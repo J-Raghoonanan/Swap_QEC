@@ -56,7 +56,7 @@ class PurificationResult:
 class QuantumState:
     """
     Represent quantum states for simulation.
-    For qudits: ρ = λ|ψ⟩⟨ψ| + (1-λ)I/d
+    For qudits: rho = λ|ψ⟩⟨ψ| + (1-λ)I/d
     """
     
     def __init__(self, purity: float, dimension: int, target_state: Optional[np.ndarray] = None):
@@ -448,7 +448,7 @@ class StreamingPurificationSimulator:
         )
     
     def _logical_error(self, purity: float) -> float:
-        """Calculate logical error using Grafe metric."""
+        """Calculate logical error using paper's fidelity metric."""
         return (1 - purity) * (self.dimension - 1) / self.dimension
     
     def validate_deterministic_behavior(self, initial_delta: float, num_levels: int, 
