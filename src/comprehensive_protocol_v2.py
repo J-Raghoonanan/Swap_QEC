@@ -1235,13 +1235,13 @@ if __name__ == "__main__":
     # Set random seed for reproducibility
     np.random.seed(42)
     
-    print("Starting streaming purification demonstration...")
+    print("Starting comprehensive streaming purification analysis...")
     
     try:
-        # Run demonstration
-        run_demonstration()
-        print("\nDemonstration completed successfully!")
+        # Run comprehensive analysis
+        results = run_comprehensive_analysis()
+        print("\nAnalysis completed successfully!")
         
     except Exception as e:
-        logger.error(f"Demonstration failed: {e}")
+        logger.error(f"Analysis failed: {e}")
         raise
