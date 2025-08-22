@@ -23,7 +23,7 @@ class NoiseModel(ABC):
 
 
 class DepolarizingNoise(NoiseModel):
-    """Depolarizing noise: ρ = (1-δ)|ψ⟩⟨ψ| + δI/d"""
+    """Depolarizing noise: rho = (1-δ)|ψ⟩⟨ψ| + δI/d"""
     
     def __init__(self, dimension: int, noise_strength: float):
         self.dimension = dimension
