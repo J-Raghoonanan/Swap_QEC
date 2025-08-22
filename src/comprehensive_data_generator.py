@@ -176,15 +176,20 @@ class ComprehensiveDataGenerator:
         self.data_dir = data_dir
         self.protocol = StreamingPurificationProtocol()
         
+        # Create base data directory first
+        os.makedirs(data_dir, exist_ok=True)
+        
         # Create comprehensive directory structure
         subdirs = [
-            "evolution", "threshold", "resources", "memory_scaling",
+            "evolution", "threshold", "resource", "memory_scaling",
             "phase_diagrams", "qec_comparisons", "convergence", 
             "noise_analysis", "amplification", "raw", "metadata"
         ]
         
         for subdir in subdirs:
-            os.makedirs(os.path.join(data_dir, subdir), exist_ok=True)
+            subdir_path = os.path.join(data_dir, subdir)
+            os.makedirs(subdir_path, exist_ok=True)
+            print(f"Created directory: {subdir_path}")
     
     # ===== EXISTING METHODS (Enhanced) =====
     
@@ -889,7 +894,7 @@ class ComprehensiveDataGenerator:
             noise_types = ['depolarizing', 'symmetric_pauli', 'dephasing']
             dimensions = [2, 3, 4]
             N_values = [8, 16, 32, 64]
-            error_rates = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+            error_rates = [0.1, 0.2, 0.5, 0.8, 0.9, 0.95, 0.99]
         
         # Generate all data types
         all_data = {}
@@ -1000,28 +1005,47 @@ class ComprehensiveDataGenerator:
         for data_type, data in all_data.items():
             if data_type == 'saved_files':
                 continue
+            
+            # Ensure directory exists
+            type_dir = os.path.join(self.data_dir, data_type)
+            os.makedirs(type_dir, exist_ok=True)
                 
             # Convert to DataFrame if it's a list of dataclasses
             if isinstance(data, list) and len(data) > 0:
-                df = pd.DataFrame([asdict(item) for item in data])
-                
-                # Save as CSV
-                csv_path = os.path.join(self.data_dir, data_type, f"{data_type}_{timestamp}.csv")
-                df.to_csv(csv_path, index=False)
-                saved_files[f'{data_type}_csv'] = csv_path
-                
-                # Save as JSON for full precision
-                json_path = os.path.join(self.data_dir, data_type, f"{data_type}_{timestamp}.json")
-                with open(json_path, 'w') as f:
-                    json.dump([asdict(item) for item in data], f, indent=2, default=str)
-                saved_files[f'{data_type}_json'] = json_path
+                try:
+                    df = pd.DataFrame([asdict(item) for item in data])
+                    
+                    # Save as CSV
+                    csv_path = os.path.join(type_dir, f"{data_type}_{timestamp}.csv")
+                    df.to_csv(csv_path, index=False)
+                    saved_files[f'{data_type}_csv'] = csv_path
+                    
+                    # Save as JSON for full precision
+                    json_path = os.path.join(type_dir, f"{data_type}_{timestamp}.json")
+                    with open(json_path, 'w') as f:
+                        json.dump([asdict(item) for item in data], f, indent=2, default=str)
+                    saved_files[f'{data_type}_json'] = json_path
+                    
+                    print(f"Saved {data_type}: {len(data)} records")
+                    
+                except Exception as e:
+                    print(f"Warning: Failed to save {data_type} as DataFrame: {e}")
+                    # Fall back to JSON only
+                    json_path = os.path.join(type_dir, f"{data_type}_{timestamp}.json")
+                    with open(json_path, 'w') as f:
+                        json.dump([asdict(item) for item in data], f, indent=2, default=str)
+                    saved_files[f'{data_type}_json'] = json_path
                 
             elif isinstance(data, (MemoryScalingData, AmplificationEfficiencyData)):
                 # Single dataclass instances
-                json_path = os.path.join(self.data_dir, data_type, f"{data_type}_{timestamp}.json")
+                json_path = os.path.join(type_dir, f"{data_type}_{timestamp}.json")
                 with open(json_path, 'w') as f:
                     json.dump(asdict(data), f, indent=2, default=str)
                 saved_files[f'{data_type}_json'] = json_path
+                print(f"Saved {data_type}: single instance")
+                
+            else:
+                print(f"Warning: Unknown data type format for {data_type}: {type(data)}")
         
         # Save metadata
         metadata = {
