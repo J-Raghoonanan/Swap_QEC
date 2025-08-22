@@ -76,6 +76,10 @@ class BlochVectorState(QuantumState):
         # Clip to unit sphere
         if np.linalg.norm(self.bloch_vector) > 1:
             self.bloch_vector = self.bloch_vector / np.linalg.norm(self.bloch_vector)
+        '''
+        Need to confirm if I should do this; the whole value of the swap purification is that it renormalizes the bloch vector, 
+        so maybe I shouldn't be ensuring normalization here.
+        '''
     
     def get_fidelity_with_target(self) -> float:
         """Fidelity via Bloch vector dot product."""
