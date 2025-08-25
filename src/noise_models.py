@@ -1,5 +1,5 @@
 """
-Noise models for streaming QEC protocol.
+Updated noise models implementing the corrected Pauli error formulas from Section II.E
 """
 
 import numpy as np
@@ -23,7 +23,7 @@ class NoiseModel(ABC):
 
 
 class DepolarizingNoise(NoiseModel):
-    """Depolarizing noise: rho = (1-δ)|ψ⟩⟨ψ| + δI/d"""
+    """Depolarizing noise: ρ = (1-δ)|ψ⟩⟨ψ| + δI/d"""
     
     def __init__(self, dimension: int, noise_strength: float):
         self.dimension = dimension
@@ -42,69 +42,78 @@ class DepolarizingNoise(NoiseModel):
 
 
 class PauliNoise(NoiseModel):
-    """Pauli noise for qubits using proper Bloch vector evolution."""
+    """
+    Pauli noise implementation using exact formulas from Section II.E.
+    
+    Implements the corrected Bloch vector transformations:
+    - r^noisy_x = (1-2p_y-2p_z)r⁰_x  (Eq. 32)
+    - r^noisy_y = (1-2p_x-2p_z)r⁰_y  (Eq. 33)  
+    - r^noisy_z = (1-2p_x-2p_y)r⁰_z  (Eq. 34)
+    """
     
     def __init__(self, px: float, py: float, pz: float):
         self.px, self.py, self.pz = px, py, pz
+        self.p_total = px + py + pz
         
         # Validate probabilities
-        total = px + py + pz
-        if total > 1:
-            raise ValueError(f"Total Pauli error probability {total:.3f} > 1")
+        if self.p_total > 1:
+            raise ValueError(f"Total Pauli error probability {self.p_total:.3f} > 1")
         
-        self.p_identity = 1 - total
+        self.p_identity = 1 - self.p_total
     
     def apply_noise(self, pure_state: np.ndarray) -> BlochVectorState:
-        """Apply Pauli noise returning Bloch vector state."""
+        """Apply Pauli noise using exact Section II.E formulas."""
         if len(pure_state) != 2:
             raise ValueError("Pauli noise only supports qubits")
         
         # Convert pure state to Bloch vector
         target_bloch = pure_state_to_bloch_vector(pure_state)
         
-        # Apply Pauli error evolution
-        noisy_bloch = self._apply_pauli_errors(target_bloch)
+        # Apply exact Pauli error transformations from Eqs. (32)-(34)
+        noisy_bloch = self._apply_exact_pauli_transformations(target_bloch)
         
-        error_rates = {'px': self.px, 'py': self.py, 'pz': self.pz}
+        error_rates = {'px': self.px, 'py': self.py, 'pz': self.pz, 'p_total': self.p_total}
         
         return BlochVectorState(noisy_bloch, target_bloch, pure_state, error_rates)
     
-    def _apply_pauli_errors(self, bloch_vector: np.ndarray) -> np.ndarray:
+    def _apply_exact_pauli_transformations(self, r0: np.ndarray) -> np.ndarray:
         """
-        Apply Pauli errors to Bloch vector.
+        Apply exact Pauli transformations from manuscript Eqs. (32)-(34).
         
-        Pauli operator actions on Bloch vector:
-        - I: (rx, ry, rz) → (rx, ry, rz)
-        - X: (rx, ry, rz) → (rx, -ry, -rz)  
-        - Y: (rx, ry, rz) → (-rx, ry, -rz)
-        - Z: (rx, ry, rz) → (-rx, -ry, rz)
+        Args:
+            r0: Original Bloch vector [r⁰_x, r⁰_y, r⁰_z]
+            
+        Returns:
+            Noisy Bloch vector after Pauli errors
         """
-        rx, ry, rz = bloch_vector
+        r0_x, r0_y, r0_z = r0
         
-        # Correct evolution under Pauli errors
-        noisy_rx = (self.p_identity * rx +      # Identity preserves
-                   self.px * rx +               # X preserves rx
-                   self.py * (-rx) +            # Y flips rx
-                   self.pz * (-rx))             # Z flips rx
+        # Exact formulas from Section II.E
+        r_noisy_x = (1 - 2*self.py - 2*self.pz) * r0_x  # Eq. (32)
+        r_noisy_y = (1 - 2*self.px - 2*self.pz) * r0_y  # Eq. (33)
+        r_noisy_z = (1 - 2*self.px - 2*self.py) * r0_z  # Eq. (34)
         
-        noisy_ry = (self.p_identity * ry +      # Identity preserves  
-                   self.px * (-ry) +            # X flips ry
-                   self.py * ry +               # Y preserves ry
-                   self.pz * (-ry))             # Z flips ry
+        return np.array([r_noisy_x, r_noisy_y, r_noisy_z])
+    
+    def get_success_probability_exact(self, target_bloch: np.ndarray) -> float:
+        """
+        Calculate exact success probability using Eq. (41) from manuscript.
         
-        noisy_rz = (self.p_identity * rz +      # Identity preserves
-                   self.px * (-rz) +            # X flips rz
-                   self.py * (-rz) +            # Y flips rz  
-                   self.pz * rz)                # Z preserves rz
+        P_success = 1/2[2 - 2p_total + p²_total + Σp²_i]
+        """
+        # From Eq. (40): Tr(ρ²) = 1 - 2p_total + p²_total + Σp²_i
+        sum_squared_errors = self.px**2 + self.py**2 + self.pz**2
+        tr_rho_squared = 1 - 2*self.p_total + self.p_total**2 + sum_squared_errors
         
-        return np.array([noisy_rx, noisy_ry, noisy_rz])
+        # From Eq. (41)
+        return 0.5 * (1 + tr_rho_squared)
     
     def get_name(self) -> str:
         return f"Pauli_px{self.px:.3f}_py{self.py:.3f}_pz{self.pz:.3f}"
 
 
-class PureDephasing(PauliNoise):
-    """Pure dephasing noise (only Z errors)."""
+class PureDephasingNoise(PauliNoise):
+    """Pure Z-dephasing noise: px = py = 0."""
     
     def __init__(self, pz: float):
         super().__init__(px=0.0, py=0.0, pz=pz)
@@ -113,8 +122,8 @@ class PureDephasing(PauliNoise):
         return f"PureDephasing_pz{self.pz:.3f}"
 
 
-class PureBitFlip(PauliNoise):
-    """Pure bit flip noise (only X errors)."""
+class PureBitFlipNoise(PauliNoise):
+    """Pure X-bit flip noise: py = pz = 0."""
     
     def __init__(self, px: float):
         super().__init__(px=px, py=0.0, pz=0.0)
@@ -123,12 +132,26 @@ class PureBitFlip(PauliNoise):
         return f"PureBitFlip_px{self.px:.3f}"
 
 
-class SymmetricPauli(PauliNoise):
-    """Symmetric Pauli noise with equal X, Y, Z error rates."""
+class SymmetricPauliNoise(PauliNoise):
+    """Symmetric Pauli noise: px = py = pz."""
     
-    def __init__(self, p_total: float):
-        p_each = p_total / 3
-        super().__init__(px=p_each, py=p_each, pz=p_each)
+    def __init__(self, p_symmetric: float):
+        super().__init__(px=p_symmetric, py=p_symmetric, pz=p_symmetric)
     
     def get_name(self) -> str:
-        return f"SymmetricPauli_p{self.px*3:.3f}"
+        return f"SymmetricPauli_p{self.px:.3f}"
+
+
+# Factory functions for easy creation
+def create_depolarizing_noise_factory(dimension: int):
+    """Factory for depolarizing noise models."""
+    def factory(noise_strength: float) -> DepolarizingNoise:
+        return DepolarizingNoise(dimension, noise_strength)
+    return factory
+
+
+def create_pauli_noise_factory(px: float, py: float, pz: float):
+    """Factory for Pauli noise models."""
+    def factory(error_scale: float = 1.0) -> PauliNoise:
+        return PauliNoise(px * error_scale, py * error_scale, pz * error_scale)
+    return factory

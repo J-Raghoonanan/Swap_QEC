@@ -1,5 +1,6 @@
 """
 Core swap test operations and amplitude amplification for streaming protocol.
+Updated swap test operations implementing exact Pauli formulas from Section II.E
 """
 
 import numpy as np
@@ -18,17 +19,17 @@ class SwapResult:
 
 
 class SwapTestProcessor:
-    """Handles swap test operations with amplitude amplification."""
+    """Handles swap test operations with exact Pauli error formulas from Section II.E."""
     
     def __init__(self, max_amplification_iterations: int = 100):
         self.max_amplification_iterations = max_amplification_iterations
     
     def calculate_success_probability(self, state1: QuantumState, state2: QuantumState) -> float:
-        """Calculate success probability for swap test on two states."""
+        """Calculate exact success probability for swap test."""
         if isinstance(state1, PurityParameterState) and isinstance(state2, PurityParameterState):
             return self._depolarizing_success_probability(state1, state2)
         elif isinstance(state1, BlochVectorState) and isinstance(state2, BlochVectorState):
-            return self._pauli_success_probability(state1, state2)
+            return self._pauli_success_probability_exact(state1, state2)
         else:
             raise ValueError("States must be of compatible types")
     
@@ -38,69 +39,97 @@ class SwapTestProcessor:
         if state1.dimension != state2.dimension:
             raise ValueError("States must have same dimension")
         
-        # For identical depolarized states ρ(δ)
-        purity = state1.purity_parameter  # Assuming identical states
+        # For identical depolarized states with purity λ = 1-δ
+        purity = state1.purity_parameter
         d = state1.dimension
         
-        # Tr(ρ²) = (1-δ)² + δ(2-δ)/d for depolarizing noise
-        # Recall that purity = 1 - δ
-        tr_rho_squared = (purity**2 + 
-                         (1 - purity) * (2 - (1 - purity)) / d)
+        # Tr(ρ²) = (1-δ)² + δ(2-δ)/d from manuscript Eq. (9)
+        delta = 1 - purity
+        tr_rho_squared = purity**2 + delta * (2 - delta) / d
         
         return 0.5 * (1 + tr_rho_squared)
     
-    def _pauli_success_probability(self, state1: BlochVectorState, 
-                                 state2: BlochVectorState) -> float:
-        """Success probability for Pauli errors (approximate)."""
-        # For identical Pauli-noisy states - simplified calculation
-        bloch_magnitude = np.linalg.norm(state1.bloch_vector)
+    def _pauli_success_probability_exact(self, state1: BlochVectorState, 
+                                       state2: BlochVectorState) -> float:
+        """
+        Exact success probability for Pauli errors using Eq. (41) from manuscript.
         
-        # Approximate success probability based on coherence
-        return 0.5 * (1 + bloch_magnitude**2)
+        P_success = 1/2[2 - 2p_total + p²_total + Σp²_i]
+        
+        Note: Success probability depends only on error rate distribution,
+        not the initial state itself (key insight from Section II.E).
+        """
+        if not state1.error_rates or not state2.error_rates:
+            raise ValueError("Pauli states must have error_rates specified")
+        
+        # Extract error rates
+        px = state1.error_rates['px']
+        py = state1.error_rates['py'] 
+        pz = state1.error_rates['pz']
+        p_total = state1.error_rates['p_total']
+        
+        # From Eq. (40): Tr(ρ²) = 1 - 2p_total + p²_total + Σp²_i
+        sum_squared_errors = px**2 + py**2 + pz**2
+        tr_rho_squared = 1 - 2*p_total + p_total**2 + sum_squared_errors
+        
+        # From Eq. (41): P_success = 1/2[2 - 2p_total + p²_total + Σp²_i]
+        return 0.5 * (2 - 2*p_total + p_total**2 + sum_squared_errors)
     
     def amplitude_amplified_swap(self, state1: QuantumState, state2: QuantumState) -> SwapResult:
         """Perform amplitude-amplified swap test."""
-        initial_success_prob = self.calculate_success_probability(state1, state2)
+        # Calculate initial success probability
+        p_success = self.calculate_success_probability(state1, state2)
         
-        if initial_success_prob >= 0.99:  # Already high probability
-            output_state = self.compute_output_state(state1, state2)
-            return SwapResult(output_state, initial_success_prob, 0, 4)
+        # Calculate optimal amplification iterations
+        iterations = self._calculate_optimal_iterations(p_success)
         
-        # Calculate optimal number of amplitude amplification iterations
-        theta = 2 * np.arcsin(np.sqrt(initial_success_prob))
-        optimal_iterations = max(0, int(np.floor(np.pi / (2 * theta) - 0.5)))
+        # Apply amplification (simulated deterministic outcome)
+        amplified_probability = self._apply_amplitude_amplification(p_success, iterations)
         
-        # Cap iterations for practical reasons
-        num_iterations = min(optimal_iterations, self.max_amplification_iterations)
-        
-        # Compute amplified success probability
-        amplified_prob = np.sin((2 * num_iterations + 1) * theta / 2)**2
-        
-        # Gate count: base swap test + amplification rounds
-        gate_count = 4 + 4 * num_iterations
-        
-        # Compute output state (same as probabilistic case but deterministic)
-        output_state = self.compute_output_state(state1, state2)
-        
-        return SwapResult(output_state, amplified_prob, num_iterations, gate_count)
-    
-    def compute_output_state(self, state1: QuantumState, state2: QuantumState) -> QuantumState:
-        """Compute output state after successful swap test."""
-        if isinstance(state1, PurityParameterState) and isinstance(state2, PurityParameterState):
-            return self._compute_depolarizing_output(state1, state2)
-        elif isinstance(state1, BlochVectorState) and isinstance(state2, BlochVectorState):
-            return self._compute_pauli_output(state1, state2)
+        # Compute output state
+        if isinstance(state1, PurityParameterState):
+            output_state = self._compute_depolarizing_output(state1, state2)
+        elif isinstance(state1, BlochVectorState):
+            output_state = self._compute_pauli_output_exact(state1, state2)
         else:
-            raise ValueError("States must be of compatible types")
+            raise ValueError("Unsupported state type")
+        
+        # Estimate gate count (swap + amplification rounds)
+        gate_count = 4 + 4 * iterations  # Base swap + amplification iterations
+        
+        return SwapResult(
+            output_state=output_state,
+            success_probability=amplified_probability,
+            amplification_iterations=iterations,
+            total_gate_count=gate_count
+        )
+    
+    def _calculate_optimal_iterations(self, p_success: float) -> int:
+        """Calculate optimal number of amplitude amplification iterations."""
+        if p_success >= 1.0:
+            return 0
+        
+        theta = 2 * np.arcsin(np.sqrt(p_success))
+        return max(0, int(np.floor(np.pi / (4 * np.arcsin(np.sqrt(p_success))) - 0.5)))
+    
+    def _apply_amplitude_amplification(self, initial_prob: float, iterations: int) -> float:
+        """Apply amplitude amplification returning final success probability."""
+        if initial_prob >= 1.0:
+            return 1.0
+        
+        theta = 2 * np.arcsin(np.sqrt(initial_prob))
+        final_amplitude = np.sin((iterations + 0.5) * theta)
+        
+        return min(1.0, final_amplitude**2)
     
     def _compute_depolarizing_output(self, state1: PurityParameterState, 
                                    state2: PurityParameterState) -> PurityParameterState:
-        """Compute output for depolarizing noise using purity transformation."""
-        # Assuming identical states for simplicity
+        """Compute output for depolarizing noise using exact purity transformation."""
+        # Assuming identical states
         λ = state1.purity_parameter
         d = state1.dimension
         
-        # Purity transformation: λ_out = λ(1 + λ + 2(1-λ)/d) / (1 + λ² + (1-λ²)/d)
+        # Exact transformation from manuscript Eq. (15)
         numerator = λ * (1 + λ + 2 * (1 - λ) / d)
         denominator = 1 + λ**2 + (1 - λ**2) / d
         
@@ -108,69 +137,196 @@ class SwapTestProcessor:
         
         return PurityParameterState(output_purity, d, state1.target_vector)
     
-    def _compute_pauli_output(self, state1: BlochVectorState, 
-                            state2: BlochVectorState) -> BlochVectorState:
-        """Compute output for Pauli errors using Bloch vector transformation."""
-        # Simple coherence-weighted purification model
+    def _compute_pauli_output_exact(self, state1: BlochVectorState, 
+                                  state2: BlochVectorState) -> BlochVectorState:
+        """
+        Compute exact output for Pauli errors using renormalization maps from Section II.E.
+        
+        Implements noise-specific renormalization transformations:
+        - Z-dephasing: Anisotropic scaling with (1-2p_z) factors
+        - X-bit-flip: Similar but affects different components
+        - Symmetric Pauli: Uniform (1-4p/3) scaling
+        """
         current_bloch = state1.bloch_vector.copy()
         target_bloch = state1.target_bloch_vector.copy()
+        error_rates = state1.error_rates
         
-        if state1.error_rates:
-            px = state1.error_rates.get('px', 0)
-            py = state1.error_rates.get('py', 0)
-            pz = state1.error_rates.get('pz', 0)
-            total_error_rate = px + py + pz
-            
-            if total_error_rate > 0:
-                # Coherence-preserving purification
-                # Z errors preserve more coherence than X/Y
-                z_coherence_weight = 1.0
-                xy_coherence_weight = 0.5
-                
-                coherence_factor = (
-                    (1 - total_error_rate) * 1.0 +  # No error preserves all
-                    pz * z_coherence_weight +         # Z error partial preservation
-                    (px + py) * xy_coherence_weight   # X,Y error minimal preservation
-                )
-                
-                # Purification strength scales with preserved coherence
-                purification_strength = 0.2 + 0.6 * coherence_factor
-                
-                # Apply purification
-                direction_to_target = target_bloch - current_bloch
-                purified_bloch = current_bloch + purification_strength * direction_to_target
-            else:
-                purified_bloch = current_bloch
+        px = error_rates['px']
+        py = error_rates['py']
+        pz = error_rates['pz']
+        
+        # Determine dominant error type and apply appropriate renormalization
+        if px == 0 and py == 0 and pz > 0:
+            # Pure Z-dephasing case
+            output_bloch = self._apply_z_dephasing_renormalization(current_bloch, pz)
+        elif py == 0 and pz == 0 and px > 0:
+            # Pure X-bit-flip case  
+            output_bloch = self._apply_x_bitflip_renormalization(current_bloch, px)
+        elif px == py == pz:
+            # Symmetric Pauli case
+            output_bloch = self._apply_symmetric_pauli_renormalization(current_bloch, px)
         else:
-            # Default: partial restoration toward target
-            purified_bloch = 0.7 * current_bloch + 0.3 * target_bloch
+            # General case - use composite renormalization
+            output_bloch = self._apply_general_pauli_renormalization(current_bloch, px, py, pz)
         
-        # Ensure unit sphere constraint
-        if np.linalg.norm(purified_bloch) > 1:
-            purified_bloch = purified_bloch / np.linalg.norm(purified_bloch)
+        return BlochVectorState(output_bloch, target_bloch, state1.target_pure_state, error_rates)
+    
+    def _apply_z_dephasing_renormalization(self, r: np.ndarray, pz: float) -> np.ndarray:
+        """
+        Apply Z-dephasing renormalization from Eq. (43).
         
-        return BlochVectorState(purified_bloch, target_bloch, state1.target_pure_state, 
-                              state1.error_rates)
+        R_Z: (r_x,r_y,r_z) ↦ 4*r^noisy / (3 + |r^noisy|²)
+        where r^noisy = ((1-2p_z)r_x, (1-2p_z)r_y, r_z)
+        """
+        rx, ry, rz = r
+        
+        # Apply Z-dephasing transformation to get noisy Bloch vector
+        r_noisy_x = (1 - 2*pz) * rx
+        r_noisy_y = (1 - 2*pz) * ry
+        r_noisy_z = rz  # Z component unchanged by Z-dephasing
+        
+        r_noisy = np.array([r_noisy_x, r_noisy_y, r_noisy_z])
+        r_noisy_magnitude_squared = np.sum(r_noisy**2)
+        
+        # Apply geometric renormalization
+        renormalization_factor = 4 / (3 + r_noisy_magnitude_squared)
+        
+        return renormalization_factor * r_noisy
+    
+    def _apply_x_bitflip_renormalization(self, r: np.ndarray, px: float) -> np.ndarray:
+        """Apply X-bit-flip renormalization (analogous to Z-dephasing)."""
+        rx, ry, rz = r
+        
+        # X-bit-flip affects Y and Z components
+        r_noisy_x = rx  # X component unchanged by X-bit-flip
+        r_noisy_y = (1 - 2*px) * ry  
+        r_noisy_z = (1 - 2*px) * rz
+        
+        r_noisy = np.array([r_noisy_x, r_noisy_y, r_noisy_z])
+        r_noisy_magnitude_squared = np.sum(r_noisy**2)
+        
+        renormalization_factor = 4 / (3 + r_noisy_magnitude_squared)
+        
+        return renormalization_factor * r_noisy
+    
+    def _apply_symmetric_pauli_renormalization(self, r: np.ndarray, p: float) -> np.ndarray:
+        """Apply symmetric Pauli renormalization with uniform (1-4p/3) scaling."""
+        # For symmetric Pauli: r^noisy = (1-4p/3)*r
+        coherence_factor = 1 - 4*p/3
+        r_noisy = coherence_factor * r
+        
+        r_noisy_magnitude_squared = np.sum(r_noisy**2)
+        renormalization_factor = 4 / (3 + r_noisy_magnitude_squared)
+        
+        return renormalization_factor * r_noisy
+    
+    def _apply_general_pauli_renormalization(self, r: np.ndarray, px: float, py: float, pz: float) -> np.ndarray:
+        """
+        Apply general Pauli renormalization using exact transformations from Eqs. (32)-(34).
+        
+        This handles the general case where px ≠ py ≠ pz.
+        """
+        rx, ry, rz = r
+        
+        # Apply exact Pauli transformations from manuscript
+        r_noisy_x = (1 - 2*py - 2*pz) * rx  # Eq. (32)
+        r_noisy_y = (1 - 2*px - 2*pz) * ry  # Eq. (33)
+        r_noisy_z = (1 - 2*px - 2*py) * rz  # Eq. (34)
+        
+        r_noisy = np.array([r_noisy_x, r_noisy_y, r_noisy_z])
+        r_noisy_magnitude_squared = np.sum(r_noisy**2)
+        
+        # Apply geometric renormalization: r^(n+1) = 4*r^noisy / (3 + |r^noisy|²)
+        renormalization_factor = 4 / (3 + r_noisy_magnitude_squared)
+        
+        return renormalization_factor * r_noisy
 
 
-def theoretical_purity_evolution(initial_purity: float, dimension: int, num_levels: int) -> list:
+def theoretical_purity_evolution_depolarizing(initial_purity: float, dimension: int, num_levels: int) -> list:
     """Compute theoretical purity evolution for depolarizing noise."""
     purities = [initial_purity]
+    current_purity = initial_purity
     
     for _ in range(num_levels):
-        λ = purities[-1]
-        d = dimension
-        
-        # Theoretical purity transformation
-        numerator = λ * (1 + λ + 2 * (1 - λ) / d)
-        denominator = 1 + λ**2 + (1 - λ**2) / d
-        
-        new_purity = numerator / denominator
-        purities.append(new_purity)
+        # Apply purity transformation
+        numerator = current_purity * (1 + current_purity + 2*(1-current_purity)/dimension)
+        denominator = 1 + current_purity**2 + (1-current_purity**2)/dimension
+        current_purity = numerator / denominator
+        purities.append(current_purity)
     
     return purities
 
 
-def theoretical_logical_errors(purities: list, dimension: int) -> list:
-    """Convert purity parameters to logical errors for depolarizing noise."""
-    return [(1 - λ) * (dimension - 1) / dimension for λ in purities]
+def theoretical_bloch_evolution_pauli(initial_bloch: np.ndarray, px: float, py: float, pz: float, 
+                                    num_levels: int) -> Tuple[list, list]:
+    """
+    Compute theoretical Bloch vector evolution for Pauli errors.
+    
+    Returns:
+        bloch_evolution: List of Bloch vectors at each level
+        magnitude_evolution: List of Bloch vector magnitudes
+    """
+    bloch_evolution = [initial_bloch.copy()]
+    magnitude_evolution = [np.linalg.norm(initial_bloch)]
+    
+    current_bloch = initial_bloch.copy()
+    
+    for level in range(num_levels):
+        # Apply exact Pauli transformations (Eqs. 32-34)
+        rx, ry, rz = current_bloch
+        
+        r_noisy_x = (1 - 2*py - 2*pz) * rx
+        r_noisy_y = (1 - 2*px - 2*pz) * ry  
+        r_noisy_z = (1 - 2*px - 2*py) * rz
+        
+        r_noisy = np.array([r_noisy_x, r_noisy_y, r_noisy_z])
+        r_noisy_magnitude_squared = np.sum(r_noisy**2)
+        
+        # Apply renormalization: r^(n+1) = 4*r^noisy / (3 + |r^noisy|²)
+        renormalization_factor = 4 / (3 + r_noisy_magnitude_squared)
+        current_bloch = renormalization_factor * r_noisy
+        
+        bloch_evolution.append(current_bloch.copy())
+        magnitude_evolution.append(np.linalg.norm(current_bloch))
+    
+    return bloch_evolution, magnitude_evolution
+
+
+def analyze_noise_model_dependence(initial_bloch: np.ndarray, num_levels: int = 5) -> dict:
+    """
+    Analyze how different noise types affect purification performance.
+    
+    Demonstrates why purification preferentially corrects depolarizing over dephasing errors.
+    """
+    results = {}
+    
+    # Test different noise scenarios
+    noise_scenarios = {
+        'pure_z_dephasing': {'px': 0.0, 'py': 0.0, 'pz': 0.3},
+        'pure_x_bitflip': {'px': 0.3, 'py': 0.0, 'pz': 0.0},
+        'symmetric_pauli': {'px': 0.1, 'py': 0.1, 'pz': 0.1},
+        'mixed_pauli': {'px': 0.1, 'py': 0.05, 'pz': 0.15}
+    }
+    
+    for scenario_name, rates in noise_scenarios.items():
+        bloch_evo, mag_evo = theoretical_bloch_evolution_pauli(
+            initial_bloch, rates['px'], rates['py'], rates['pz'], num_levels)
+        
+        # Calculate logical error evolution
+        logical_errors = []
+        for bloch in bloch_evo:
+            # Logical error = 1/2 * |r_final - r_target|
+            target_bloch = initial_bloch / np.linalg.norm(initial_bloch)  # Normalize target
+            logical_error = 0.5 * np.linalg.norm(bloch - target_bloch)
+            logical_errors.append(logical_error)
+        
+        results[scenario_name] = {
+            'bloch_evolution': bloch_evo,
+            'magnitude_evolution': mag_evo,
+            'logical_error_evolution': logical_errors,
+            'error_rates': rates,
+            'final_logical_error': logical_errors[-1],
+            'error_reduction_ratio': logical_errors[-1] / logical_errors[0] if logical_errors[0] > 0 else 0
+        }
+    
+    return results

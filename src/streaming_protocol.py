@@ -195,25 +195,3 @@ class StreamingPurificationProtocol:
                 final_errors.append(float('inf'))  # Mark as failed
         
         return error_rates, np.array(final_errors)
-
-
-def create_depolarizing_noise_factory(dimension: int = 2):
-    """Factory function for depolarizing noise models."""
-    def factory(error_rate: float) -> DepolarizingNoise:
-        return DepolarizingNoise(dimension, error_rate)
-    return factory
-
-
-def create_pauli_noise_factory(error_type: str = 'symmetric'):
-    """Factory function for Pauli noise models."""
-    def factory(error_rate: float) -> PauliNoise:
-        if error_type == 'symmetric':
-            p_each = error_rate / 3
-            return PauliNoise(p_each, p_each, p_each)
-        elif error_type == 'dephasing':
-            return PauliNoise(0, 0, error_rate)
-        elif error_type == 'bitflip':
-            return PauliNoise(error_rate, 0, 0)
-        else:
-            raise ValueError(f"Unknown error type: {error_type}")
-    return factory
