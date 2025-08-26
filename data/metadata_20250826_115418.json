@@ -1,0 +1,36 @@
+{
+  "timestamp": "20250826_115418",
+  "generation_date": "2025-08-26T11:54:18.293718",
+  "protocol_version": "streaming_purification_section_iie_v1.0",
+  "manuscript_reference": "Streaming Quantum State Purification for Error Correction",
+  "section_implemented": "Section II.E - Extension to General Pauli Errors",
+  "data_counts": {
+    "evolution_records": 259,
+    "threshold_records": 42,
+    "resource_records": 48,
+    "comparison_records": 56
+  },
+  "files": {
+    "evolution_csv": "data/evolution/evolution_data_20250826_115418.csv",
+    "evolution_json": "data/evolution/evolution_data_20250826_115418.json",
+    "threshold_csv": "data/threshold/threshold_data_20250826_115418.csv",
+    "threshold_json": "data/threshold/threshold_data_20250826_115418.json",
+    "resource_csv": "data/resources/resource_data_20250826_115418.csv",
+    "resource_json": "data/resources/resource_data_20250826_115418.json",
+    "comparison_json": "data/comparisons/noise_comparison_20250826_115418.json",
+    "validation_json": "data/validation/manuscript_validation_20250826_115418.json"
+  },
+  "theoretical_basis": {
+    "exact_pauli_transformations": "Eqs. (32)-(34)",
+    "success_probability_formula": "Eq. (41)",
+    "bloch_vector_renormalization": "Eq. (44)",
+    "z_dephasing_convergence": "Eqs. (47)-(51)",
+    "appendix_c_validation": "\u03bb sequence [0.7, 0.802, 0.881, 0.933]"
+  },
+  "key_results": {
+    "depolarizing_threshold": "Theoretical ~100% (ultrahigh)",
+    "pauli_threshold_degradation": "Due to coherence preservation in Bloch sphere geometry",
+    "memory_scaling": "O(log N) demonstrated across all noise types",
+    "preferential_correction": "Depolarizing > Pauli errors explained by manuscript theory"
+  }
+}
