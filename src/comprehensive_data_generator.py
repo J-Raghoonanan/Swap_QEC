@@ -714,8 +714,8 @@ class StreamingQECDataGenerator:
             print("Running FULL data generation...")
             noise_types = ['depolarizing', 'symmetric_pauli', 'pure_dephasing']
             dimensions = [2, 3, 4, 5]
-            N_values = [8, 16, 32, 64]
-            error_rates = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+            N_values = [8, 16, 32, 64, 128, 256]
+            error_rates = [0.1, 0.2, 0.5, 0.7, 0.8, 0.9, 0.95, 0.99]
             N_resource = [4, 8, 16, 32, 64, 128, 256]
         
         results = {}
@@ -768,7 +768,7 @@ class StreamingQECDataGenerator:
             print("\n5. Generating noise comparison data (preferential correction)...")
             comparison_data = self.generate_noise_comparison_data(
                 dimension=2,  # Focus on qubits for Pauli comparison
-                N_values=[16, 32, 64] if quick_run else [8, 16, 32, 64, 128],
+                N_values=N_values,
                 error_rates=error_rates[:5] if quick_run else error_rates
             )
             results['comparison_data'] = comparison_data
