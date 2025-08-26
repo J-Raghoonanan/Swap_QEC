@@ -28,7 +28,7 @@ from matplotlib.patches import Patch
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
 
-# Set publication-quality plotting parameters
+# Set publication-quality plotting parameters (fix font issues)
 plt.style.use('seaborn-v0_8-paper')
 sns.set_palette("husl")
 
@@ -40,9 +40,8 @@ plt.rcParams.update({
     'ytick.labelsize': 10,
     'legend.fontsize': 10,
     'figure.titlesize': 16,
-    'font.family': 'serif',
-    'font.serif': ['Times New Roman'],
-    'mathtext.fontset': 'stix',
+    'font.family': 'DejaVu Sans',  # Changed from Times New Roman to avoid subscript issues
+    'mathtext.fontset': 'dejavusans',  # Changed to match font
     'axes.linewidth': 1.2,
     'grid.linewidth': 0.8,
     'lines.linewidth': 2,
@@ -185,19 +184,41 @@ class StreamingQECFigureGenerator:
         """Plot memory scaling - THE KEY ADVANTAGE FIGURE."""
         fig, ax = plt.subplots(figsize=(10, 6))
         
-        data = self.data['memory_scaling']
-        N_values = data['N_values']
-        streaming = data['streaming_memory']
-        standard = data['standard_qec_memory']
-        theoretical = data['theoretical_log_N']
-        
-        # Main scaling plots
-        ax.loglog(N_values, streaming, 'o-', color=PROTOCOL_COLORS['streaming_qec'],
-                 label='Streaming QEC (O(log N))', linewidth=3, markersize=8)
-        ax.loglog(N_values, standard, 's-', color=PROTOCOL_COLORS['surface_code'],
-                 label='Standard QEC (O(N))', linewidth=3, markersize=8)
-        ax.loglog(N_values, theoretical, '--', color='gray', alpha=0.7,
-                 label='Theoretical log₂(N)', linewidth=2)
+        if 'memory_scaling' not in self.data or not self.data['memory_scaling']:
+            print("Warning: No memory scaling data found")
+            ax.text(0.5, 0.5, 'No Memory Scaling Data Available', 
+                   transform=ax.transAxes, ha='center', va='center', fontsize=16)
+            ax.set_title('Memory Scaling (No Data)')
+        else:
+            data = self.data['memory_scaling']
+            N_values = data['N_values']
+            streaming = data['streaming_memory']
+            standard = data['standard_qec_memory']
+            theoretical = data['theoretical_log_N']
+            
+            print(f"Plotting memory scaling with {len(N_values)} data points")
+            
+            # Main scaling plots
+            ax.loglog(N_values, streaming, 'o-', color=PROTOCOL_COLORS['streaming_qec'],
+                     label='Streaming QEC (O(log N))', linewidth=3, markersize=8)
+            ax.loglog(N_values, standard, 's-', color=PROTOCOL_COLORS['surface_code'],
+                     label='Standard QEC (O(N))', linewidth=3, markersize=8)
+            ax.loglog(N_values, theoretical, '--', color='gray', alpha=0.7,
+                     label='Theoretical log_2(N)', linewidth=2)  # Changed subscript to underscore
+            
+            # Add advantage annotation
+            if 'memory_advantage' in data and data['memory_advantage']:
+                max_advantage = max(data['memory_advantage'])
+                ax.text(0.65, 0.25, f'Max Advantage:\n{max_advantage:.0f}x reduction', 
+                        transform=ax.transAxes, fontsize=12, 
+                        bbox=dict(boxstyle="round,pad=0.5", facecolor="yellow", alpha=0.8),
+                        ha='center')
+            
+            # Add scaling annotations
+            ax.text(0.75, 0.85, 'O(N)', transform=ax.transAxes, fontsize=14, 
+                    color=PROTOCOL_COLORS['surface_code'], fontweight='bold')
+            ax.text(0.75, 0.15, 'O(log N)', transform=ax.transAxes, fontsize=14,
+                    color=PROTOCOL_COLORS['streaming_qec'], fontweight='bold')
         
         # Formatting
         ax.set_xlabel('Number of Input States (N)', fontsize=14)
@@ -205,19 +226,6 @@ class StreamingQECFigureGenerator:
         ax.set_title('Memory Scaling: Streaming vs Standard QEC', fontsize=16, fontweight='bold')
         ax.legend(fontsize=12, loc='upper left')
         ax.grid(True, alpha=0.3)
-        
-        # Add advantage annotation
-        max_advantage = max(data['memory_advantage'])
-        ax.text(0.65, 0.25, f'Max Advantage:\n{max_advantage:.0f}× reduction', 
-                transform=ax.transAxes, fontsize=12, 
-                bbox=dict(boxstyle="round,pad=0.5", facecolor="yellow", alpha=0.8),
-                ha='center')
-        
-        # Add scaling annotations
-        ax.text(0.75, 0.85, 'O(N)', transform=ax.transAxes, fontsize=14, 
-                color=PROTOCOL_COLORS['surface_code'], fontweight='bold')
-        ax.text(0.75, 0.15, 'O(log N)', transform=ax.transAxes, fontsize=14,
-                color=PROTOCOL_COLORS['streaming_qec'], fontweight='bold')
         
         plt.tight_layout()
         
@@ -234,44 +242,75 @@ class StreamingQECFigureGenerator:
         
         evolution_data = self.data['evolution']
         
-        # Group by noise type and plot representative examples
-        noise_types = ['depolarizing', 'symmetric_pauli']
-        linestyles = ['-', '--']
-        
-        for i, noise_type in enumerate(noise_types):
-            # Find a representative example (moderate error rate, reasonable N)
-            examples = [d for d in evolution_data 
-                       if d['noise_type'] == noise_type 
-                       and d['physical_error_rate'] == 0.3 
-                       and d['N'] == 32]
+        # Debug: Check if we have data
+        if not evolution_data:
+            print("Warning: No evolution data found")
+            # Create placeholder plot
+            ax.text(0.5, 0.5, 'No Evolution Data Available', 
+                   transform=ax.transAxes, ha='center', va='center', fontsize=16)
+            ax.set_title('Error Evolution (No Data)')
+        else:
+            print(f"Found {len(evolution_data)} evolution records")
             
-            if examples:
-                data = examples[0]
-                iterations = data['iterations']
-                errors = data['logical_errors']
-                theoretical = data['theoretical_predictions']
+            # Group by noise type and plot representative examples
+            noise_types = ['depolarizing', 'symmetric_pauli']
+            linestyles = ['-', '--']
+            colors = [PROTOCOL_COLORS['depolarizing'], PROTOCOL_COLORS['symmetric_pauli']]
+            
+            plots_created = 0
+            
+            for i, noise_type in enumerate(noise_types):
+                # Find a representative example (moderate error rate, reasonable N)
+                examples = [d for d in evolution_data 
+                           if d['noise_type'] == noise_type 
+                           and abs(d['physical_error_rate'] - 0.3) < 0.1
+                           and d['N'] >= 16]
                 
-                color = PROTOCOL_COLORS[noise_type]
+                if not examples:
+                    # Try with any available data for this noise type
+                    examples = [d for d in evolution_data if d['noise_type'] == noise_type]
                 
-                # Plot simulation
-                ax.semilogy(iterations, errors, 'o-', color=color, linestyle=linestyles[i],
-                           label=f'{noise_type.replace("_", " ").title()} (Simulation)', 
-                           linewidth=2, markersize=6)
-                
-                # Plot theoretical prediction
-                ax.semilogy(iterations, theoretical, '--', color=color, alpha=0.7,
-                           label=f'{noise_type.replace("_", " ").title()} (Theory)', 
-                           linewidth=2)
+                if examples:
+                    data = examples[0]  # Use first available example
+                    iterations = data['iterations']
+                    errors = data['logical_errors']
+                    
+                    if len(iterations) > 0 and len(errors) > 0:
+                        color = colors[i]
+                        
+                        # Plot simulation
+                        ax.semilogy(iterations, errors, 'o-', color=color, linestyle=linestyles[i],
+                                   label=f'{noise_type.replace("_", " ").title()} (N={data["N"]}, p={data["physical_error_rate"]:.2f})', 
+                                   linewidth=2, markersize=6)
+                        plots_created += 1
+                        
+                        # Plot theoretical if available
+                        if 'theoretical_predictions' in data and data['theoretical_predictions']:
+                            theoretical = data['theoretical_predictions']
+                            if len(theoretical) == len(iterations):
+                                ax.semilogy(iterations, theoretical, '--', color=color, alpha=0.7,
+                                           label=f'{noise_type.replace("_", " ").title()} (Theory)', 
+                                           linewidth=2)
+            
+            if plots_created == 0:
+                ax.text(0.5, 0.5, 'No Valid Evolution Data Found', 
+                       transform=ax.transAxes, ha='center', va='center', fontsize=16)
         
         ax.set_xlabel('Purification Level', fontsize=14)
         ax.set_ylabel('Logical Error Rate', fontsize=14)
-        ax.set_title('Logical Error Evolution (p = 0.3, N = 32)', fontsize=16, fontweight='bold')
-        ax.legend(fontsize=11)
+        ax.set_title('Logical Error Evolution', fontsize=16, fontweight='bold')
+        
+        # Only add legend if we have plots
+        handles, labels = ax.get_legend_handles_labels()
+        if handles:
+            ax.legend(fontsize=11)
+        
         ax.grid(True, alpha=0.3)
         
-        # Add improvement annotations
-        ax.text(0.7, 0.8, 'Error\nReduction', transform=ax.transAxes, fontsize=12,
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgreen", alpha=0.7))
+        # Add improvement annotations if we have data
+        if 'evolution' in self.data and self.data['evolution']:
+            ax.text(0.7, 0.8, 'Error\nReduction', transform=ax.transAxes, fontsize=12,
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgreen", alpha=0.7))
         
         plt.tight_layout()
         
@@ -331,57 +370,76 @@ class StreamingQECFigureGenerator:
         """Plot phase diagrams for different noise types."""
         saved_paths = {}
         
+        if 'phase_diagrams' not in self.data or not self.data['phase_diagrams']:
+            print("Warning: No phase diagram data found")
+            return saved_paths
+        
         phase_data = self.data['phase_diagrams']
         
-        for data in phase_data:
-            noise_type = data['noise_type']
-            dimension = data['dimension']
-            
-            fig, ax = plt.subplots(figsize=(10, 8))
-            
-            error_rates = np.array(data['error_rates'])
-            code_sizes = np.array(data['code_sizes'])
-            success_matrix = np.array(data['success_matrix'])
-            threshold_curve = np.array(data['threshold_curve'])
-            
-            # Create meshgrid
-            X, Y = np.meshgrid(code_sizes, error_rates)
-            
-            # Plot phase diagram
-            colors = ['lightcoral', 'lightgreen']
-            levels = [0, 0.5, 1]
-            contour_fill = ax.contourf(X, Y, success_matrix, levels=levels, 
-                                     colors=colors, alpha=0.8)
-            
-            # Plot threshold line
-            ax.plot(code_sizes, threshold_curve, 'k-', linewidth=3, 
-                   label='Error Threshold')
-            
-            # Formatting
-            ax.set_xscale('log', base=2)
-            ax.set_xlabel('Code Size (N)', fontsize=14)
-            ax.set_ylabel('Physical Error Rate', fontsize=14)
-            ax.set_title(f'Phase Diagram: {noise_type.replace("_", " ").title()} Noise (d={dimension})', 
-                        fontsize=16, fontweight='bold')
-            
-            # Legend
-            legend_elements = [
-                Patch(facecolor='lightcoral', label='Failure Region'),
-                Patch(facecolor='lightgreen', label='Success Region'),
-                plt.Line2D([0], [0], color='black', linewidth=3, label='Threshold')
-            ]
-            ax.legend(handles=legend_elements, fontsize=12, loc='upper right')
-            
-            ax.grid(True, alpha=0.3)
-            
-            plt.tight_layout()
-            
-            filename = f"phase_diagram_{noise_type}_d{dimension}.{save_format}"
-            filepath = os.path.join(self.figures_dir, filename)
-            plt.savefig(filepath, dpi=300, bbox_inches='tight', format=save_format)
-            plt.close()
-            
-            saved_paths[f'phase_{noise_type}_d{dimension}'] = filepath
+        for i, data in enumerate(phase_data):
+            try:
+                noise_type = data['noise_type']
+                dimension = data['dimension']
+                
+                fig, ax = plt.subplots(figsize=(10, 8))
+                
+                # Convert to numpy arrays safely
+                error_rates = np.array(data['error_rates'])
+                code_sizes = np.array(data['code_sizes'])
+                success_matrix = np.array(data['success_matrix'])
+                threshold_curve = np.array(data['threshold_curve'])
+                
+                # Ensure arrays have correct shapes
+                if success_matrix.shape != (len(error_rates), len(code_sizes)):
+                    print(f"Warning: Shape mismatch in success_matrix for {noise_type}")
+                    continue
+                
+                # Create meshgrid
+                X, Y = np.meshgrid(code_sizes, error_rates)
+                
+                # Plot phase diagram
+                colors = ['lightcoral', 'lightgreen']
+                levels = [0, 0.5, 1]
+                contour_fill = ax.contourf(X, Y, success_matrix, levels=levels, 
+                                         colors=colors, alpha=0.8)
+                
+                # Plot threshold line safely
+                if len(threshold_curve) == len(code_sizes):
+                    ax.plot(code_sizes, threshold_curve, 'k-', linewidth=3, 
+                           label='Error Threshold')
+                
+                # Formatting
+                ax.set_xscale('log', base=2)
+                ax.set_xlabel('Code Size (N)', fontsize=14)
+                ax.set_ylabel('Physical Error Rate', fontsize=14)
+                ax.set_title(f'Phase Diagram: {noise_type.replace("_", " ").title()} Noise (d={dimension})', 
+                            fontsize=16, fontweight='bold')
+                
+                # Legend
+                legend_elements = [
+                    Patch(facecolor='lightcoral', label='Failure Region'),
+                    Patch(facecolor='lightgreen', label='Success Region'),
+                    plt.Line2D([0], [0], color='black', linewidth=3, label='Threshold')
+                ]
+                ax.legend(handles=legend_elements, fontsize=12, loc='upper right')
+                
+                ax.grid(True, alpha=0.3)
+                
+                plt.tight_layout()
+                
+                filename = f"phase_diagram_{noise_type}_d{dimension}.{save_format}"
+                filepath = os.path.join(self.figures_dir, filename)
+                plt.savefig(filepath, dpi=300, bbox_inches='tight', format=save_format)
+                plt.close()
+                
+                # Use string key instead of potentially problematic data reference
+                key = f'phase_{noise_type}_d{dimension}'
+                saved_paths[key] = filepath
+                print(f"Saved phase diagram: {filename}")
+                
+            except Exception as e:
+                print(f"Error generating phase diagram for {data.get('noise_type', 'unknown')}: {e}")
+                continue
         
         return saved_paths
     

@@ -1,0 +1,4637 @@
+[
+  {
+    "dimension": 2,
+    "N": 8,
+    "physical_error_rate": 0.1,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.04999999999999999,
+          0.027559055118110243,
+          0.014549190118973654,
+          0.007487790810549455
+        ],
+        "fidelities": [
+          0.95,
+          0.9724409448818898,
+          0.9854508098810264,
+          0.9925122091894505
+        ],
+        "purities": [
+          0.9,
+          0.9448818897637795,
+          0.9709016197620527,
+          0.9850244183789011
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.14975581621098913,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.100"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.2000000000000001,
+          0.18199608610567522,
+          0.16632244124770176,
+          0.15309852228638124
+        ],
+        "fidelities": [
+          0.8000000000000004,
+          0.8180039138943251,
+          0.8336775587522987,
+          0.8469014777136192
+        ],
+        "purities": [
+          0.6000000000000003,
+          0.6360078277886501,
+          0.667355117504597,
+          0.693802955427238
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.7654926114319058,
+        "convergence_achieved": "True",
+        "noise_model_name": "SymmetricPauli_p0.100"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.09987538506040976,
+          0.12467024299521824,
+          0.14310090000786432,
+          0.15762882514144128
+        ],
+        "fidelities": [
+          0.9002490745903489,
+          0.8757745034525969,
+          0.8579080995973267,
+          0.8443103657807924
+        ],
+        "purities": [
+          0.8005602216730828,
+          0.7518435287773213,
+          0.7166197518360418,
+          0.6903831176854297
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 1.5782549929204206,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.100"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 5.111605217078265,
+      "pure_dephasing": 10.538856071518696
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 8,
+    "physical_error_rate": 0.2,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.09999999999999998,
+          0.06043956043956045,
+          0.03397561053676024,
+          0.018161044852027297
+        ],
+        "fidelities": [
+          0.9,
+          0.9395604395604396,
+          0.9660243894632398,
+          0.9818389551479727
+        ],
+        "purities": [
+          0.8,
+          0.8791208791208791,
+          0.9320487789264795,
+          0.9636779102959454
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.181610448520273,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.200"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.39999999999999997,
+          0.4029183337255825,
+          0.4057128931932033,
+          0.4083921167959674
+        ],
+        "fidelities": [
+          0.6,
+          0.5970816662744175,
+          0.5942871068067966,
+          0.5916078832040326
+        ],
+        "purities": [
+          0.19999999999999993,
+          0.19416333254883494,
+          0.18857421361359328,
+          0.18321576640806514
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 1.0209802919899185,
+        "convergence_achieved": "False",
+        "noise_model_name": "SymmetricPauli_p0.200"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.19023603108539486,
+          0.2651206340295511,
+          0.3275465843378644,
+          0.3844470494348275
+        ],
+        "fidelities": [
+          0.8190512623843833,
+          0.762077874488763,
+          0.7252861165540514,
+          0.7017555405486985
+        ],
+        "purities": [
+          0.6488174162505403,
+          0.5739924218210346,
+          0.5747099493325413,
+          0.6310469851535405
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 2.020895028356923,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.200"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 5.621814715555573,
+      "pure_dephasing": 11.127636349245249
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 8,
+    "physical_error_rate": 0.3,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.15000000000000002,
+          0.09885386819484243,
+          0.05962442795564704,
+          0.03346617716880623
+        ],
+        "fidelities": [
+          0.85,
+          0.9011461318051576,
+          0.940375572044353,
+          0.9665338228311937
+        ],
+        "purities": [
+          0.7,
+          0.8022922636103151,
+          0.8807511440887059,
+          0.9330676456623875
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.2231078477920415,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.300"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.6000000000000002,
+          0.5796178343949047,
+          0.563501051609772,
+          0.5507027039679606
+        ],
+        "fidelities": [
+          0.39999999999999997,
+          0.4203821656050955,
+          0.43649894839022807,
+          0.4492972960320395
+        ],
+        "purities": [
+          0.2,
+          0.15923566878980894,
+          0.1270021032195438,
+          0.10140540793592097
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.9178378399466007,
+        "convergence_achieved": "True",
+        "noise_model_name": "SymmetricPauli_p0.300"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.121685354356286,
+          0.17007845974007277,
+          0.19139037346497076,
+          0.2005508279857052
+        ],
+        "fidelities": [
+          0.9506422484506173,
+          0.9488899824135435,
+          0.9511029964723825,
+          0.9533685638157204
+        ],
+        "purities": [
+          0.9283309192640996,
+          0.9546028805343064,
+          0.9751579800779836,
+          0.9870951289951181
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 1.6481098242809629,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.300"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 4.113875190988871,
+      "pure_dephasing": 7.387054469805848
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 8,
+    "physical_error_rate": 0.4,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.4,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.2,
+          0.14285714285714285,
+          0.09302325581395349,
+          0.055522740696987594
+        ],
+        "fidelities": [
+          0.8,
+          0.8571428571428572,
+          0.9069767441860466,
+          0.9444772593030124
+        ],
+        "purities": [
+          0.6,
+          0.7142857142857143,
+          0.813953488372093,
+          0.8889545186060248
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.27761370348493797,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.400"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.4,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.29751153672869396,
+          0.35864975128281074,
+          0.38048347494081985,
+          0.39192916581051523
+        ],
+        "fidelities": [
+          0.7787172137833277,
+          0.7720215116122631,
+          0.7907178195873639,
+          0.8083329783770038
+        ],
+        "purities": [
+          0.6847782948370855,
+          0.77627612537675,
+          0.8613605384283756,
+          0.9207419820773461
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 1.3173578749919952,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.400"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 4.74529123906691
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 8,
+    "physical_error_rate": 0.5,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.5,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.25,
+          0.1923076923076923,
+          0.13572679509632224,
+          0.0873170028292733
+        ],
+        "fidelities": [
+          0.75,
+          0.8076923076923077,
+          0.8642732049036778,
+          0.9126829971707267
+        ],
+        "purities": [
+          0.5,
+          0.6153846153846154,
+          0.7285464098073555,
+          0.8253659943414534
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.3492680113170932,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.500"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.5,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.46641603207503934,
+          0.46909779176348765,
+          0.47843596946372946,
+          0.4945343104920879
+        ],
+        "fidelities": [
+          0.5649121700467519,
+          0.5829595057016046,
+          0.6033103870180939,
+          0.6241396014284111
+        ],
+        "purities": [
+          0.36031144874053594,
+          0.460487758529952,
+          0.5734504822381528,
+          0.6890683149943719
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 1.0602858317111294,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.500"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 3.035737019582128
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 8,
+    "physical_error_rate": 0.6,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.6,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.3,
+          0.24683544303797467,
+          0.18902229001623772,
+          0.1327210475470032
+        ],
+        "fidelities": [
+          0.7,
+          0.7531645569620253,
+          0.8109777099837623,
+          0.8672789524529968
+        ],
+        "purities": [
+          0.4,
+          0.5063291139240507,
+          0.6219554199675246,
+          0.7345579049059936
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.44240349182334404,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.600"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.6,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.560697674607821,
+          0.44611572135549826,
+          0.4849059130516826,
+          0.4937611402588408
+        ],
+        "fidelities": [
+          0.4760301961489703,
+          0.6033519245819141,
+          0.5954716875407126,
+          0.6229955694499844
+        ],
+        "purities": [
+          0.4020551129364637,
+          0.4576949264409669,
+          0.5678219159320935,
+          0.6835075217719111
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.8806192046439307,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.600"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 1.990534028143635
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 8,
+    "physical_error_rate": 0.7,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.7,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.35,
+          0.3058252427184466,
+          0.2534926855535944,
+          0.19595745479515309
+        ],
+        "fidelities": [
+          0.65,
+          0.6941747572815534,
+          0.7465073144464056,
+          0.804042545204847
+        ],
+        "purities": [
+          0.30000000000000004,
+          0.38834951456310685,
+          0.4930146288928113,
+          0.6080850904096938
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.559878442271866,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.700"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.7,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.6999859176379754,
+          0.3942306163875997,
+          0.5562652306458415,
+          0.47002002710181134
+        ],
+        "fidelities": [
+          0.3000281644407452,
+          0.605785116129934,
+          0.4437664199605529,
+          0.5300357437465438
+        ],
+        "purities": [
+          0.40004224443037784,
+          0.21168745855416934,
+          0.1130915874152296,
+          0.061792220330111114
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.6714706899930811,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.700"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 1.1993151357433907
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 8,
+    "physical_error_rate": 0.8,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.8,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.4,
+          0.368421052631579,
+          0.3285198555956679,
+          0.27998595388191233
+        ],
+        "fidelities": [
+          0.6,
+          0.631578947368421,
+          0.6714801444043321,
+          0.7200140461180877
+        ],
+        "purities": [
+          0.19999999999999996,
+          0.26315789473684204,
+          0.3429602888086642,
+          0.44002809223617534
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.6999648847047808,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.800"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 8,
+        "physical_error_rate": 0.8,
+        "iterations": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "logical_errors": [
+          0.5804559891650191,
+          0.2198395543785891,
+          0.4676758332594761,
+          0.3207966778248294
+        ],
+        "fidelities": [
+          0.5788385558030743,
+          0.8744284106946871,
+          0.7235770686921938,
+          0.8595524505144498
+        ],
+        "purities": [
+          0.8142916213755731,
+          0.8312829611247031,
+          0.8770353555179838,
+          0.921874089055327
+        ],
+        "total_swap_operations": 7,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 3,
+        "final_error_reduction_ratio": 0.5526632230744878,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.800"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 0.7895584980774866
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 16,
+    "physical_error_rate": 0.1,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.04999999999999999,
+          0.027559055118110243,
+          0.014549190118973654,
+          0.007487790810549455,
+          0.0038001707301427157
+        ],
+        "fidelities": [
+          0.95,
+          0.9724409448818898,
+          0.9854508098810264,
+          0.9925122091894505,
+          0.9961998292698573
+        ],
+        "purities": [
+          0.9,
+          0.9448818897637795,
+          0.9709016197620527,
+          0.9850244183789011,
+          0.9923996585397146
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.07600341460285433,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.100"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.2,
+          0.18199608610567516,
+          0.16632244124770168,
+          0.1530985222863811,
+          0.14225152874825905
+        ],
+        "fidelities": [
+          0.8000000000000003,
+          0.8180039138943251,
+          0.8336775587522987,
+          0.8469014777136191,
+          0.8577484712517411
+        ],
+        "purities": [
+          0.6000000000000003,
+          0.63600782778865,
+          0.6673551175045969,
+          0.6938029554272381,
+          0.7154969425034822
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.7112576437412952,
+        "convergence_achieved": "True",
+        "noise_model_name": "SymmetricPauli_p0.100"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.09998912732523615,
+          0.12459651892823392,
+          0.14259846981786425,
+          0.15633012867799878,
+          0.1671429648113877
+        ],
+        "fidelities": [
+          0.9000217441673772,
+          0.8754423860939974,
+          0.8574900184745315,
+          0.8438406477706863,
+          0.83316091235097
+        ],
+        "purities": [
+          0.8000489228806934,
+          0.7509105902117269,
+          0.7150506053949689,
+          0.6878364831939812,
+          0.666626381226878
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 1.6716113969843867,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.100"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 9.358232751224097,
+      "pure_dephasing": 21.993898638885742
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 16,
+    "physical_error_rate": 0.2,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.09999999999999998,
+          0.06043956043956045,
+          0.03397561053676024,
+          0.018161044852027297,
+          0.009413284561262059
+        ],
+        "fidelities": [
+          0.9,
+          0.9395604395604396,
+          0.9660243894632398,
+          0.9818389551479727,
+          0.990586715438738
+        ],
+        "purities": [
+          0.8,
+          0.8791208791208791,
+          0.9320487789264795,
+          0.9636779102959454,
+          0.9811734308774759
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.09413284561262061,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.200"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.40000000000000013,
+          0.4029183337255826,
+          0.4057128931932034,
+          0.4083921167959675,
+          0.41096361311815544
+        ],
+        "fidelities": [
+          0.6,
+          0.5970816662744175,
+          0.5942871068067967,
+          0.5916078832040326,
+          0.5890363868818447
+        ],
+        "purities": [
+          0.19999999999999998,
+          0.194163332548835,
+          0.18857421361359336,
+          0.18321576640806522,
+          0.1780727737636893
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 1.0274090327953882,
+        "convergence_achieved": "False",
+        "noise_model_name": "SymmetricPauli_p0.200"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.19954752469114104,
+          0.26977628376455964,
+          0.3211651550629131,
+          0.3609538257828628,
+          0.39354383837623574
+        ],
+        "fidelities": [
+          0.8009039269481922,
+          0.7316187275862656,
+          0.6818008426237551,
+          0.6446281218415335,
+          0.6163946094437514
+        ],
+        "purities": [
+          0.6024056492382981,
+          0.4664674516751704,
+          0.373887145809214,
+          0.315694701816922,
+          0.29169410119268574
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 1.9721810079346338,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.200"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 10.914458456120878,
+      "pure_dephasing": 20.95103993828716
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 16,
+    "physical_error_rate": 0.3,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.15000000000000002,
+          0.09885386819484243,
+          0.05962442795564704,
+          0.03346617716880623,
+          0.0178711445677599
+        ],
+        "fidelities": [
+          0.85,
+          0.9011461318051576,
+          0.940375572044353,
+          0.9665338228311937,
+          0.98212885543224
+        ],
+        "purities": [
+          0.7,
+          0.8022922636103151,
+          0.8807511440887059,
+          0.9330676456623875,
+          0.9642577108644802
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.11914096378506599,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.300"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.6,
+          0.5796178343949046,
+          0.5635010516097719,
+          0.5507027039679604,
+          0.5405121724980627
+        ],
+        "fidelities": [
+          0.4,
+          0.42038216560509556,
+          0.4364989483902281,
+          0.44929729603203955,
+          0.4594878275019373
+        ],
+        "purities": [
+          0.19999999999999996,
+          0.15923566878980888,
+          0.12700210321954375,
+          0.10140540793592094,
+          0.08102434499612544
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.9008536208301046,
+        "convergence_achieved": "True",
+        "noise_model_name": "SymmetricPauli_p0.300"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.2121327545529815,
+          0.293268633053748,
+          0.33689326692832766,
+          0.3599181364949366,
+          0.3716401288919739
+        ],
+        "fidelities": [
+          0.8499989814858818,
+          0.8302195936949317,
+          0.83184752634054,
+          0.8386041191650382,
+          0.8445498357142844
+        ],
+        "purities": [
+          0.7615754382597097,
+          0.8154166660748247,
+          0.8839561066980224,
+          0.9341203009099542,
+          0.9647097410457248
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 1.7519224208214126,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.300"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 7.561241677172199,
+      "pure_dephasing": 14.70461850536928
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 16,
+    "physical_error_rate": 0.4,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.4,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.2,
+          0.14285714285714285,
+          0.09302325581395349,
+          0.055522740696987594,
+          0.030924433981125543
+        ],
+        "fidelities": [
+          0.8,
+          0.8571428571428572,
+          0.9069767441860466,
+          0.9444772593030124,
+          0.9690755660188745
+        ],
+        "purities": [
+          0.6,
+          0.7142857142857143,
+          0.813953488372093,
+          0.8889545186060248,
+          0.9381511320377489
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.15462216990562772,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.400"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.4,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.37642130261675966,
+          0.44893748062056044,
+          0.475800003654963,
+          0.49602789010452625,
+          0.5172130087706551
+        ],
+        "fidelities": [
+          0.6457675073407546,
+          0.5961809492705162,
+          0.5978352860959805,
+          0.6131681964451594,
+          0.6304230442854084
+        ],
+        "purities": [
+          0.3870943265120416,
+          0.4369247568012245,
+          0.5448703683411066,
+          0.6609443674219712,
+          0.7692394704563781
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 1.3740269351791645,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.400"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 8.886351394614303
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 16,
+    "physical_error_rate": 0.5,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.5,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.25,
+          0.1923076923076923,
+          0.13572679509632224,
+          0.0873170028292733,
+          0.05158128504231457
+        ],
+        "fidelities": [
+          0.75,
+          0.8076923076923077,
+          0.8642732049036778,
+          0.9126829971707267,
+          0.9484187149576855
+        ],
+        "purities": [
+          0.5,
+          0.6153846153846154,
+          0.7285464098073555,
+          0.8253659943414534,
+          0.8968374299153709
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.2063251401692583,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.500"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.5,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.4980139832874865,
+          0.4982304069840388,
+          0.49917673479143043,
+          0.5015423027091269,
+          0.5064506307816762
+        ],
+        "fidelities": [
+          0.5039641449002623,
+          0.5052715949561752,
+          0.5069960969375098,
+          0.5092519730586519,
+          0.5121609013451206
+        ],
+        "purities": [
+          0.08904094451725336,
+          0.118408334160331,
+          0.15714336759206612,
+          0.20781390199334934,
+          0.27315301766063893
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 1.0169405835524894,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.500"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 4.928825361360447
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 16,
+    "physical_error_rate": 0.6,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.6,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.3,
+          0.24683544303797467,
+          0.18902229001623772,
+          0.1327210475470032,
+          0.08494574100110652
+        ],
+        "fidelities": [
+          0.7,
+          0.7531645569620253,
+          0.8109777099837623,
+          0.8672789524529968,
+          0.9150542589988935
+        ],
+        "purities": [
+          0.4,
+          0.5063291139240507,
+          0.6219554199675246,
+          0.7345579049059936,
+          0.830108517997787
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.28315247000368843,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.600"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.6,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.3662766951740739,
+          0.2945824581436234,
+          0.3155420631328751,
+          0.3162101729159349,
+          0.31949176038883953
+        ],
+        "fidelities": [
+          0.7764023042872639,
+          0.8540548350648121,
+          0.8659066879015457,
+          0.8811666918928749,
+          0.8880449823474034
+        ],
+        "purities": [
+          0.8014010774010862,
+          0.8736902419296025,
+          0.928382424451685,
+          0.9615728060805392,
+          0.9800407487523429
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.8722688737731465,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.600"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 3.08056247491602
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 16,
+    "physical_error_rate": 0.7,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.7,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.35,
+          0.3058252427184466,
+          0.2534926855535944,
+          0.19595745479515309,
+          0.13909373894318044
+        ],
+        "fidelities": [
+          0.65,
+          0.6941747572815534,
+          0.7465073144464056,
+          0.804042545204847,
+          0.8609062610568196
+        ],
+        "purities": [
+          0.30000000000000004,
+          0.38834951456310685,
+          0.4930146288928113,
+          0.6080850904096938,
+          0.7218125221136391
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.3974106826948013,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.700"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.7,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.45608987455614797,
+          0.27119387201480155,
+          0.35889921107897516,
+          0.32966048906024614,
+          0.3472243214795231
+        ],
+        "fidelities": [
+          0.7028314661819391,
+          0.858804523881822,
+          0.828961337339549,
+          0.8674949616491237,
+          0.8667313080064865
+        ],
+        "purities": [
+          0.8021207885464179,
+          0.8540506778879166,
+          0.911635850661128,
+          0.9511487784706746,
+          0.9742608222306827
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.7613067968619796,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.700"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 1.915667670782365
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 16,
+    "physical_error_rate": 0.8,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.8,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.4,
+          0.368421052631579,
+          0.3285198555956679,
+          0.27998595388191233,
+          0.22443343814890537
+        ],
+        "fidelities": [
+          0.6,
+          0.631578947368421,
+          0.6714801444043321,
+          0.7200140461180877,
+          0.7755665618510946
+        ],
+        "purities": [
+          0.19999999999999996,
+          0.26315789473684204,
+          0.3429602888086642,
+          0.44002809223617534,
+          0.5511331237021893
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.5610835953722634,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.800"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 16,
+        "physical_error_rate": 0.8,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "logical_errors": [
+          0.7997086817566562,
+          0.2699129541597211,
+          0.6791995740358693,
+          0.358986175087649,
+          0.6120907900847258
+        ],
+        "fidelities": [
+          0.20058253040378926,
+          0.7303125249749658,
+          0.3213469484822537,
+          0.6419268371458171,
+          0.38933782180860127
+        ],
+        "purities": [
+          0.6003882280017087,
+          0.46115302361881305,
+          0.36143607928794197,
+          0.2884296174103988,
+          0.2365836605951058
+        ],
+        "total_swap_operations": 15,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 4,
+        "final_error_reduction_ratio": 0.7653922034961467,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.800"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 1.364132207409005
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 32,
+    "physical_error_rate": 0.1,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.04999999999999999,
+          0.027559055118110243,
+          0.014549190118973654,
+          0.007487790810549455,
+          0.0038001707301427157,
+          0.00191455399727819
+        ],
+        "fidelities": [
+          0.95,
+          0.9724409448818898,
+          0.9854508098810264,
+          0.9925122091894505,
+          0.9961998292698573,
+          0.9980854460027218
+        ],
+        "purities": [
+          0.9,
+          0.9448818897637795,
+          0.9709016197620527,
+          0.9850244183789011,
+          0.9923996585397146,
+          0.9961708920054436
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.038291079945563807,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.100"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.2,
+          0.18199608610567516,
+          0.1663224412477017,
+          0.15309852228638113,
+          0.14225152874825914,
+          0.13356859018190156
+        ],
+        "fidelities": [
+          0.8000000000000003,
+          0.818003913894325,
+          0.8336775587522985,
+          0.8469014777136191,
+          0.8577484712517411,
+          0.8664314098180987
+        ],
+        "purities": [
+          0.6000000000000003,
+          0.63600782778865,
+          0.6673551175045969,
+          0.693802955427238,
+          0.7154969425034821,
+          0.7328628196361971
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.6678429509095077,
+        "convergence_achieved": "True",
+        "noise_model_name": "SymmetricPauli_p0.100"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.09972538151343821,
+          0.12476523581730617,
+          0.14375091736319418,
+          0.15929452190253773,
+          0.17317971041147776,
+          0.18688337969990712
+        ],
+        "fidelities": [
+          0.9005484828199919,
+          0.8762115239711353,
+          0.8584577474571553,
+          0.8449275553398781,
+          0.8342201567240988,
+          0.825392372968339
+        ],
+        "purities": [
+          0.801233135954805,
+          0.7530680926441733,
+          0.7186712007584976,
+          0.6936924391919985,
+          0.6759034511594155,
+          0.6642823814505352
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 1.8739800927683008,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.100"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 17.44121481710469,
+      "pure_dephasing": 48.94038234054587
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 32,
+    "physical_error_rate": 0.2,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.09999999999999998,
+          0.06043956043956045,
+          0.03397561053676024,
+          0.018161044852027297,
+          0.009413284561262059,
+          0.004795665261973114
+        ],
+        "fidelities": [
+          0.9,
+          0.9395604395604396,
+          0.9660243894632398,
+          0.9818389551479727,
+          0.990586715438738,
+          0.9952043347380268
+        ],
+        "purities": [
+          0.8,
+          0.8791208791208791,
+          0.9320487789264795,
+          0.9636779102959454,
+          0.9811734308774759,
+          0.9904086694760538
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.04795665261973116,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.200"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.39999999999999997,
+          0.4029183337255825,
+          0.4057128931932033,
+          0.40839211679596743,
+          0.4109636131181554,
+          0.41343426471042677
+        ],
+        "fidelities": [
+          0.6,
+          0.5970816662744175,
+          0.5942871068067966,
+          0.5916078832040326,
+          0.5890363868818447,
+          0.5865657352895732
+        ],
+        "purities": [
+          0.19999999999999996,
+          0.19416333254883497,
+          0.18857421361359336,
+          0.18321576640806517,
+          0.17807277376368924,
+          0.17313147057914643
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 1.033585661776067,
+        "convergence_achieved": "False",
+        "noise_model_name": "SymmetricPauli_p0.200"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.1530406571387935,
+          0.22961527992713512,
+          0.2911315040739482,
+          0.33756445580575584,
+          0.369846996366299,
+          0.3907048925323568
+        ],
+        "fidelities": [
+          0.8828927863126317,
+          0.858277549588447,
+          0.846306414346485,
+          0.8397763981479759,
+          0.8352706626543904,
+          0.831663089461931
+        ],
+        "purities": [
+          0.7907318864194239,
+          0.8024979161704122,
+          0.8510322367827067,
+          0.9027206876357976,
+          0.9424594704825525,
+          0.9681185929640053
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 2.5529483461249396,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.200"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 21.552498043844103,
+      "pure_dephasing": 53.23449837853281
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 32,
+    "physical_error_rate": 0.3,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.15000000000000002,
+          0.09885386819484243,
+          0.05962442795564704,
+          0.03346617716880623,
+          0.0178711445677599,
+          0.00925775107555743
+        ],
+        "fidelities": [
+          0.85,
+          0.9011461318051576,
+          0.940375572044353,
+          0.9665338228311937,
+          0.98212885543224,
+          0.9907422489244426
+        ],
+        "purities": [
+          0.7,
+          0.8022922636103151,
+          0.8807511440887059,
+          0.9330676456623875,
+          0.9642577108644802,
+          0.9814844978488851
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.06171834050371619,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.300"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.6000000000000001,
+          0.5796178343949047,
+          0.563501051609772,
+          0.5507027039679606,
+          0.5405121724980629,
+          0.5323842259210185
+        ],
+        "fidelities": [
+          0.39999999999999997,
+          0.4203821656050955,
+          0.43649894839022807,
+          0.4492972960320395,
+          0.4594878275019373,
+          0.4676157740789817
+        ],
+        "purities": [
+          0.19999999999999998,
+          0.15923566878980894,
+          0.1270021032195438,
+          0.10140540793592095,
+          0.08102434499612546,
+          0.06476845184203661
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.8873070432016974,
+        "convergence_achieved": "True",
+        "noise_model_name": "SymmetricPauli_p0.300"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.2918497217872893,
+          0.38682920600882403,
+          0.4412100346528098,
+          0.4781246500938067,
+          0.509395269573858,
+          0.5391406286256112
+        ],
+        "fidelities": [
+          0.7160791329756061,
+          0.6332249694114128,
+          0.5958152745403321,
+          0.5828674512799411,
+          0.5831058176532666,
+          0.5895848371806742
+        ],
+        "purities": [
+          0.45279307893528686,
+          0.3625565006055199,
+          0.4024006422393765,
+          0.49586543459800164,
+          0.60856999044478,
+          0.7218239525410428
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 1.8473227431018642,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.300"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 14.37671583454631,
+      "pure_dephasing": 29.931503796519497
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 32,
+    "physical_error_rate": 0.4,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.4,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.2,
+          0.14285714285714285,
+          0.09302325581395349,
+          0.055522740696987594,
+          0.030924433981125543,
+          0.016432838465105015
+        ],
+        "fidelities": [
+          0.8,
+          0.8571428571428572,
+          0.9069767441860466,
+          0.9444772593030124,
+          0.9690755660188745,
+          0.983567161534895
+        ],
+        "purities": [
+          0.6,
+          0.7142857142857143,
+          0.813953488372093,
+          0.8889545186060248,
+          0.9381511320377489,
+          0.96713432306979
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.08216419232552508,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.400"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.4,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.3210798002320083,
+          0.3864676078378583,
+          0.4112330543689814,
+          0.42592975678202005,
+          0.43578105958870605,
+          0.44190506013466274
+        ],
+        "fidelities": [
+          0.7422694047074345,
+          0.7272744465775177,
+          0.745343308387115,
+          0.7652334262244656,
+          0.7795336606755316,
+          0.7882122237273772
+        ],
+        "purities": [
+          0.6176136100328771,
+          0.7117068455071486,
+          0.8110633351169472,
+          0.8869037917087874,
+          0.9368858896830218,
+          0.9664208315221624
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 1.3763091288064448,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.400"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 16.750716946789503
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 32,
+    "physical_error_rate": 0.5,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.5,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.25,
+          0.1923076923076923,
+          0.13572679509632224,
+          0.0873170028292733,
+          0.05158128504231457,
+          0.028515977323784802
+        ],
+        "fidelities": [
+          0.75,
+          0.8076923076923077,
+          0.8642732049036778,
+          0.9126829971707267,
+          0.9484187149576855,
+          0.9714840226762151
+        ],
+        "purities": [
+          0.5,
+          0.6153846153846154,
+          0.7285464098073555,
+          0.8253659943414534,
+          0.8968374299153709,
+          0.9429680453524304
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.11406390929513921,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.500"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.5,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.44112368537033875,
+          0.44477467844196067,
+          0.4557288228208656,
+          0.47119118382590713,
+          0.4863847463032311,
+          0.49798548086237754
+        ],
+        "fidelities": [
+          0.6108197884105813,
+          0.6375942724417717,
+          0.664700955471411,
+          0.6887928669492737,
+          0.7072792768074363,
+          0.7196105408268475
+        ],
+        "purities": [
+          0.4707861264110939,
+          0.584529852188649,
+          0.6996848302517431,
+          0.8020324149672089,
+          0.8805666317636491,
+          0.9329524746236127
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 1.1289021591400183,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.500"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 9.897102125607455
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 32,
+    "physical_error_rate": 0.6,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.6,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.3,
+          0.24683544303797467,
+          0.18902229001623772,
+          0.1327210475470032,
+          0.08494574100110652,
+          0.049964498534438684
+        ],
+        "fidelities": [
+          0.7,
+          0.7531645569620253,
+          0.8109777099837623,
+          0.8672789524529968,
+          0.9150542589988935,
+          0.9500355014655613
+        ],
+        "purities": [
+          0.4,
+          0.5063291139240507,
+          0.6219554199675246,
+          0.7345579049059936,
+          0.830108517997787,
+          0.9000710029311226
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.16654832844812895,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.600"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.6,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.45476177338931584,
+          0.3653740705275888,
+          0.39558107811721904,
+          0.40010403422736013,
+          0.4078974381016763,
+          0.411942995985136
+        ],
+        "fidelities": [
+          0.6553195491063406,
+          0.7617934317771455,
+          0.7745261000645978,
+          0.7987369967427622,
+          0.8107616484605851,
+          0.8181961640255887
+        ],
+        "purities": [
+          0.6697098465530762,
+          0.7623428183987703,
+          0.8509065505188668,
+          0.9139370546110294,
+          0.9531882678054656,
+          0.9754859219215798
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.9058434989268036,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.600"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 5.438922788161913
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 32,
+    "physical_error_rate": 0.7,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.7,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.35,
+          0.3058252427184466,
+          0.2534926855535944,
+          0.19595745479515309,
+          0.13909373894318044,
+          0.08999727799255686
+        ],
+        "fidelities": [
+          0.65,
+          0.6941747572815534,
+          0.7465073144464056,
+          0.804042545204847,
+          0.8609062610568196,
+          0.9100027220074431
+        ],
+        "purities": [
+          0.30000000000000004,
+          0.38834951456310685,
+          0.4930146288928113,
+          0.6080850904096938,
+          0.7218125221136391,
+          0.8200054440148863
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.2571350799787339,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.700"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.7,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.44130486821071346,
+          0.26269213201374914,
+          0.3465380494969853,
+          0.3182470941961368,
+          0.33469615840058875,
+          0.33100837681286294
+        ],
+        "fidelities": [
+          0.7217857332764642,
+          0.868775781910776,
+          0.8416404238209422,
+          0.8773438342233506,
+          0.8766536008708017,
+          0.8846004105907773
+        ],
+        "purities": [
+          0.8161757653420967,
+          0.866678575096223,
+          0.9202804867432908,
+          0.9562950322732734,
+          0.9770877531090308,
+          0.9882650577877646
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.7500673585472745,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.700"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 2.9170168403677477
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 32,
+    "physical_error_rate": 0.8,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.8,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.4,
+          0.368421052631579,
+          0.3285198555956679,
+          0.27998595388191233,
+          0.22443343814890537,
+          0.16635883220815212
+        ],
+        "fidelities": [
+          0.6,
+          0.631578947368421,
+          0.6714801444043321,
+          0.7200140461180877,
+          0.7755665618510946,
+          0.8336411677918478
+        ],
+        "purities": [
+          0.19999999999999996,
+          0.26315789473684204,
+          0.3429602888086642,
+          0.44002809223617534,
+          0.5511331237021893,
+          0.6672823355836958
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.41589708052038027,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.800"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 32,
+        "physical_error_rate": 0.8,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "logical_errors": [
+          0.663926161716184,
+          0.24423736329317003,
+          0.5453217760500695,
+          0.36267579082179136,
+          0.49853673225287626,
+          0.4287793606230425
+        ],
+        "fidelities": [
+          0.44900256473601996,
+          0.8288925861237886,
+          0.6099978633198071,
+          0.8019542121458931,
+          0.7090663628358325,
+          0.7914541291438839
+        ],
+        "purities": [
+          0.7477981357216776,
+          0.7444312614397336,
+          0.7934070903494852,
+          0.8567098491183691,
+          0.9112743521930337,
+          0.9493279080279665
+        ],
+        "total_swap_operations": 31,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 5,
+        "final_error_reduction_ratio": 0.6458238661882066,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.800"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 1.5528453947792482
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 64,
+    "physical_error_rate": 0.1,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.04999999999999999,
+          0.027559055118110243,
+          0.014549190118973654,
+          0.007487790810549455,
+          0.0038001707301427157,
+          0.00191455399727819,
+          0.0009609460178189866
+        ],
+        "fidelities": [
+          0.95,
+          0.9724409448818898,
+          0.9854508098810264,
+          0.9925122091894505,
+          0.9961998292698573,
+          0.9980854460027218,
+          0.999039053982181
+        ],
+        "purities": [
+          0.9,
+          0.9448818897637795,
+          0.9709016197620527,
+          0.9850244183789011,
+          0.9923996585397146,
+          0.9961708920054436,
+          0.998078107964362
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.019218920356379735,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.100"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.19999999999999998,
+          0.18199608610567516,
+          0.16632244124770174,
+          0.15309852228638116,
+          0.1422515287482591,
+          0.13356859018190148,
+          0.1267582963007704
+        ],
+        "fidelities": [
+          0.8000000000000003,
+          0.818003913894325,
+          0.8336775587522984,
+          0.846901477713619,
+          0.857748471251741,
+          0.8664314098180987,
+          0.8732417036992297
+        ],
+        "purities": [
+          0.6000000000000003,
+          0.63600782778865,
+          0.6673551175045969,
+          0.6938029554272379,
+          0.715496942503482,
+          0.7328628196361973,
+          0.7464834073984594
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.633791481503852,
+        "convergence_achieved": "True",
+        "noise_model_name": "SymmetricPauli_p0.100"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.09996868593394084,
+          0.1246098766415827,
+          0.14268937931375195,
+          0.15656584795715417,
+          0.16762947043574997,
+          0.17679937149990146,
+          0.1847631850415884
+        ],
+        "fidelities": [
+          0.900062618326411,
+          0.8755021202904496,
+          0.8575652377402376,
+          0.8439251741629237,
+          0.8332431803141314,
+          0.8246796795181102,
+          0.8176682284375254
+        ],
+        "purities": [
+          0.8001408788301467,
+          0.7510785355662352,
+          0.7153334794602623,
+          0.6882965608208904,
+          0.6673614303290276,
+          0.6509614344363889,
+          0.638139993995793
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 1.8482106003041756,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.100"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 32.97747582857663,
+      "pure_dephasing": 96.16620320145407
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 64,
+    "physical_error_rate": 0.2,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.09999999999999998,
+          0.06043956043956045,
+          0.03397561053676024,
+          0.018161044852027297,
+          0.009413284561262059,
+          0.004795665261973114,
+          0.0024208859156122364
+        ],
+        "fidelities": [
+          0.9,
+          0.9395604395604396,
+          0.9660243894632398,
+          0.9818389551479727,
+          0.990586715438738,
+          0.9952043347380268,
+          0.9975791140843877
+        ],
+        "purities": [
+          0.8,
+          0.8791208791208791,
+          0.9320487789264795,
+          0.9636779102959454,
+          0.9811734308774759,
+          0.9904086694760538,
+          0.9951582281687755
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.02420885915612237,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.200"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.40000000000000013,
+          0.4029183337255826,
+          0.40571289319320347,
+          0.40839211679596754,
+          0.4109636131181555,
+          0.4134342647104269,
+          0.4158103163782963
+        ],
+        "fidelities": [
+          0.6000000000000001,
+          0.5970816662744176,
+          0.5942871068067967,
+          0.5916078832040327,
+          0.5890363868818447,
+          0.5865657352895732,
+          0.5841896836217039
+        ],
+        "purities": [
+          0.2,
+          0.19416333254883505,
+          0.1885742136135934,
+          0.18321576640806522,
+          0.17807277376368932,
+          0.17313147057914646,
+          0.16837936724340763
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 1.0395257909457405,
+        "convergence_achieved": "False",
+        "noise_model_name": "SymmetricPauli_p0.200"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.0969033051213969,
+          0.15218293742341052,
+          0.18941807182174802,
+          0.21325265657862189,
+          0.22799983263511062,
+          0.23693978449182312,
+          0.242301146738278
+        ],
+        "fidelities": [
+          0.9530487472827474,
+          0.9477504134356276,
+          0.9452991195981413,
+          0.9435032595620836,
+          0.9419365209709317,
+          0.9406240225411574,
+          0.9396056736019662
+        ],
+        "purities": [
+          0.9218221039358904,
+          0.9400214037530109,
+          0.9616201444038289,
+          0.9777115220757566,
+          0.9877660545950546,
+          0.9935078943142603,
+          0.9966253444753463
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 2.5004425435719866,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.200"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 42.93989172483771,
+      "pure_dephasing": 103.2862609281458
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 64,
+    "physical_error_rate": 0.3,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.15000000000000002,
+          0.09885386819484243,
+          0.05962442795564704,
+          0.03346617716880623,
+          0.0178711445677599,
+          0.00925775107555743,
+          0.004714974473884026
+        ],
+        "fidelities": [
+          0.85,
+          0.9011461318051576,
+          0.940375572044353,
+          0.9665338228311937,
+          0.98212885543224,
+          0.9907422489244426,
+          0.995285025526116
+        ],
+        "purities": [
+          0.7,
+          0.8022922636103151,
+          0.8807511440887059,
+          0.9330676456623875,
+          0.9642577108644802,
+          0.9814844978488851,
+          0.990570051052232
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.03143316315922683,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.300"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.6000000000000001,
+          0.5796178343949046,
+          0.563501051609772,
+          0.5507027039679606,
+          0.5405121724980628,
+          0.5323842259210184,
+          0.5258943456712553
+        ],
+        "fidelities": [
+          0.39999999999999997,
+          0.4203821656050955,
+          0.43649894839022807,
+          0.4492972960320395,
+          0.4594878275019373,
+          0.4676157740789817,
+          0.47410565432874485
+        ],
+        "purities": [
+          0.2,
+          0.15923566878980894,
+          0.12700210321954378,
+          0.10140540793592097,
+          0.08102434499612547,
+          0.06476845184203663,
+          0.051788691342510275
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.8764905761187586,
+        "convergence_achieved": "True",
+        "noise_model_name": "SymmetricPauli_p0.300"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.29433049770819314,
+          0.3891516179425145,
+          0.4423659813231169,
+          0.4771293658242838,
+          0.5059904746848082,
+          0.5347073949621498,
+          0.563392410467327
+        ],
+        "fidelities": [
+          0.711231860396158,
+          0.625045159776608,
+          0.5842700833774086,
+          0.5679317981923344,
+          0.56510284603102,
+          0.569384267996239,
+          0.5764891369193538
+        ],
+        "purities": [
+          0.4375490933703808,
+          0.3254789794987355,
+          0.34616611509142575,
+          0.42700927354902946,
+          0.5334011867357529,
+          0.6489877232227037,
+          0.7586834520181356
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 1.914148940915694,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.300"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 27.884262607579,
+      "pure_dephasing": 60.8958421148849
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 64,
+    "physical_error_rate": 0.4,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.4,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.2,
+          0.14285714285714285,
+          0.09302325581395349,
+          0.055522740696987594,
+          0.030924433981125543,
+          0.016432838465105015,
+          0.008488638491187972
+        ],
+        "fidelities": [
+          0.8,
+          0.8571428571428572,
+          0.9069767441860466,
+          0.9444772593030124,
+          0.9690755660188745,
+          0.983567161534895,
+          0.991511361508812
+        ],
+        "purities": [
+          0.6,
+          0.7142857142857143,
+          0.813953488372093,
+          0.8889545186060248,
+          0.9381511320377489,
+          0.96713432306979,
+          0.9830227230176241
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.04244319245593986,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.400"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.4,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.39986924184826317,
+          0.4732176756869045,
+          0.49283588370708226,
+          0.49825048810360323,
+          0.5000889819995534,
+          0.5013656980911375,
+          0.5032006877732083
+        ],
+        "fidelities": [
+          0.6002614735592382,
+          0.5270647020359914,
+          0.5076784864543447,
+          0.5026648196569653,
+          0.5015335938346615,
+          0.5015041594693189,
+          0.5018554498910555
+        ],
+        "purities": [
+          0.20156273599594685,
+          0.06323513638816976,
+          0.04756867556219258,
+          0.060609192452762625,
+          0.08056261544937693,
+          0.10717691340456548,
+          0.14235704501688987
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 1.2584130888570717,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.400"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 29.64935048567391
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 64,
+    "physical_error_rate": 0.5,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.5,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.25,
+          0.1923076923076923,
+          0.13572679509632224,
+          0.0873170028292733,
+          0.05158128504231457,
+          0.028515977323784802,
+          0.015082393932659255
+        ],
+        "fidelities": [
+          0.75,
+          0.8076923076923077,
+          0.8642732049036778,
+          0.9126829971707267,
+          0.9484187149576855,
+          0.9714840226762151,
+          0.9849176060673408
+        ],
+        "purities": [
+          0.5,
+          0.6153846153846154,
+          0.7285464098073555,
+          0.8253659943414534,
+          0.8968374299153709,
+          0.9429680453524304,
+          0.9698352121346815
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.06032957573063702,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.500"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.5,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.47917923087693487,
+          0.4810652708249696,
+          0.48821879272722685,
+          0.5022426107762957,
+          0.522367779195326,
+          0.5446915387727806,
+          0.5643039770661074
+        ],
+        "fidelities": [
+          0.5407745293923781,
+          0.5529273149504335,
+          0.5674791101751429,
+          0.5837379461574708,
+          0.6001667343744672,
+          0.6147339496712093,
+          0.6258844379265536
+        ],
+        "purities": [
+          0.2855679582599497,
+          0.3706810475022152,
+          0.4725958093219776,
+          0.5864659793606466,
+          0.701526424636803,
+          0.8035491822704292,
+          0.8816425952939875
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 1.1776469861462644,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.500"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 19.52022655362754
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 64,
+    "physical_error_rate": 0.6,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.6,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.3,
+          0.24683544303797467,
+          0.18902229001623772,
+          0.1327210475470032,
+          0.08494574100110652,
+          0.049964498534438684,
+          0.02753763246795954
+        ],
+        "fidelities": [
+          0.7,
+          0.7531645569620253,
+          0.8109777099837623,
+          0.8672789524529968,
+          0.9150542589988935,
+          0.9500355014655613,
+          0.9724623675320405
+        ],
+        "purities": [
+          0.4,
+          0.5063291139240507,
+          0.6219554199675246,
+          0.7345579049059936,
+          0.830108517997787,
+          0.9000710029311226,
+          0.9449247350640809
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.0917921082265318,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.600"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.6,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.5455893583876725,
+          0.43511903579780165,
+          0.47372012181116213,
+          0.4833089506556274,
+          0.5025349370486992,
+          0.5170365877993021,
+          0.5272726728101181
+        ],
+        "fidelities": [
+          0.503887086690213,
+          0.6299237109413036,
+          0.6281450894024032,
+          0.657477038840098,
+          0.6751212875121819,
+          0.6891236332484274,
+          0.6976623977459927
+        ],
+        "purities": [
+          0.4541137948844327,
+          0.5263165825049113,
+          0.640486824879905,
+          0.7511713003674775,
+          0.8430009500984493,
+          0.9087364114451953,
+          0.9501134021543295
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.9664277074030844,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.600"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 10.528440037765098
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 64,
+    "physical_error_rate": 0.7,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.7,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.35,
+          0.3058252427184466,
+          0.2534926855535944,
+          0.19595745479515309,
+          0.13909373894318044,
+          0.08999727799255686,
+          0.053423673646459835
+        ],
+        "fidelities": [
+          0.65,
+          0.6941747572815534,
+          0.7465073144464056,
+          0.804042545204847,
+          0.8609062610568196,
+          0.9100027220074431,
+          0.9465763263535402
+        ],
+        "purities": [
+          0.30000000000000004,
+          0.38834951456310685,
+          0.4930146288928113,
+          0.6080850904096938,
+          0.7218125221136391,
+          0.8200054440148863,
+          0.8931526527070803
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.15263906756131382,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.700"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.7,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.31041601625798715,
+          0.18583765113438047,
+          0.2398136788829044,
+          0.21989524721130693,
+          0.2292639315661422,
+          0.22626037743200011,
+          0.22786731340308938
+        ],
+        "fidelities": [
+          0.8623455669293159,
+          0.9384087606279041,
+          0.9273361172345945,
+          0.943668689400271,
+          0.9433518105501502,
+          0.9467394073985338,
+          0.9470372808236698
+        ],
+        "purities": [
+          0.9136819360779653,
+          0.9443397549760313,
+          0.9692197228986774,
+          0.9839158686521785,
+          0.9917938512963564,
+          0.9958577524811562,
+          0.9979194222805997
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.7340707356211561,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.700"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 4.8091930024814005
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 64,
+    "physical_error_rate": 0.8,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.8,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.4,
+          0.368421052631579,
+          0.3285198555956679,
+          0.27998595388191233,
+          0.22443343814890537,
+          0.16635883220815212,
+          0.11263810068147184
+        ],
+        "fidelities": [
+          0.6,
+          0.631578947368421,
+          0.6714801444043321,
+          0.7200140461180877,
+          0.7755665618510946,
+          0.8336411677918478,
+          0.8873618993185282
+        ],
+        "purities": [
+          0.19999999999999996,
+          0.26315789473684204,
+          0.3429602888086642,
+          0.44002809223617534,
+          0.5511331237021893,
+          0.6672823355836958,
+          0.7747237986370563
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.2815952517036796,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.800"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 64,
+        "physical_error_rate": 0.8,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "logical_errors": [
+          0.7983315828055123,
+          0.2697892092749938,
+          0.6778305035080188,
+          0.3607753213388726,
+          0.6122215853834789,
+          0.4214557181854545,
+          0.5803786672130348
+        ],
+        "fidelities": [
+          0.2033333548690568,
+          0.7314972517254769,
+          0.32528177575248124,
+          0.6443779274356035,
+          0.3957930692837763,
+          0.5943951455131191,
+          0.4423783456343874
+        ],
+        "purities": [
+          0.6022181364715329,
+          0.46597626191342917,
+          0.37275175244881403,
+          0.3132842793551584,
+          0.28711209583183045,
+          0.29678320642742806,
+          0.3418639670416635
+        ],
+        "total_swap_operations": 63,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 6,
+        "final_error_reduction_ratio": 0.7269894862150597,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.800"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 2.581682332413988
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 128,
+    "physical_error_rate": 0.1,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.04999999999999999,
+          0.027559055118110243,
+          0.014549190118973654,
+          0.007487790810549455,
+          0.0038001707301427157,
+          0.00191455399727819,
+          0.0009609460178189866,
+          0.00048139686940856796
+        ],
+        "fidelities": [
+          0.95,
+          0.9724409448818898,
+          0.9854508098810264,
+          0.9925122091894505,
+          0.9961998292698573,
+          0.9980854460027218,
+          0.999039053982181,
+          0.9995186031305914
+        ],
+        "purities": [
+          0.9,
+          0.9448818897637795,
+          0.9709016197620527,
+          0.9850244183789011,
+          0.9923996585397146,
+          0.9961708920054436,
+          0.998078107964362,
+          0.9990372062611829
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.009627937388171361,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.100"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.19999999999999996,
+          0.18199608610567505,
+          0.1663224412477016,
+          0.153098522286381,
+          0.14225152874825897,
+          0.1335685901819014,
+          0.12675829630077035,
+          0.12150455322775607
+        ],
+        "fidelities": [
+          0.8,
+          0.8180039138943249,
+          0.8336775587522984,
+          0.846901477713619,
+          0.857748471251741,
+          0.8664314098180986,
+          0.8732417036992297,
+          0.878495446772244
+        ],
+        "purities": [
+          0.6000000000000001,
+          0.63600782778865,
+          0.6673551175045969,
+          0.693802955427238,
+          0.7154969425034822,
+          0.7328628196361973,
+          0.7464834073984594,
+          0.7569908935444879
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.6075227661387804,
+        "convergence_achieved": "True",
+        "noise_model_name": "SymmetricPauli_p0.100"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.1,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.07389400176735904,
+          0.11609979833623536,
+          0.15862403871285596,
+          0.1990110526865093,
+          0.23558764859184353,
+          0.2673779463887829,
+          0.294120910982339,
+          0.3160950807574392
+        ],
+        "fidelities": [
+          0.9453967650280555,
+          0.936928126224197,
+          0.9305212497612847,
+          0.924022861672018,
+          0.9165628130559458,
+          0.9081433334085951,
+          0.8992253721981598,
+          0.8903759655856376
+        ],
+        "purities": [
+          0.8963416503214605,
+          0.8953374545899697,
+          0.9070453911880316,
+          0.9243987467828167,
+          0.9424740913679903,
+          0.9584034633152739,
+          0.9710457918661524,
+          0.9803918923873037
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 4.277682534403853,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.100"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 63.09999137355914,
+      "pure_dephasing": 444.29895645762144
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 128,
+    "physical_error_rate": 0.2,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.09999999999999998,
+          0.06043956043956045,
+          0.03397561053676024,
+          0.018161044852027297,
+          0.009413284561262059,
+          0.004795665261973114,
+          0.0024208859156122364,
+          0.001216310723194669
+        ],
+        "fidelities": [
+          0.9,
+          0.9395604395604396,
+          0.9660243894632398,
+          0.9818389551479727,
+          0.990586715438738,
+          0.9952043347380268,
+          0.9975791140843877,
+          0.9987836892768054
+        ],
+        "purities": [
+          0.8,
+          0.8791208791208791,
+          0.9320487789264795,
+          0.9636779102959454,
+          0.9811734308774759,
+          0.9904086694760538,
+          0.9951582281687755,
+          0.9975673785536107
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.012163107231946694,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.200"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.4,
+          0.4029183337255825,
+          0.4057128931932033,
+          0.40839211679596743,
+          0.4109636131181554,
+          0.41343426471042677,
+          0.4158103163782962,
+          0.4180974506493203
+        ],
+        "fidelities": [
+          0.6,
+          0.5970816662744175,
+          0.5942871068067966,
+          0.5916078832040326,
+          0.5890363868818447,
+          0.5865657352895732,
+          0.5841896836217038,
+          0.5819025493506798
+        ],
+        "purities": [
+          0.19999999999999996,
+          0.19416333254883497,
+          0.18857421361359333,
+          0.18321576640806517,
+          0.17807277376368924,
+          0.1731314705791464,
+          0.1683793672434076,
+          0.16380509870135937
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 1.0452436266233007,
+        "convergence_achieved": "False",
+        "noise_model_name": "SymmetricPauli_p0.200"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.2,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.1177284849299074,
+          0.1827226936303745,
+          0.22908869026861728,
+          0.26004654204199745,
+          0.2796756825544556,
+          0.2917033107318367,
+          0.2989327007055545,
+          0.3032375781525595
+        ],
+        "fidelities": [
+          0.9307000191805431,
+          0.9208515558553623,
+          0.9164249979885031,
+          0.9135663250747497,
+          0.9112012066762935,
+          0.9092182454444231,
+          0.9076601489936674,
+          0.9065129500739033
+        ],
+        "purities": [
+          0.8821791549213446,
+          0.9038564899869931,
+          0.9357491672397968,
+          0.9616455253423681,
+          0.9786106357251466,
+          0.9885526125327624,
+          0.9940239605659089,
+          0.9969272368186813
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 2.575736690513766,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.200"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 85.93557605723834,
+      "pure_dephasing": 211.76633909372532
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 128,
+    "physical_error_rate": 0.3,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.15000000000000002,
+          0.09885386819484243,
+          0.05962442795564704,
+          0.03346617716880623,
+          0.0178711445677599,
+          0.00925775107555743,
+          0.004714974473884026,
+          0.0023797703810490844
+        ],
+        "fidelities": [
+          0.85,
+          0.9011461318051576,
+          0.940375572044353,
+          0.9665338228311937,
+          0.98212885543224,
+          0.9907422489244426,
+          0.995285025526116,
+          0.9976202296189509
+        ],
+        "purities": [
+          0.7,
+          0.8022922636103151,
+          0.8807511440887059,
+          0.9330676456623875,
+          0.9642577108644802,
+          0.9814844978488851,
+          0.990570051052232,
+          0.9952404592379018
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.01586513587366056,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.300"
+      },
+      "symmetric_pauli": {
+        "noise_type": "symmetric_pauli",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.6000000000000001,
+          0.5796178343949046,
+          0.563501051609772,
+          0.5507027039679606,
+          0.5405121724980628,
+          0.5323842259210184,
+          0.5258943456712553,
+          0.5207088114427764
+        ],
+        "fidelities": [
+          0.39999999999999997,
+          0.4203821656050955,
+          0.43649894839022807,
+          0.4492972960320395,
+          0.4594878275019373,
+          0.4676157740789817,
+          0.47410565432874485,
+          0.4792911885572237
+        ],
+        "purities": [
+          0.2,
+          0.15923566878980894,
+          0.1270021032195438,
+          0.10140540793592097,
+          0.08102434499612546,
+          0.06476845184203663,
+          0.051788691342510275,
+          0.04141762288555256
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.8678480190712938,
+        "convergence_achieved": "True",
+        "noise_model_name": "SymmetricPauli_p0.300"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.3,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.29649305085526867,
+          0.39112875162799726,
+          0.44311100241275536,
+          0.4753226685895084,
+          0.5005204075787477,
+          0.5258504420850287,
+          0.5537631584329183,
+          0.5822752438542639
+        ],
+        "fidelities": [
+          0.7069729026484503,
+          0.6177884005068107,
+          0.5738654745731019,
+          0.554132287443652,
+          0.547857534672967,
+          0.5491337674366632,
+          0.5542685645240739,
+          0.5605998182289966
+        ],
+        "purities": [
+          0.42370287633630804,
+          0.28823671422555636,
+          0.2843437007027855,
+          0.3467790461876467,
+          0.4399009573791025,
+          0.5500998268593925,
+          0.6660996927237705,
+          0.7736776533790777
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 1.9638748435237294,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.300"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "symmetric_pauli": 54.70158125226667,
+      "pure_dephasing": 123.78556724396996
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 128,
+    "physical_error_rate": 0.4,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.4,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.2,
+          0.14285714285714285,
+          0.09302325581395349,
+          0.055522740696987594,
+          0.030924433981125543,
+          0.016432838465105015,
+          0.008488638491187972,
+          0.004316679421504932
+        ],
+        "fidelities": [
+          0.8,
+          0.8571428571428572,
+          0.9069767441860466,
+          0.9444772593030124,
+          0.9690755660188745,
+          0.983567161534895,
+          0.991511361508812,
+          0.9956833205784951
+        ],
+        "purities": [
+          0.6,
+          0.7142857142857143,
+          0.813953488372093,
+          0.8889545186060248,
+          0.9381511320377489,
+          0.96713432306979,
+          0.9830227230176241,
+          0.9913666411569901
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.02158339710752466,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.400"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.4,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.1153100751634692,
+          0.13862142232194724,
+          0.14379133527381452,
+          0.14506475770999108,
+          0.14544158910519503,
+          0.14557908849715165,
+          0.14563795318038197,
+          0.14566548547130392
+        ],
+        "fidelities": [
+          0.9667589664144878,
+          0.9698567180143753,
+          0.9736908775755049,
+          0.9760989029789462,
+          0.977407807554939,
+          0.9780846654314836,
+          0.9784279022950072,
+          0.9786005605773265
+        ],
+        "purities": [
+          0.9592817726793158,
+          0.9779010517244268,
+          0.9886694607912826,
+          0.994268951357538,
+          0.9971179737551287,
+          0.9985548286181288,
+          0.9992763695826662,
+          0.9996379229199281
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 1.2632502863674437,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.400"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 58.528797856711556
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 128,
+    "physical_error_rate": 0.5,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.5,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.25,
+          0.1923076923076923,
+          0.13572679509632224,
+          0.0873170028292733,
+          0.05158128504231457,
+          0.028515977323784802,
+          0.015082393932659255,
+          0.007770364374534877
+        ],
+        "fidelities": [
+          0.75,
+          0.8076923076923077,
+          0.8642732049036778,
+          0.9126829971707267,
+          0.9484187149576855,
+          0.9714840226762151,
+          0.9849176060673408,
+          0.9922296356254652
+        ],
+        "purities": [
+          0.5,
+          0.6153846153846154,
+          0.7285464098073555,
+          0.8253659943414534,
+          0.8968374299153709,
+          0.9429680453524304,
+          0.9698352121346815,
+          0.9844592712509302
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.03108145749813951,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.500"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.5,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.4187853564987447,
+          0.4227959788678979,
+          0.43354019008811695,
+          0.4467882656554628,
+          0.45824648843055343,
+          0.46615303099931354,
+          0.47088452358866306,
+          0.4734884936460433
+        ],
+        "fidelities": [
+          0.6492376503644387,
+          0.6809777388133978,
+          0.7105042969403275,
+          0.7342942039530913,
+          0.7508734363328997,
+          0.7610917093267278,
+          0.7668584244405553,
+          0.7699382418923586
+        ],
+        "purities": [
+          0.5463289308913426,
+          0.662522991481086,
+          0.770613764117844,
+          0.8577038143333807,
+          0.9183970393938189,
+          0.9558040753974104,
+          0.9769148560563043,
+          0.9881894464272681
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 1.1306233283910503,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.500"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 36.376136108119375
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 128,
+    "physical_error_rate": 0.6,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.6,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.3,
+          0.24683544303797467,
+          0.18902229001623772,
+          0.1327210475470032,
+          0.08494574100110652,
+          0.049964498534438684,
+          0.02753763246795954,
+          0.014537275048431664
+        ],
+        "fidelities": [
+          0.7,
+          0.7531645569620253,
+          0.8109777099837623,
+          0.8672789524529968,
+          0.9150542589988935,
+          0.9500355014655613,
+          0.9724623675320405,
+          0.9854627249515684
+        ],
+        "purities": [
+          0.4,
+          0.5063291139240507,
+          0.6219554199675246,
+          0.7345579049059936,
+          0.830108517997787,
+          0.9000710029311226,
+          0.9449247350640809,
+          0.9709254499031367
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.048457583494772215,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.600"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.6,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.5347740302936433,
+          0.4271071595732048,
+          0.4651868495884467,
+          0.4746363402794514,
+          0.49208154164558754,
+          0.5043696373581694,
+          0.5126633683777242,
+          0.5174331588748308
+        ],
+        "fidelities": [
+          0.523361227539156,
+          0.6480432545639327,
+          0.6497156782426223,
+          0.6794809231145881,
+          0.6969116812597917,
+          0.7100026290520041,
+          0.7176920472999054,
+          0.7220310704160382
+        ],
+        "purities": [
+          0.4872144949225646,
+          0.5673227664129955,
+          0.6815115062055705,
+          0.7867924214898339,
+          0.8696112347206416,
+          0.9260482927813544,
+          0.960241170907183,
+          0.9793225093282069
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.9675734601224171,
+        "convergence_achieved": "False",
+        "noise_model_name": "PureDephasing_pz0.600"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 19.96743110862725
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 128,
+    "physical_error_rate": 0.7,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.7,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.35,
+          0.3058252427184466,
+          0.2534926855535944,
+          0.19595745479515309,
+          0.13909373894318044,
+          0.08999727799255686,
+          0.053423673646459835,
+          0.029637644659280205
+        ],
+        "fidelities": [
+          0.65,
+          0.6941747572815534,
+          0.7465073144464056,
+          0.804042545204847,
+          0.8609062610568196,
+          0.9100027220074431,
+          0.9465763263535402,
+          0.9703623553407198
+        ],
+        "purities": [
+          0.30000000000000004,
+          0.38834951456310685,
+          0.4930146288928113,
+          0.6080850904096938,
+          0.7218125221136391,
+          0.8200054440148863,
+          0.8931526527070803,
+          0.9407247106814396
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.08467898474080059,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.700"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.7,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.6721365046753921,
+          0.3831740329505067,
+          0.538230552312299,
+          0.47789333315988936,
+          0.5328623303092876,
+          0.539332866084133,
+          0.5666448469990911,
+          0.5786418692407106
+        ],
+        "fidelities": [
+          0.35461788440392383,
+          0.6454342392898301,
+          0.5156425995279643,
+          0.6040670205524324,
+          0.5844200457811597,
+          0.6159694712510939,
+          0.619620006358284,
+          0.6306750269047887
+        ],
+        "purities": [
+          0.47491205636908035,
+          0.4111281008025895,
+          0.47046669157493665,
+          0.5742788814891293,
+          0.688076474946801,
+          0.7920843684598736,
+          0.8733988527331767,
+          0.9284426524953975
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.8608993340127618,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.700"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 10.166623237724739
+    }
+  },
+  {
+    "dimension": 2,
+    "N": 128,
+    "physical_error_rate": 0.8,
+    "noise_results": {
+      "depolarizing": {
+        "noise_type": "depolarizing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.8,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.4,
+          0.368421052631579,
+          0.3285198555956679,
+          0.27998595388191233,
+          0.22443343814890537,
+          0.16635883220815212,
+          0.11263810068147184,
+          0.06962143663455533
+        ],
+        "fidelities": [
+          0.6,
+          0.631578947368421,
+          0.6714801444043321,
+          0.7200140461180877,
+          0.7755665618510946,
+          0.8336411677918478,
+          0.8873618993185282,
+          0.9303785633654447
+        ],
+        "purities": [
+          0.19999999999999996,
+          0.26315789473684204,
+          0.3429602888086642,
+          0.44002809223617534,
+          0.5511331237021893,
+          0.6672823355836958,
+          0.7747237986370563,
+          0.8607571267308893
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.17405359158638833,
+        "convergence_achieved": true,
+        "noise_model_name": "Depolarizing_d2_delta0.800"
+      },
+      "pure_dephasing": {
+        "noise_type": "pure_dephasing",
+        "dimension": 2,
+        "N": 128,
+        "physical_error_rate": 0.8,
+        "iterations": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "logical_errors": [
+          0.654865613184452,
+          0.24181622954583817,
+          0.5366922861178093,
+          0.35858269893803746,
+          0.4899629462485241,
+          0.4221086033394802,
+          0.47303709728930154,
+          0.4477464419710809
+        ],
+        "fidelities": [
+          0.4639387858356898,
+          0.8343226484543035,
+          0.6240611382450953,
+          0.8091516381372967,
+          0.720699324493379,
+          0.7991546595023671,
+          0.7638755065885421,
+          0.7930194971786333
+        ],
+        "purities": [
+          0.7557453464418769,
+          0.7557717574137548,
+          0.8052322602167793,
+          0.8665637659514361,
+          0.9181786605882606,
+          0.9535834153666339,
+          0.9749658496592175,
+          0.986907034074427
+        ],
+        "total_swap_operations": 127,
+        "total_amplification_iterations": 0,
+        "memory_levels_used": 7,
+        "final_error_reduction_ratio": 0.6837226340131053,
+        "convergence_achieved": "True",
+        "noise_model_name": "PureDephasing_pz0.800"
+      }
+    },
+    "relative_performance": {
+      "depolarizing": 1.0,
+      "pure_dephasing": 3.9282305396941606
+    }
+  }
+]
