@@ -79,7 +79,7 @@ class SwapTestProcessor:
                         2*px*py*rz0**2 + 2*px*pz*ry0**2 + 2*py*pz*rx0**2)
         
         # From Eq. (41): P_success = 1/2[2 - 2p_total + p²_total + Σp²_i]
-        return 0.5 * (2 - 2*p_total + p_total**2 + sum_squared_errors)
+        return 0.5 * (1 + tr_rho_squared)
     
     def amplitude_amplified_swap(self, state1: QuantumState, state2: QuantumState) -> SwapResult:
         """Perform amplitude-amplified swap test."""
