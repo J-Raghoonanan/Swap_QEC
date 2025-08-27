@@ -97,13 +97,16 @@ class PauliNoise(NoiseModel):
     
     def get_success_probability_exact(self, target_bloch: np.ndarray) -> float:
         """
-        Calculate exact success probability using Eq. (41) from manuscript.
+        Calculate exact success probability using corrected state-dependent formula.
         
-        P_success = 1/2[2 - 2p_total + p²_total + Σp²_i]
         """
-        # From Eq. (40): Tr(ρ²) = 1 - 2p_total + p²_total + Σp²_i
-        sum_squared_errors = self.px**2 + self.py**2 + self.pz**2
-        tr_rho_squared = 1 - 2*self.p_total + self.p_total**2 + sum_squared_errors
+        rx0, ry0, rz0 = target_bloch
+    
+        tr_rho_squared = ((1 - self.p_total)**2 + 
+                        self.px**2 + self.py**2 + self.pz**2 + 
+                        2*(1 - self.p_total)*(self.px*rx0**2 + self.py*ry0**2 + self.pz*rz0**2) +
+                        2*self.px*self.py*rz0**2 + 2*self.px*self.pz*ry0**2 + 2*self.py*self.pz*rx0**2)
+    
         
         # From Eq. (41)
         return 0.5 * (1 + tr_rho_squared)

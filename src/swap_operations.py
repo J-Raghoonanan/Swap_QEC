@@ -59,18 +59,24 @@ class SwapTestProcessor:
         Note: Success probability depends only on error rate distribution,
         not the initial state itself (key insight from Section II.E).
         """
+        
         if not state1.error_rates or not state2.error_rates:
             raise ValueError("Pauli states must have error_rates specified")
-        
-        # Extract error rates
+    
+        # Extract error rates and Bloch vector components
         px = state1.error_rates['px']
         py = state1.error_rates['py'] 
         pz = state1.error_rates['pz']
         p_total = state1.error_rates['p_total']
-        
-        # From Eq. (40): Tr(ρ²) = 1 - 2p_total + p²_total + Σp²_i
-        sum_squared_errors = px**2 + py**2 + pz**2
-        tr_rho_squared = 1 - 2*p_total + p_total**2 + sum_squared_errors
+    
+        # Get initial Bloch vector components
+        rx0, ry0, rz0 = state1.target_bloch_vector
+    
+        # Corrected formula with state-dependent terms
+        tr_rho_squared = ((1 - p_total)**2 + 
+                        px**2 + py**2 + pz**2 + 
+                        2*(1 - p_total)*(px*rx0**2 + py*ry0**2 + pz*rz0**2) +
+                        2*px*py*rz0**2 + 2*px*pz*ry0**2 + 2*py*pz*rx0**2)
         
         # From Eq. (41): P_success = 1/2[2 - 2p_total + p²_total + Σp²_i]
         return 0.5 * (2 - 2*p_total + p_total**2 + sum_squared_errors)
