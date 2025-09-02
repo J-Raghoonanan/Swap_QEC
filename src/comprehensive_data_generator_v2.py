@@ -818,13 +818,13 @@ class ComprehensiveStreamingDataGenerator:
         if quick_run:
             print("QUICK RUN MODE - Reduced parameter sets")
             noise_types = ['depolarizing', 'symmetric_pauli']
-            dimensions = [2, 3]
+            dimensions = [2, 4, 8]
             N_values = [8, 16, 32, 64, 128, 256, 512, 1024]
             error_rates = [0.1, 0.3, 0.5]
         else:
             print("FULL ANALYSIS MODE - Complete parameter space")
             noise_types = ['depolarizing', 'symmetric_pauli', 'pure_dephasing']
-            dimensions = [2, 3, 4]
+            dimensions = [2, 4, 8, 16, 32, 64]
             N_values = [8, 16, 32, 64, 128, 256, 512, 1024]
             error_rates = [0.01, 0.1, 0.5, 0.7, 0.8, 0.9, 0.95, 0.99]
         
