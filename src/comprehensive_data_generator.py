@@ -806,7 +806,7 @@ class StreamingQECDataGenerator:
         # print(f"Evolution records: {len(evolution_data)}")
         # print(f"Threshold records: {len(threshold_data)}")
         # print(f"Resource records: {len(resource_data)}")
-        if comparison_data:
+        # if comparison_data:
             # print(f"Comparison records: {len(comparison_data)}")
         
         # Print key findings preview
