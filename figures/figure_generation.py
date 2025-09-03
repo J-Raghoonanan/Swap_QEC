@@ -415,7 +415,7 @@ class StreamingQECPlotter:
         ax.axhline(y=0.99, color='black', linestyle=':', alpha=0.7, 
                   linewidth=2, label='Target Fidelity 0.99')
         
-        ax.set_xlabel('Purification Level', fontsize=25)
+        ax.set_xlabel(r'Purification Level, $n$', fontsize=25)
         ax.set_ylabel('State Fidelity', fontsize=25)
         ax.set_title(f'Fidelity Evolution (Depolarizing Noise, N={target_N})', fontsize=30)
         ax.legend(fontsize=14)
@@ -682,26 +682,26 @@ class StreamingQECPlotter:
         
         plots = {}
         
-        print("\n1. Grafe Figure 4 Analog (KEY PLOT)...")
-        plots['grafe_figure4'] = self.plot_grafe_figure4_analog(save_format)
+        # print("\n1. Grafe Figure 4 Analog (KEY PLOT)...")
+        # plots['grafe_figure4'] = self.plot_grafe_figure4_analog(save_format)
         
-        print("\n2. Error Evolution...")
-        plots['error_evolution'] = self.plot_error_evolution(save_format)
+        # print("\n2. Error Evolution...")
+        # plots['error_evolution'] = self.plot_error_evolution(save_format)
         
         print("\n3. Fidelity Evolution...")  
         plots['fidelity_evolution'] = self.plot_fidelity_evolution(save_format)
         
-        print("\n4. Memory Scaling...")
-        plots['memory_scaling'] = self.plot_memory_scaling(save_format)
+        # print("\n4. Memory Scaling...")
+        # plots['memory_scaling'] = self.plot_memory_scaling(save_format)
         
-        print("\n5. Noise Model Comparison...")
-        plots['noise_comparison'] = self.plot_noise_comparison(save_format)
+        # print("\n5. Noise Model Comparison...")
+        # plots['noise_comparison'] = self.plot_noise_comparison(save_format)
         
-        print("\n6. Resource Overhead...")
-        plots['resource_overhead'] = self.plot_resource_overhead(save_format)
+        # print("\n6. Resource Overhead...")
+        # plots['resource_overhead'] = self.plot_resource_overhead(save_format)
         
-        print("\n7. Error Reduction Ratios...")
-        plots['error_reduction'] = self.plot_error_reduction_ratios(save_format)
+        # print("\n7. Error Reduction Ratios...")
+        # plots['error_reduction'] = self.plot_error_reduction_ratios(save_format)
         
         # Summary
         successful_plots = [name for name, path in plots.items() if path is not None]

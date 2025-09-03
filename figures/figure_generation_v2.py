@@ -307,122 +307,347 @@ class StreamingQECPlotter:
         return filepath
 
     
-    def plot_error_evolution(self, save_format: str = 'pdf') -> Optional[str]:
-        """Plot logical error evolution through purification levels."""
-        # Use streaming evolution data if available, otherwise legacy
-        evolution_data = self.streaming_evolution_data if self.streaming_evolution_data else self.evolution_data
+    # def plot_error_evolution(self, save_format: str = 'pdf') -> Optional[str]:
+    #     """Plot logical error evolution through purification levels."""
+    #     # Use streaming evolution data if available, otherwise legacy
+    #     evolution_data = self.streaming_evolution_data if self.streaming_evolution_data else self.evolution_data
         
+    #     if not evolution_data:
+    #         print("Warning: No evolution data available")
+    #         return None
+    
+    #     # Create figure with 2 subplots side by side
+    #     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
+    
+    #     # Auto-discover all noise types in the data
+    #     available_noise_types = sorted(list(set(d['noise_type'] for d in evolution_data)))
+    #     print(f"Found noise types: {available_noise_types}")
+    
+    #     # Separate noise types
+    #     depolarizing_types = [nt for nt in available_noise_types if 'depolarizing' in nt.lower()]
+    #     pauli_types = [nt for nt in available_noise_types if 'depolarizing' not in nt.lower()]
+    
+    #     print(f"Depolarizing types: {depolarizing_types}")
+    #     print(f"Pauli types: {pauli_types}")
+    
+    #     linestyles = ['solid', 'dotted', 'dashed', 'dashdot']
+    #     plotted_any = [False, False]
+    
+    #     # Function to plot data for a given set of noise types on a specific axis
+    #     def plot_noise_group(ax, noise_types, subplot_idx, title_suffix):
+    #         for noise_idx, noise_type in enumerate(noise_types):
+    #             noise_data = [d for d in evolution_data if d['noise_type'] == noise_type]
+            
+    #             # Find best code size (largest available)
+    #             available_sizes = list(set(d['N'] for d in noise_data))
+    #             target_N = max(available_sizes)
+            
+    #             # Get all error rates for this noise type and code size
+    #             target_data = [d for d in noise_data if d['N'] == target_N]
+    #             error_rates = sorted(list(set(d['physical_error_rate'] for d in target_data)))
+            
+    #             print(f"{noise_type}: {len(error_rates)} error rates for N={target_N}")
+            
+    #             # Set legend label based on noise type
+    #             if noise_type == 'depolarizing':
+    #                 legend_label = '$\delta$'
+    #             else:
+    #                 legend_label = 'p'
+            
+    #             # Generate colors for this noise type
+    #             base_color = PROTOCOL_COLORS.get(noise_type, '#666666')
+            
+    #             for rate_idx, error_rate in enumerate(error_rates):
+    #                 matches = [d for d in target_data if d['physical_error_rate'] == error_rate]
+                
+    #                 if matches:
+    #                     data = matches[0]
+                        
+    #                     # Handle both streaming and legacy data formats
+    #                     if 'iterations' in data and 'logical_errors' in data:
+    #                         # Legacy format
+    #                         iterations = data['iterations'] 
+    #                         logical_errors = data['logical_errors']
+    #                     else:
+    #                         # Streaming format - create synthetic progression
+    #                         # For streaming, we have output states at different levels
+    #                         # We'll show the best achieved error as a function of purification level
+    #                         iterations = list(range(data.get('max_stack_depth_used', 5) + 1))
+                            
+    #                         # Simulate error evolution based on best output error
+    #                         best_error = data.get('best_output_error', error_rate)
+    #                         if best_error == float('inf'):
+    #                             best_error = error_rate
+                            
+    #                         # Create exponential decay from initial to best error
+    #                         logical_errors = [error_rate * np.exp(-0.5 * i) + best_error * (1 - np.exp(-0.5 * i)) 
+    #                                         for i in iterations]
+                    
+    #                     if len(iterations) > 0 and len(logical_errors) > 0:
+    #                         # Vary alpha for different error rates within same noise type
+    #                         alpha = 1.0 - 0.6 * (rate_idx / max(1, len(error_rates) - 1))
+    #                         linestyle = linestyles[noise_idx % len(linestyles)]
+                        
+    #                         ax.semilogy(iterations, logical_errors, 'o-', 
+    #                                 color=base_color, linestyle=linestyle, alpha=max(0.4, alpha),
+    #                                 linewidth=3, markersize=6,
+    #                                 label=rf'{noise_type.replace("_", " ").title()}, {legend_label}={error_rate:.3f}')
+    #                         plotted_any[subplot_idx] = True
+        
+    #         # Set labels and formatting for this subplot
+    #         ax.set_xlabel(r'Purification Level, $n$', fontsize=20)
+    #         ax.set_ylabel(r'Logical Error Rate, $\varepsilon_L^{(n)}$', fontsize=20)
+    #         ax.set_title(f'Error Evolution - {title_suffix}', fontsize=24)
+        
+    #         if not plotted_any[subplot_idx]:
+    #             ax.text(0.5, 0.5, f'No {title_suffix} Data Available', 
+    #                 transform=ax.transAxes, ha='center', va='center', fontsize=16)
+    #         else:
+    #             ax.legend(fontsize=12, loc='best')
+    
+    #     # Plot depolarizing noise types on left subplot
+    #     plot_noise_group(ax1, depolarizing_types, 0, "Depolarizing Noise")
+    
+    #     # Plot Pauli noise types on right subplot  
+    #     plot_noise_group(ax2, pauli_types, 1, "Pauli Errors")
+        
+    #     ax1.text(0.90, 0.95, '(a)', transform=ax1.transAxes, fontsize=18, fontweight='bold')
+    #     ax2.text(0.90, 0.95, '(b)', transform=ax2.transAxes, fontsize=18, fontweight='bold')
+    
+    #     plt.tight_layout()
+    
+    #     filename = f"error_evolution.{save_format}"
+    #     filepath = os.path.join(self.figures_dir, filename)
+    #     plt.savefig(filepath, dpi=300, bbox_inches='tight', format=save_format)
+    #     plt.close()
+    
+    #     print(f"Saved error evolution plot: {filename}")
+    #     return filepath
+    
+    
+    def plot_depolarizing_error_evolution(self, save_format: str = 'pdf') -> Optional[str]:
+        """Plot logical error evolution for depolarizing noise only."""
+        evolution_data = self.streaming_evolution_data if self.streaming_evolution_data else self.evolution_data
+    
         if not evolution_data:
             print("Warning: No evolution data available")
             return None
-    
-        # Create figure with 2 subplots side by side
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
-    
-        # Auto-discover all noise types in the data
+
+        # Create single figure for depolarizing noise
+        fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+
+        # Filter for depolarizing noise types only
         available_noise_types = sorted(list(set(d['noise_type'] for d in evolution_data)))
-        print(f"Found noise types: {available_noise_types}")
-    
-        # Separate noise types
         depolarizing_types = [nt for nt in available_noise_types if 'depolarizing' in nt.lower()]
-        pauli_types = [nt for nt in available_noise_types if 'depolarizing' not in nt.lower()]
     
-        print(f"Depolarizing types: {depolarizing_types}")
-        print(f"Pauli types: {pauli_types}")
-    
-        linestyles = ['solid', 'dotted', 'dashed', 'dashdot']
-        plotted_any = [False, False]
-    
-        # Function to plot data for a given set of noise types on a specific axis
-        def plot_noise_group(ax, noise_types, subplot_idx, title_suffix):
-            for noise_idx, noise_type in enumerate(noise_types):
-                noise_data = [d for d in evolution_data if d['noise_type'] == noise_type]
-            
-                # Find best code size (largest available)
-                available_sizes = list(set(d['N'] for d in noise_data))
-                target_N = max(available_sizes)
-            
-                # Get all error rates for this noise type and code size
-                target_data = [d for d in noise_data if d['N'] == target_N]
-                error_rates = sorted(list(set(d['physical_error_rate'] for d in target_data)))
-            
-                print(f"{noise_type}: {len(error_rates)} error rates for N={target_N}")
-            
-                # Set legend label based on noise type
-                if noise_type == 'depolarizing':
-                    legend_label = '$\delta$'
-                else:
-                    legend_label = 'p'
-            
-                # Generate colors for this noise type
-                base_color = PROTOCOL_COLORS.get(noise_type, '#666666')
-            
-                for rate_idx, error_rate in enumerate(error_rates):
-                    matches = [d for d in target_data if d['physical_error_rate'] == error_rate]
-                
-                    if matches:
-                        data = matches[0]
-                        
-                        # Handle both streaming and legacy data formats
-                        if 'iterations' in data and 'logical_errors' in data:
-                            # Legacy format
-                            iterations = data['iterations'] 
-                            logical_errors = data['logical_errors']
-                        else:
-                            # Streaming format - create synthetic progression
-                            # For streaming, we have output states at different levels
-                            # We'll show the best achieved error as a function of purification level
-                            iterations = list(range(data.get('max_stack_depth_used', 5) + 1))
-                            
-                            # Simulate error evolution based on best output error
-                            best_error = data.get('best_output_error', error_rate)
-                            if best_error == float('inf'):
-                                best_error = error_rate
-                            
-                            # Create exponential decay from initial to best error
-                            logical_errors = [error_rate * np.exp(-0.5 * i) + best_error * (1 - np.exp(-0.5 * i)) 
-                                            for i in iterations]
-                    
-                        if len(iterations) > 0 and len(logical_errors) > 0:
-                            # Vary alpha for different error rates within same noise type
-                            alpha = 1.0 - 0.6 * (rate_idx / max(1, len(error_rates) - 1))
-                            linestyle = linestyles[noise_idx % len(linestyles)]
-                        
-                            ax.semilogy(iterations, logical_errors, 'o-', 
-                                    color=base_color, linestyle=linestyle, alpha=max(0.4, alpha),
-                                    linewidth=3, markersize=6,
-                                    label=rf'{noise_type.replace("_", " ").title()}, {legend_label}={error_rate:.3f}')
-                            plotted_any[subplot_idx] = True
-        
-            # Set labels and formatting for this subplot
-            ax.set_xlabel(r'Purification Level, $n$', fontsize=20)
-            ax.set_ylabel(r'Logical Error Rate, $\varepsilon_L^{(n)}$', fontsize=20)
-            ax.set_title(f'Error Evolution - {title_suffix}', fontsize=24)
-        
-            if not plotted_any[subplot_idx]:
-                ax.text(0.5, 0.5, f'No {title_suffix} Data Available', 
+        print(f"Plotting depolarizing types: {depolarizing_types}")
+
+        if not depolarizing_types:
+            ax.text(0.5, 0.5, 'No Depolarizing Data Available', 
                     transform=ax.transAxes, ha='center', va='center', fontsize=16)
-            else:
-                ax.legend(fontsize=12, loc='best')
-    
-        # Plot depolarizing noise types on left subplot
-        plot_noise_group(ax1, depolarizing_types, 0, "Depolarizing Noise")
-    
-        # Plot Pauli noise types on right subplot  
-        plot_noise_group(ax2, pauli_types, 1, "Pauli Errors")
+            plt.tight_layout()
+            filename = f"depolarizing_error_evolution.{save_format}"
+            filepath = os.path.join(self.figures_dir, filename)
+            plt.savefig(filepath, dpi=300, bbox_inches='tight', format=save_format)
+            plt.close()
+            return filepath
+
+        linestyles = ['solid', 'dotted', 'dashed', 'dashdot']
+        plotted_any = False
+
+        for noise_idx, noise_type in enumerate(depolarizing_types):
+            noise_data = [d for d in evolution_data if d['noise_type'] == noise_type]
         
-        ax1.text(0.90, 0.95, '(a)', transform=ax1.transAxes, fontsize=18, fontweight='bold')
-        ax2.text(0.90, 0.95, '(b)', transform=ax2.transAxes, fontsize=18, fontweight='bold')
+            # Find best code size (largest available)
+            available_sizes = list(set(d['N'] for d in noise_data))
+            target_N = max(available_sizes)
+        
+            # Get all error rates for this noise type and code size
+            target_data = [d for d in noise_data if d['N'] == target_N]
+            error_rates = sorted(list(set(d['physical_error_rate'] for d in target_data)))
+        
+            print(f"{noise_type}: {len(error_rates)} error rates for N={target_N}")
+        
+            # Generate colors for this noise type
+            base_color = PROTOCOL_COLORS.get(noise_type, '#2E86AB')  # Default blue for depolarizing
+        
+            for rate_idx, error_rate in enumerate(error_rates):
+                matches = [d for d in target_data if d['physical_error_rate'] == error_rate]
+            
+                if matches:
+                    data = matches[0]
+                
+                    # Handle both streaming and legacy data formats
+                    if 'iterations' in data and 'logical_errors' in data:
+                        # Legacy format
+                        iterations = data['iterations'] 
+                        logical_errors = data['logical_errors']
+                    else:
+                        # Streaming format - create synthetic progression
+                        iterations = list(range(data.get('max_stack_depth_used', 5) + 1))
+                    
+                        best_error = data.get('best_output_error', error_rate)
+                        if best_error == float('inf'):
+                            best_error = error_rate
+                    
+                        # Create exponential decay from initial to best error
+                        logical_errors = [error_rate * np.exp(-0.5 * i) + best_error * (1 - np.exp(-0.5 * i)) 
+                                        for i in iterations]
+                
+                    if len(iterations) > 0 and len(logical_errors) > 0:
+                        # Vary alpha for different error rates
+                        alpha = 1.0 - 0.6 * (rate_idx / max(1, len(error_rates) - 1))
+                        linestyle = linestyles[noise_idx % len(linestyles)]
+                
+                        ax.semilogy(iterations, logical_errors, 'o-', 
+                                color=base_color, linestyle=linestyle, alpha=max(0.4, alpha),
+                                linewidth=3, markersize=6,
+                                label=rf'$\delta={error_rate:.3f}$')
+                        plotted_any = True
+
+        # Set labels and formatting
+        ax.set_xlabel(r'Purification Level, $n$', fontsize=25)
+        ax.set_ylabel(r'Logical Error Rate, $\varepsilon_L^{(n)}$', fontsize=25)
+        ax.set_title('Error Evolution - Depolarizing Noise', fontsize=30)
+        ax.tick_params(axis='both', which='major', labelsize=16)
+        ax.grid(True, alpha=0.3)
     
+        if plotted_any:
+            ax.legend(fontsize=14, loc='best')
+
         plt.tight_layout()
     
-        filename = f"error_evolution.{save_format}"
+        filename = f"depolarizing_error_evolution.{save_format}"
         filepath = os.path.join(self.figures_dir, filename)
         plt.savefig(filepath, dpi=300, bbox_inches='tight', format=save_format)
         plt.close()
     
-        print(f"Saved error evolution plot: {filename}")
+        print(f"Saved depolarizing error evolution plot: {filename}")
         return filepath
+
+
+    def plot_pauli_error_evolution(self, save_format: str = 'pdf', 
+                                include_symmetric: bool = False) -> Optional[str]:
+        """Plot logical error evolution for Pauli noise types."""
+        evolution_data = self.streaming_evolution_data if self.streaming_evolution_data else self.evolution_data
+    
+        if not evolution_data:
+            print("Warning: No evolution data available")
+            return None
+
+        # Create single figure for Pauli noise
+        fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+
+        # Filter for Pauli noise types
+        available_noise_types = sorted(list(set(d['noise_type'] for d in evolution_data)))
+        pauli_types = [nt for nt in available_noise_types if 'depolarizing' not in nt.lower()]
+    
+        # Optionally filter out symmetric Pauli
+        if not include_symmetric:
+            pauli_types = [nt for nt in pauli_types if 'symmetric' not in nt.lower()]
+    
+        print(f"Plotting Pauli types: {pauli_types} (include_symmetric={include_symmetric})")
+
+        if not pauli_types:
+            ax.text(0.5, 0.5, 'No Pauli Data Available', 
+                    transform=ax.transAxes, ha='center', va='center', fontsize=16)
+            plt.tight_layout()
+            suffix = "_with_symmetric" if include_symmetric else ""
+            filename = f"pauli_error_evolution{suffix}.{save_format}"
+            filepath = os.path.join(self.figures_dir, filename)
+            plt.savefig(filepath, dpi=300, bbox_inches='tight', format=save_format)
+            plt.close()
+            return filepath
+
+        linestyles = ['solid', 'dotted', 'dashed', 'dashdot']
+        colors = ['#A23B72', '#F18F01', '#C73E1D', '#592E83']  # Different colors for different Pauli types
+        plotted_any = False
+
+        for noise_idx, noise_type in enumerate(pauli_types):
+            noise_data = [d for d in evolution_data if d['noise_type'] == noise_type]
+        
+            # Find best code size (largest available)
+            available_sizes = list(set(d['N'] for d in noise_data))
+            target_N = max(available_sizes)
+        
+            # Get all error rates for this noise type and code size
+            target_data = [d for d in noise_data if d['N'] == target_N]
+            error_rates = sorted(list(set(d['physical_error_rate'] for d in target_data)))
+        
+            print(f"{noise_type}: {len(error_rates)} error rates for N={target_N}")
+        
+            # Use different base colors for different noise types
+            base_color = colors[noise_idx % len(colors)]
+        
+            for rate_idx, error_rate in enumerate(error_rates):
+                matches = [d for d in target_data if d['physical_error_rate'] == error_rate]
+            
+                if matches:
+                    data = matches[0]
+                
+                    # Handle both streaming and legacy data formats
+                    if 'iterations' in data and 'logical_errors' in data:
+                        iterations = data['iterations'] 
+                        logical_errors = data['logical_errors']
+                    else:
+                        iterations = list(range(data.get('max_stack_depth_used', 5) + 1))
+                    
+                        best_error = data.get('best_output_error', error_rate)
+                        if best_error == float('inf'):
+                            best_error = error_rate
+                    
+                        logical_errors = [error_rate * np.exp(-0.5 * i) + best_error * (1 - np.exp(-0.5 * i)) 
+                                        for i in iterations]
+                
+                    if len(iterations) > 0 and len(logical_errors) > 0:
+                        alpha = 1.0 - 0.6 * (rate_idx / max(1, len(error_rates) - 1))
+                        linestyle = linestyles[noise_idx % len(linestyles)]
+                
+                        # Create cleaner labels
+                        clean_noise_name = noise_type.replace('_', ' ').replace('pure', 'Z').title()
+                    
+                        ax.semilogy(iterations, logical_errors, 'o-', 
+                                color=base_color, linestyle=linestyle, alpha=max(0.4, alpha),
+                                linewidth=3, markersize=6,
+                                # label=rf'{clean_noise_name}, $p={error_rate:.3f}$')
+                                label=rf'$p={error_rate:.3f}$')
+                        plotted_any = True
+
+        # Set labels and formatting
+        ax.set_xlabel(r'Purification Level, $n$', fontsize=25)
+        ax.set_ylabel(r'Logical Error Rate, $\varepsilon_L^{(n)}$', fontsize=25)
+    
+        title_suffix = "Z Dephasing"
+        # if not include_symmetric:
+        #     title_suffix += " (Excluding Symmetric)"
+        ax.set_title(f'Error Evolution - {title_suffix}', fontsize=30)
+        ax.tick_params(axis='both', which='major', labelsize=16)
+        ax.grid(True, alpha=0.3)
+    
+        if plotted_any:
+            ax.legend(fontsize=14, loc='best')
+
+        plt.tight_layout()
+    
+        suffix = "_with_symmetric" if include_symmetric else ""
+        filename = f"pauli_error_evolution{suffix}.{save_format}"
+        filepath = os.path.join(self.figures_dir, filename)
+        plt.savefig(filepath, dpi=300, bbox_inches='tight', format=save_format)
+        plt.close()
+    
+        print(f"Saved Pauli error evolution plot: {filename}")
+        return filepath
+
+
+    def plot_both_error_evolutions(self, save_format: str = 'pdf', 
+                                include_symmetric_pauli: bool = False) -> Tuple[Optional[str], Optional[str]]:    
+        """Plot both depolarizing and Pauli error evolution figures separately."""
+        print("Generating separate error evolution plots...")
+    
+        depolarizing_path = self.plot_depolarizing_error_evolution(save_format)
+        pauli_path = self.plot_pauli_error_evolution(save_format, include_symmetric_pauli)
+    
+        return depolarizing_path, pauli_path
     
     def plot_fidelity_evolution(self, save_format: str = 'pdf') -> Optional[str]:
         """Plot fidelity evolution through purification levels."""
@@ -962,35 +1187,38 @@ class StreamingQECPlotter:
         
         plots = {}
         
-        print("\n1. Grafe Figure 4 Analog (Threshold Behavior)...")
-        plots['grafe_figure4'] = self.plot_grafe_figure4_analog(save_format)
+        # print("\n1. Grafe Figure 4 Analog (Threshold Behavior)...")
+        # plots['grafe_figure4'] = self.plot_grafe_figure4_analog(save_format)
         
-        print("\n2. Error Evolution...")
-        plots['error_evolution'] = self.plot_error_evolution(save_format)
+        # print("\n2. Error Evolution...")
+        # plots['error_evolution'] = self.plot_error_evolution(save_format)
         
-        print("\n3. Fidelity Evolution...")  
-        plots['fidelity_evolution'] = self.plot_fidelity_evolution(save_format)
+        # print("\n3. Fidelity Evolution...")  
+        # plots['fidelity_evolution'] = self.plot_fidelity_evolution(save_format)
         
-        print("\n4. Memory Scaling (KEY NEW PLOT)...")
-        plots['memory_scaling'] = self.plot_memory_scaling(save_format)
+        # print("\n4. Memory Scaling (KEY NEW PLOT)...")
+        # plots['memory_scaling'] = self.plot_memory_scaling(save_format)
         
-        print("\n5. Batch vs Streaming Comparison (NEW)...")
-        plots['batch_vs_streaming'] = self.plot_batch_vs_streaming_comparison(save_format)
+        # print("\n5. Batch vs Streaming Comparison (NEW)...")
+        # plots['batch_vs_streaming'] = self.plot_batch_vs_streaming_comparison(save_format)
         
-        print("\n6. Noise Model Comparison...")
-        plots['noise_comparison'] = self.plot_noise_comparison(save_format)
+        # print("\n6. Noise Model Comparison...")
+        # plots['noise_comparison'] = self.plot_noise_comparison(save_format)
         
-        print("\n7. Resource Overhead...")
-        plots['resource_overhead'] = self.plot_resource_overhead(save_format)
+        # print("\n7. Resource Overhead...")
+        # plots['resource_overhead'] = self.plot_resource_overhead(save_format)
         
-        print("\n8. Error Reduction Ratios...")
-        plots['error_reduction'] = self.plot_error_reduction_ratios(save_format)
+        # print("\n8. Error Reduction Ratios...")
+        # plots['error_reduction'] = self.plot_error_reduction_ratios(save_format)
         
-        print("\n9. Streaming Output Distribution (NEW)...")
-        plots['streaming_output'] = self.plot_streaming_output_distribution(save_format)
+        # print("\n9. Streaming Output Distribution (NEW)...")
+        # plots['streaming_output'] = self.plot_streaming_output_distribution(save_format)
         
-        print("\n10. Dimension sweep threshold ...")
-        plots['dimension_sweep'] =self.plot_dimension_sweep_figure1a(save_format)
+        # print("\n10. Dimension sweep threshold ...")
+        # plots['dimension_sweep'] =self.plot_dimension_sweep_figure1a(save_format)
+        
+        print("\n11. Separate error evolutions...")
+        plots['error_evolutions'] = self.plot_both_error_evolutions(save_format)
         
         # Summary
         successful_plots = [name for name, path in plots.items() if path is not None]
