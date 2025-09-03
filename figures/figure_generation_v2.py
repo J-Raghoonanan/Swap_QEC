@@ -984,8 +984,8 @@ class StreamingQECPlotter:
                     color='gray', linewidth=2, alpha=0.7, label='No Correction')
     
         ax.set_xscale('linear')
-        ax.set_xlabel('Physical Error Rate', fontsize=25)
-        ax.set_ylabel('Final Logical Error Rate', fontsize=25)
+        ax.set_xlabel(r'Physical Error Rate, $\delta$', fontsize=25)
+        ax.set_ylabel(r'Final Logical Error Rate, $\varepsilon_L$', fontsize=25)
     
         # Update title to reflect filtering
         title_suffix = ""
