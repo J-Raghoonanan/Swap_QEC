@@ -748,48 +748,48 @@ class StreamingQECDataGenerator:
         )
         results['evolution_data'] = evolution_data
         
-        # 3. Generate threshold data (ultrahigh thresholds)
-        print("\n3. Generating threshold data (error correction thresholds)...")
-        threshold_data = self.generate_threshold_data(
-            noise_types=noise_types,
-            dimensions=dimensions,
-            N_values=N_values
-        )
-        results['threshold_data'] = threshold_data
+        # # 3. Generate threshold data (ultrahigh thresholds)
+        # print("\n3. Generating threshold data (error correction thresholds)...")
+        # threshold_data = self.generate_threshold_data(
+        #     noise_types=noise_types,
+        #     dimensions=dimensions,
+        #     N_values=N_values
+        # )
+        # results['threshold_data'] = threshold_data
         
-        # 4. Generate resource data (O(log N) scaling)
-        print("\n4. Generating resource data (memory scaling demonstration)...")
-        resource_data = self.generate_resource_data(
-            noise_types=noise_types,
-            dimensions=dimensions,
-            N_values=N_resource
-        )
-        results['resource_data'] = resource_data
+        # # 4. Generate resource data (O(log N) scaling)
+        # print("\n4. Generating resource data (memory scaling demonstration)...")
+        # resource_data = self.generate_resource_data(
+        #     noise_types=noise_types,
+        #     dimensions=dimensions,
+        #     N_values=N_resource
+        # )
+        # results['resource_data'] = resource_data
         
-        # 5. Generate noise comparison data (preferential correction)
-        comparison_data = None
-        if include_comparisons:
-            print("\n5. Generating noise comparison data (preferential correction)...")
-            comparison_data = self.generate_noise_comparison_data(
-                dimension=2,  # Focus on qubits for Pauli comparison
-                N_values=N_values,
-                error_rates=error_rates[:5] if quick_run else error_rates
-            )
-            results['comparison_data'] = comparison_data
+        # # 5. Generate noise comparison data (preferential correction)
+        # comparison_data = None
+        # if include_comparisons:
+        #     print("\n5. Generating noise comparison data (preferential correction)...")
+        #     comparison_data = self.generate_noise_comparison_data(
+        #         dimension=2,  # Focus on qubits for Pauli comparison
+        #         N_values=N_values,
+        #         error_rates=error_rates[:5] if quick_run else error_rates
+        #     )
+        #     results['comparison_data'] = comparison_data
         
-        # 6. Demonstrate Section II.E insights
-        print("\n6. Demonstrating Section II.E theoretical insights...")
-        section_iie_insights = self.demonstrate_section_iie_insights()
-        results['section_iie_insights'] = section_iie_insights
+        # # 6. Demonstrate Section II.E insights
+        # print("\n6. Demonstrating Section II.E theoretical insights...")
+        # section_iie_insights = self.demonstrate_section_iie_insights()
+        # results['section_iie_insights'] = section_iie_insights
         
         # 7. Save all data
         if save_immediately:
             print("\n7. Saving comprehensive data...")
             saved_files = self.save_data(
                 evolution_data=evolution_data,
-                threshold_data=threshold_data,
-                resource_data=resource_data,
-                comparison_data=comparison_data,
+                # threshold_data=threshold_data,
+                # resource_data=resource_data,
+                # comparison_data=comparison_data,
                 validation_results=validation_results if include_validation else None
             )
             results['saved_files'] = saved_files
@@ -803,11 +803,11 @@ class StreamingQECDataGenerator:
         print("\n" + "="*80)
         print("DATA GENERATION COMPLETE")
         print("="*80)
-        print(f"Evolution records: {len(evolution_data)}")
-        print(f"Threshold records: {len(threshold_data)}")
-        print(f"Resource records: {len(resource_data)}")
+        # print(f"Evolution records: {len(evolution_data)}")
+        # print(f"Threshold records: {len(threshold_data)}")
+        # print(f"Resource records: {len(resource_data)}")
         if comparison_data:
-            print(f"Comparison records: {len(comparison_data)}")
+            # print(f"Comparison records: {len(comparison_data)}")
         
         # Print key findings preview
         print("\nKEY FINDINGS CAPTURED:")
