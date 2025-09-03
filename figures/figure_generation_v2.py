@@ -925,7 +925,7 @@ class StreamingQECPlotter:
             print("Warning: No threshold data for noise comparison")
             return None
     
-        fig, ax = plt.subplots(figsize=(12, 8))
+        fig, ax = plt.subplots(figsize=(10, 8))
     
         # Get unique noise types and optionally filter out symmetric Pauli
         all_noise_types = list(set(d['noise_type'] for d in threshold_data))
