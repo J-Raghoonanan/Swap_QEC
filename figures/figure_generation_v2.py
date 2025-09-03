@@ -510,7 +510,7 @@ class StreamingQECPlotter:
         ax.set_ylabel(r'Logical Error Rate, $\varepsilon_L^{(n)}$', fontsize=25)
         ax.set_title('Error Evolution - Depolarizing Noise', fontsize=30)
         ax.tick_params(axis='both', which='major', labelsize=16)
-        ax.grid(True, alpha=0.3)
+        # ax.grid(True, alpha=0.3)
     
         if plotted_any:
             ax.legend(fontsize=14, loc='best')
@@ -622,7 +622,7 @@ class StreamingQECPlotter:
         #     title_suffix += " (Excluding Symmetric)"
         ax.set_title(f'Error Evolution - {title_suffix}', fontsize=30)
         ax.tick_params(axis='both', which='major', labelsize=16)
-        ax.grid(True, alpha=0.3)
+        # ax.grid(True, alpha=0.3)
     
         if plotted_any:
             ax.legend(fontsize=14, loc='best')
@@ -995,7 +995,7 @@ class StreamingQECPlotter:
         ax.set_title(f'Noise Model Comparison (N={target_N}){title_suffix}', fontsize=24)
         ax.legend(fontsize=14, loc='best')
         ax.tick_params(axis='both', which='major', labelsize=16)
-        ax.grid(True, alpha=0.3)
+        # ax.grid(True, alpha=0.3)
     
         plt.tight_layout()
     
@@ -1243,8 +1243,8 @@ class StreamingQECPlotter:
         # print("\n10. Dimension sweep threshold ...")
         # plots['dimension_sweep'] =self.plot_dimension_sweep_figure1a(save_format)
         
-        # print("\n11. Separate error evolutions...")
-        # plots['error_evolutions'] = self.plot_both_error_evolutions(save_format)
+        print("\n11. Separate error evolutions...")
+        plots['error_evolutions'] = self.plot_both_error_evolutions(save_format)
         
         # Summary
         successful_plots = [name for name, path in plots.items() if path is not None]
