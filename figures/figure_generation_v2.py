@@ -434,7 +434,7 @@ class StreamingQECPlotter:
             return None
 
         # Create single figure for depolarizing noise
-        fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+        fig, ax = plt.subplots(1, 1, figsize=(10, 8))
 
         # Filter for depolarizing noise types only
         available_noise_types = sorted(list(set(d['noise_type'] for d in evolution_data)))
@@ -536,7 +536,7 @@ class StreamingQECPlotter:
             return None
 
         # Create single figure for Pauli noise
-        fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+        fig, ax = plt.subplots(1, 1, figsize=(10, 8))
 
         # Filter for Pauli noise types
         available_noise_types = sorted(list(set(d['noise_type'] for d in evolution_data)))
@@ -1228,8 +1228,8 @@ class StreamingQECPlotter:
         # print("\n5. Batch vs Streaming Comparison (NEW)...")
         # plots['batch_vs_streaming'] = self.plot_batch_vs_streaming_comparison(save_format)
         
-        print("\n6. Noise Model Comparison...")
-        plots['noise_comparison'] = self.plot_noise_comparison(save_format)
+        # print("\n6. Noise Model Comparison...")
+        # plots['noise_comparison'] = self.plot_noise_comparison(save_format)
         
         # print("\n7. Resource Overhead...")
         # plots['resource_overhead'] = self.plot_resource_overhead(save_format)
@@ -1243,8 +1243,8 @@ class StreamingQECPlotter:
         # print("\n10. Dimension sweep threshold ...")
         # plots['dimension_sweep'] =self.plot_dimension_sweep_figure1a(save_format)
         
-        # print("\n11. Separate error evolutions...")
-        # plots['error_evolutions'] = self.plot_both_error_evolutions(save_format)
+        print("\n11. Separate error evolutions...")
+        plots['error_evolutions'] = self.plot_both_error_evolutions(save_format)
         
         # Summary
         successful_plots = [name for name, path in plots.items() if path is not None]
