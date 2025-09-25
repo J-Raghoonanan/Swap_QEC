@@ -53,7 +53,7 @@ PROTOCOL_COLORS = {
 class StreamingQECPlotter:
     """Generate individual publication-quality figures for streaming QEC paper with O(log N) memory scaling."""
     
-    def __init__(self, data_dir: str = "data/data_streaming", figures_dir: str = "figures"):
+    def __init__(self, data_dir: str = "data/data_streaming", figures_dir: str = "figures/results_v1"):
         self.data_dir = data_dir
         self.figures_dir = figures_dir
         os.makedirs(figures_dir, exist_ok=True)
@@ -108,7 +108,7 @@ class StreamingQECPlotter:
             print(f"Error loading {data_type} data: {e}")
             return []
     
-    def plot_grafe_figure4_analog(self, save_format: str = 'pdf') -> Optional[str]:
+    def plot_streaming_depolarizing_threshold(self, save_format: str = 'pdf') -> Optional[str]:
         """
         Create analog of Grafe's Figure 4: Logical error vs physical error rate 
         for different code sizes, showing threshold behavior.
@@ -195,14 +195,110 @@ class StreamingQECPlotter:
         
         plt.tight_layout()
         
-        filename = f"grafe_figure4_analog.{save_format}"
+        filename = f"streaming_depolarizing_threshold.{save_format}"
         filepath = os.path.join(self.figures_dir, filename)
         plt.savefig(filepath, dpi=300, bbox_inches='tight', format=save_format)
         plt.close()
-        
-        print(f"Saved Grafe Figure 4 analog: {filename} with {plotted_curves} curves")
+
+        print(f"Saved Streaming QEC Threshold plot: {filename} with {plotted_curves} curves")
         return filepath
     
+    
+    def plot_streaming_dephasing_threshold(self, save_format: str = 'pdf') -> Optional[str]:
+        """
+        Grafe Figure 4 analog using dephasing data instead of depolarizing.
+        Accepts either 'pure_dephasing' or 'dephasing' records in threshold_data.
+        """
+        threshold_data = self.threshold_data if self.threshold_data else []
+        if not threshold_data:
+            print("Warning: No threshold data available for Grafe Figure 4 analog (dephasing)")
+            return None
+
+        # Accept both naming variants; prefer 'pure_dephasing' if present
+        noise_aliases = ['pure_dephasing', 'dephasing']
+        available_types = {d.get('noise_type') for d in threshold_data}
+        chosen_type = next((t for t in noise_aliases if t in available_types), None)
+        if chosen_type is None:
+            print("Warning: No dephasing threshold data found (looked for 'pure_dephasing' or 'dephasing').")
+            return None
+
+        dephasing_data = [d for d in threshold_data if d.get('noise_type') == chosen_type]
+        if not dephasing_data:
+            print("Warning: No dephasing data to plot.")
+            return None
+
+        # Collect code sizes present
+        code_sizes = sorted({d.get('N') for d in dephasing_data})
+        if not code_sizes:
+            print("Warning: No code sizes in dephasing threshold data.")
+            return None
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+        colors = plt.cm.viridis(np.linspace(0, 1, len(code_sizes)))
+        plotted_curves = 0
+
+        for i, N in enumerate(code_sizes):
+            # Expect one record per (noise_type, N, dimension) set; if multiple, take the first
+            size_records = [d for d in dephasing_data if d.get('N') == N]
+            if not size_records:
+                continue
+
+            # If multiple dims present, prefer qubits (d=2) when available
+            size_records_sorted = sorted(size_records, key=lambda r: (r.get('dimension', 2) != 2, r.get('dimension', 2)))
+            rec = size_records_sorted[0]
+
+            phys = np.asarray(rec.get('physical_error_rates', []), dtype=float)
+            # Prefer streaming-style best errors if present
+            if 'best_final_errors' in rec and rec['best_final_errors'] is not None:
+                finals = np.asarray(rec['best_final_errors'], dtype=float)
+            else:
+                finals = np.asarray(rec.get('final_logical_errors', []), dtype=float)
+
+            if phys.size == 0 or finals.size == 0:
+                continue
+
+            valid = np.isfinite(phys) & np.isfinite(finals) & (finals > 0)
+            if not np.any(valid):
+                continue
+
+            ax.loglog(phys[valid], finals[valid], 'o-',
+                    color=colors[i], linewidth=3, markersize=8,
+                    label=f'N = {N}', alpha=0.8)
+            plotted_curves += 1
+
+        if plotted_curves == 0:
+            print("Warning: No valid dephasing curves to plot.")
+            ax.text(0.5, 0.5, 'No Valid Threshold Data', transform=ax.transAxes,
+                    ha='center', va='center', fontsize=16)
+            return None
+
+        # "No correction" reference
+        physical_range = np.logspace(-2, 0, 100)
+        ax.loglog(physical_range, physical_range, '--',
+                color='gray', linewidth=2, alpha=0.7, label='No Correction')
+
+        # Match the axis choices you used in the depolarizing version
+        ax.set_xscale('linear')
+        ax.set_xlabel(r'Physical Error Rate, $\delta$', fontsize=25)
+        ax.set_ylabel(r'Final Logical Error Rate, $\varepsilon_L$', fontsize=25)
+        title_label = 'Dephasing' if chosen_type == 'dephasing' else 'Pure Dephasing'
+        ax.set_title(f'Streaming QEC Threshold \n({title_label} Noise, d=2)', fontsize=30)
+
+        ax.legend(fontsize=14, loc='lower left')
+        ax.set_xlim(0.09, 1.0)
+        ax.set_ylim(1e-5, 1.0)
+        plt.tight_layout()
+
+        filename = f"grafe_figure4_analog_dephasing.{save_format}"
+        filepath = os.path.join(self.figures_dir, filename)
+        plt.savefig(filepath, dpi=300, bbox_inches='tight', format=save_format)
+        plt.close()
+
+        print(f"Saved Grafe Figure 4 analog (dephasing): {filename} with {plotted_curves} curves")
+        return filepath
+
+
+
     def plot_dimension_sweep_figure1a(self, save_format: str = 'pdf') -> Optional[str]:
         """
         Figure 1a (dimension sweep): Final logical error vs physical error rate
@@ -1214,7 +1310,7 @@ class StreamingQECPlotter:
         plots = {}
         
         # print("\n1. Grafe Figure 4 Analog (Threshold Behavior)...")
-        # plots['grafe_figure4'] = self.plot_grafe_figure4_analog(save_format)
+        # plots['streaming_depolarizing_threshold'] = self.plot_streaming_depolarizing_threshold(save_format)
         
         # print("\n2. Error Evolution...")
         # plots['error_evolution'] = self.plot_error_evolution(save_format)
@@ -1243,9 +1339,12 @@ class StreamingQECPlotter:
         # print("\n10. Dimension sweep threshold ...")
         # plots['dimension_sweep'] =self.plot_dimension_sweep_figure1a(save_format)
         
-        print("\n11. Separate error evolutions...")
-        plots['error_evolutions'] = self.plot_both_error_evolutions(save_format)
+        # print("\n11. Separate error evolutions...")
+        # plots['error_evolutions'] = self.plot_both_error_evolutions(save_format)
         
+        print("\n12. Grafe Figure 4 Analog for Dephasing...")
+        plots['streaming_dephasing_threshold'] = self.plot_streaming_dephasing_threshold(save_format)
+
         # Summary
         successful_plots = [name for name, path in plots.items() if path is not None]
         print(f"\n{len(successful_plots)} plots generated successfully:")
@@ -1269,7 +1368,7 @@ def main():
     
     # Parse command line arguments
     data_dir = "data/data_streaming"
-    figures_dir = "figures"
+    figures_dir = "figures/results_v1"
     save_format = "pdf"
     
     if '--data-dir' in sys.argv:
