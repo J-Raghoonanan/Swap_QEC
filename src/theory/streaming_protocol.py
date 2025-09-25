@@ -12,11 +12,11 @@ import numpy as np
 from dataclasses import dataclass
 from typing import List, Union, Tuple, Dict, Optional
 from datetime import datetime
-from src.quantum_states import QuantumState, PurityParameterState, BlochVectorState, generate_random_pure_state
-from src.noise_models import (NoiseModel, DepolarizingNoise, PauliNoise, PureDephasingNoise, 
+from src.theory.quantum_states import QuantumState, PurityParameterState, BlochVectorState, generate_random_pure_state
+from src.theory.noise_models import (NoiseModel, DepolarizingNoise, PauliNoise, PureDephasingNoise, 
                              PureBitFlipNoise, SymmetricPauliNoise,
                              create_depolarizing_noise_factory, create_pauli_noise_factory)
-from src.swap_operations import SwapTestProcessor, SwapResult
+from src.theory.swap_operations import SwapTestProcessor, SwapResult
 
 
 @dataclass
