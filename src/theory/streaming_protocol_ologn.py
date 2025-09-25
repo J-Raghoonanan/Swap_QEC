@@ -6,9 +6,9 @@ Implements stack-based processing where states are processed online.
 import numpy as np
 from dataclasses import dataclass, field
 from typing import List, Optional, Union, Tuple, Iterator
-from src.quantum_states import QuantumState, PurityParameterState, BlochVectorState, generate_random_pure_state
-from src.noise_models import NoiseModel, DepolarizingNoise, PauliNoise
-from src.swap_operations import SwapTestProcessor, SwapResult
+from src.theory.quantum_states import QuantumState, PurityParameterState, BlochVectorState, generate_random_pure_state
+from src.theory.noise_models import NoiseModel, DepolarizingNoise, PauliNoise
+from src.theory.swap_operations import SwapTestProcessor, SwapResult
 
 
 @dataclass

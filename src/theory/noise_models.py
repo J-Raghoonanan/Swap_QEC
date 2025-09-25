@@ -5,7 +5,7 @@ Updated noise models implementing the corrected Pauli error formulas from Sectio
 import numpy as np
 from abc import ABC, abstractmethod
 from typing import Union
-from src.quantum_states import PurityParameterState, BlochVectorState, pure_state_to_bloch_vector
+from src.theory.quantum_states import PurityParameterState, BlochVectorState, pure_state_to_bloch_vector
 
 
 class NoiseModel(ABC):

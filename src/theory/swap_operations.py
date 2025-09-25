@@ -6,7 +6,7 @@ Updated swap test operations implementing exact Pauli formulas from Section II.E
 import numpy as np
 from dataclasses import dataclass
 from typing import Union, Tuple
-from src.quantum_states import QuantumState, PurityParameterState, BlochVectorState
+from src.theory.quantum_states import QuantumState, PurityParameterState, BlochVectorState
 
 
 @dataclass

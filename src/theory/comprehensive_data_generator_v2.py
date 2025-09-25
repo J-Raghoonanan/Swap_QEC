@@ -19,13 +19,13 @@ import warnings
 from tqdm import tqdm
 
 # Import the new streaming protocol
-from src.streaming_protocol_ologn import TrueStreamingProtocol, StreamingResult, create_streaming_protocol, run_streaming_comparison
+from src.theory.streaming_protocol_ologn import TrueStreamingProtocol, StreamingResult, create_streaming_protocol, run_streaming_comparison
 
 # Keep the old protocol for comparisons
-from src.streaming_protocol import StreamingPurificationProtocol
+from src.theory.streaming_protocol import StreamingPurificationProtocol
 
 # Import noise models (assuming same interface)
-from src.noise_models import (
+from src.theory.noise_models import (
     DepolarizingNoise, 
     PauliNoise, 
     PureDephasingNoise, 
@@ -516,7 +516,7 @@ class ComprehensiveStreamingDataGenerator:
         error_rate_ranges = {
             'depolarizing': np.linspace(0.1, 0.99, 12),
             'symmetric_pauli': np.linspace(0.05, 0.8, 10),
-            'pure_dephasing': np.linspace(0.05, 0.9, 10),
+            'pure_dephasing': np.linspace(0.1, 0.99, 12),
         }
         
         threshold_data = []
@@ -529,7 +529,7 @@ class ComprehensiveStreamingDataGenerator:
                 if noise_type != 'depolarizing' and dimension > 2:
                     continue
                 
-                error_rates = error_rate_ranges.get(noise_type, np.linspace(0.1, 0.8, 10))
+                error_rates = error_rate_ranges.get(noise_type, np.linspace(0.1, 0.99, 12))
                 
                 for N in N_values:
                     if self.verbose:
