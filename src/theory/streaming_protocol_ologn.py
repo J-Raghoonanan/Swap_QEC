@@ -30,6 +30,7 @@ class StreamingResult:
     total_swap_operations: int
     total_amplification_iterations: int
     error_evolution_trace: List[Tuple[int, float, int]]  # (time, error, level)
+    fidelity_evolution_trace: List[Tuple[int, float, int]] = field(default_factory=list)
 
 
 class TrueStreamingProtocol:
@@ -59,6 +60,7 @@ class TrueStreamingProtocol:
         self.output_states = []
         self.max_depth_used = 0
         self.error_trace = []
+        self.fidelity_trace: List[Tuple[int, float, int]] = []
     
     def process_state_stream(self, 
                            noise_model: NoiseModel,
@@ -158,6 +160,13 @@ class TrueStreamingProtocol:
             if state is not None:
                 error = state.state.get_logical_error()
                 self.error_trace.append((time, error, level))
+                
+                try:
+                    fid = float(state.state.get_fidelity_with_target())
+                    self.fidelity_trace.append((time, fid, level))
+                except AttributeError:
+                    # PurityParameterState (depolarizing) may not expose fidelity in the same way
+                    pass
     
     def _reset_protocol(self):
         """Reset protocol state for new run."""
@@ -168,6 +177,7 @@ class TrueStreamingProtocol:
         self.output_states = []
         self.max_depth_used = 0
         self.error_trace = []
+        self.fidelity_trace = []
     
     def _generate_result(self) -> StreamingResult:
         """Generate final result summary."""
@@ -178,7 +188,8 @@ class TrueStreamingProtocol:
             memory_efficiency=self.max_depth_used / max(1, np.log2(self.states_processed)),
             total_swap_operations=self.swap_operations,
             total_amplification_iterations=self.amplification_iterations,
-            error_evolution_trace=self.error_trace
+            error_evolution_trace=self.error_trace,
+            fidelity_evolution_trace=self.fidelity_trace
         )
     
     def get_memory_usage(self) -> int:
