@@ -187,9 +187,9 @@ class StreamingQECPlotter:
         ax.set_xscale('linear')
         ax.set_xlabel(r'Physical Error Rate, $\delta$', fontsize=25)
         ax.set_ylabel(r'Final Logical Error Rate, $\varepsilon_L$', fontsize=25)
-        ax.set_title('Streaming QEC Threshold \n(Depolarizing Noise, d=2)', fontsize=30)
+        ax.set_title('QEC Threshold \n(Depolarizing Noise, d=2)', fontsize=30)
         
-        ax.legend(fontsize=14, loc='upper left')
+        ax.legend(fontsize=14, loc='lower right')
         ax.set_xlim(0.09, 1.0)
         ax.set_ylim(1e-5, 1.0)
         
@@ -282,7 +282,7 @@ class StreamingQECPlotter:
         ax.set_xlabel(r'Physical Error Rate, $\delta$', fontsize=25)
         ax.set_ylabel(r'Final Logical Error Rate, $\varepsilon_L$', fontsize=25)
         title_label = 'Dephasing' if chosen_type == 'dephasing' else 'Pure Dephasing'
-        ax.set_title(f'Streaming QEC Threshold \n({title_label} Noise, d=2)', fontsize=30)
+        ax.set_title(f'QEC Threshold \n({title_label} Noise, d=2)', fontsize=30)
 
         ax.legend(fontsize=14, loc='lower left')
         ax.set_xlim(0.09, 1.0)
@@ -1342,8 +1342,8 @@ class StreamingQECPlotter:
         # print("\n11. Separate error evolutions...")
         # plots['error_evolutions'] = self.plot_both_error_evolutions(save_format)
         
-        print("\n12. Grafe Figure 4 Analog for Dephasing...")
-        plots['streaming_dephasing_threshold'] = self.plot_streaming_dephasing_threshold(save_format)
+        # print("\n12. Grafe Figure 4 Analog for Dephasing...")
+        # plots['streaming_dephasing_threshold'] = self.plot_streaming_dephasing_threshold(save_format)
 
         # Summary
         successful_plots = [name for name, path in plots.items() if path is not None]
