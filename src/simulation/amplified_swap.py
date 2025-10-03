@@ -121,18 +121,28 @@ def build_swap_test_unitary(M: int) -> QuantumCircuit:
 def ancilla_success_probability(rho_after_A: DensityMatrix, M: int) -> float:
     """Compute Pr[ancilla=0] from the (1+2M)-qubit density matrix after SWAP test.
     
+    This computes Tr(Π₊ ρ) where Π₊ = |0⟩⟨0|_anc ⊗ I_A ⊗ I_B.
+    
+    NOTE: This is NOT the same as tracing out A and B first! For controlled gates,
+    we must project first, then trace.
+    
     Assumes qubit ordering [anc, A..., B...].
     """
-    # Trace out all qubits except ancilla (qubit 0)
-    traced_qubits = list(range(1, 1 + 2 * M))
-    anc_dm = partial_trace(rho_after_A, qargs=traced_qubits)
+    # Build projector Π₊ = |0⟩⟨0| on ancilla, I on registers A and B
+    P0_anc = Operator(np.array([[1, 0], [0, 0]], dtype=complex))
+    I_A = Operator(np.eye(2**M, dtype=complex))
+    I_B = Operator(np.eye(2**M, dtype=complex))
     
-    # anc_dm is a 2×2 DensityMatrix; probability of |0⟩ is diagonal element [0,0]
-    p0 = float(np.real(anc_dm.data[0, 0]))
+    # Full projector: |0⟩⟨0|_anc ⊗ I_A ⊗ I_B
+    Pi = P0_anc.tensor(I_A).tensor(I_B)
+    
+    # Compute Tr(Π ρ)
+    projected = Pi @ rho_after_A @ Pi.adjoint()
+    p0 = float(np.real(np.trace(projected.data)))
     
     # Clip for numerical safety
     p0 = max(0.0, min(1.0, p0))
-    logger.debug(f"Ancilla success probability: {p0:.6f}")
+    logger.debug(f"Ancilla success probability (Tr(Π₊ ρ)): {p0:.6f}")
     return p0
 
 
