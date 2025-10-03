@@ -101,8 +101,7 @@ class NoiseSpec:
     delta: float = 0.1
     # exact-k mode controls
     exact_k: int = 0  # number of single-qubit errors to inject deterministically
-    identical_pattern: bool = False  # if True, use same error pattern on both copies
-
+    
     # Optional explicit p override; if None we derive it from δ
     p_override: Optional[float] = None
 
@@ -122,12 +121,22 @@ class AASpec:
 
 
 @dataclass
+class TwirlingSpec:
+    """Clifford twirling configuration for dephasing noise mitigation."""
+    
+    enabled: bool = True  # Auto-enable for dephasing noise types
+    mode: Literal["random", "cyclic"] = "random"  # random or deterministic cycle
+    seed: Optional[int] = None  # for reproducibility in random mode
+
+
+@dataclass
 class RunSpec:
     """Top-level run configuration for a streaming purification experiment."""
 
     target: TargetSpec
     noise: NoiseSpec
     aa: AASpec
+    twirling: TwirlingSpec = field(default_factory=lambda: TwirlingSpec())
     # Total number of noisy copies to stream
     N: int = 16
     # Backend configuration
@@ -141,6 +150,8 @@ class RunSpec:
     out_dir: Path = field(default_factory=lambda: Path("data/simulations"))
     # Optional run identifier; if empty we will synthesize a descriptive one
     run_id: Optional[str] = None
+    # Verbosity for logging
+    verbose: bool = False
         
     def validate(self) -> None:
         if self.target.M <= 0:
@@ -167,7 +178,16 @@ class RunSpec:
         ]
         if self.noise.mode == NoiseMode.exact_k:
             parts.append(f"k{self.noise.exact_k}")
+        if self._should_apply_twirling():
+            parts.append("twirl")
         return "_".join(parts)
+    
+    def _should_apply_twirling(self) -> bool:
+        """Determine if Clifford twirling should be applied for this run."""
+        if not self.twirling.enabled:
+            return False
+        # Auto-enable for dephasing noise types
+        return self.noise.noise_type in [NoiseType.dephase_z, NoiseType.dephase_x]
 
 
 __all__ = [
@@ -177,6 +197,7 @@ __all__ = [
     "TargetSpec",
     "NoiseSpec",
     "AASpec",
+    "TwirlingSpec",
     "RunSpec",
     "delta_to_kraus_p",
     "kraus_p_to_delta",
