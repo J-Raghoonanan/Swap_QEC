@@ -91,27 +91,58 @@ def build_clifford_circuit(M: int, mode: Literal["random", "cyclic"], seed: Opti
 # Building the SWAP-test unitary
 # -----------------------------
 
-def build_swap_test_unitary(M: int) -> QuantumCircuit:
-    """Return a circuit on (1 + 2M) qubits implementing the SWAP test:
-       - H on ancilla
-       - M controlled-SWAPs between regA[i] and regB[i] with control ancilla
-       - H on ancilla
-       
-    Qubit order: [anc] + [A0..A{M-1}] + [B0..B{M-1}].
-    """
-    n = 1 + 2 * M
-    qc = QuantumCircuit(n, name="swap_test")
-    anc = 0
-    A = list(range(1, 1 + M))
-    B = list(range(1 + M, 1 + 2 * M))
-
-    qc.h(anc)
-    for i in range(M):
-        qc.cswap(anc, A[i], B[i])
-    qc.h(anc)
+def build_swap_test_unitary(M: int) -> np.ndarray:
+    """Build SWAP test unitary as explicit matrix for M-qubit registers.
     
-    logger.debug(f"Built SWAP test unitary for M={M} (total {n} qubits)")
-    return qc
+    Returns (1+2M)×(1+2M) unitary matrix U_swap = H_anc × CSWAP × H_anc.
+    
+    Qubit ordering: |anc⟩|A₀...A_{M-1}⟩|B₀...B_{M-1}⟩
+    
+    CRITICAL: We build this as an explicit matrix to avoid Qiskit's 
+    qubit ordering conventions which conflict with our state construction.
+    """
+    total_qubits = 1 + 2*M
+    dim = 2**total_qubits
+    
+    # Step 1: Build H on ancilla, I on all other qubits
+    # H_anc = H ⊗ I^{2M}
+    H = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
+    I_registers = np.eye(2**(2*M), dtype=complex)
+    H_anc = np.kron(H, I_registers)
+    
+    # Step 2: Build controlled-SWAP gate
+    # Control = ancilla (qubit 0), targets = all M pairs (A_i, B_i)
+    # When ancilla=0: do nothing
+    # When ancilla=1: swap each A_i ↔ B_i
+    
+    CSWAP = np.eye(dim, dtype=complex)
+    
+    # Iterate over all basis states |anc, A₀...A_{M-1}, B₀...B_{M-1}⟩
+    for idx in range(dim):
+        # Extract bits: anc is MSB, then A bits, then B bits
+        anc_bit = (idx >> (2*M)) & 1
+        
+        if anc_bit == 1:
+            # Extract A and B indices
+            A_idx = (idx >> M) & ((1 << M) - 1)
+            B_idx = idx & ((1 << M) - 1)
+            
+            # Compute swapped index: |1, B, A⟩
+            swapped_idx = (1 << (2*M)) | (B_idx << M) | A_idx
+            
+            # Swap rows if needed (each row swaps with exactly one other)
+            if idx < swapped_idx:
+                # Swap rows idx ↔ swapped_idx
+                CSWAP[idx, idx] = 0
+                CSWAP[swapped_idx, swapped_idx] = 0
+                CSWAP[idx, swapped_idx] = 1
+                CSWAP[swapped_idx, idx] = 1
+    
+    # Step 3: Compose U_swap = H × CSWAP × H
+    U_swap = H_anc @ CSWAP @ H_anc
+    
+    logger.debug(f"Built explicit SWAP test unitary: {dim}×{dim} matrix for M={M}")
+    return U_swap
 
 
 # -----------------------------
@@ -284,12 +315,45 @@ def purify_two_from_density(
         twirling_applied = True
 
     # Step 2: Joint state: |0⟩⟨0|_anc ⊗ rho_A ⊗ rho_B
-    rho_joint = DensityMatrix.from_label('0').tensor(rho_A).tensor(rho_B)
+    # CRITICAL: Build with explicit ordering to avoid Qiskit's little-endian confusion
+    # We want basis states ordered as |anc, A₀, A₁, ..., B₀, B₁, ...⟩
+    
+    import itertools
+    
+    # Build the state explicitly in the correct order
+    total_qubits = 1 + 2*M
+    dim_total = 2**total_qubits
+    
+    # Create basis states in the order (anc, A_bits, B_bits)
+    rho_joint_data = np.zeros((dim_total, dim_total), dtype=complex)
+    
+    dim_register = 2**M
+    for i in range(dim_total):
+        for j in range(dim_total):
+            # Decompose indices into (anc_bit, A_index, B_index)
+            # Bit order: anc is most significant, then A bits, then B bits
+            anc_i = (i >> (2*M)) & 1
+            anc_j = (j >> (2*M)) & 1
+            
+            A_i = (i >> M) & ((1 << M) - 1)
+            A_j = (j >> M) & ((1 << M) - 1)
+            
+            B_i = i & ((1 << M) - 1)
+            B_j = j & ((1 << M) - 1)
+            
+            # |0⟩⟨0| ⊗ rho_A ⊗ rho_B
+            if anc_i == 0 and anc_j == 0:
+                rho_joint_data[i, j] = rho_A.data[A_i, A_j] * rho_B.data[B_i, B_j]
+    
+    rho_joint = DensityMatrix(rho_joint_data)
     logger.debug(f"Joint state dimension: {rho_joint.dim} (should be {2**(1+2*M)})")
 
-    # Step 3: SWAP-test unitary
-    A = build_swap_test_unitary(M)
-    rho_after_A = rho_joint.evolve(A)
+    # Step 3: SWAP-test unitary (explicit matrix, not Qiskit circuit)
+    U_swap = build_swap_test_unitary(M)
+    
+    # Apply unitary: ρ' = U ρ U†
+    rho_after_swap_data = U_swap @ rho_joint.data @ U_swap.conj().T
+    rho_after_A = DensityMatrix(rho_after_swap_data)
 
     # Step 4: Pre-AA success probability and emulated Grover iteration count
     P0 = ancilla_success_probability(rho_after_A, M)
