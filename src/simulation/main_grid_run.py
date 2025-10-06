@@ -31,8 +31,13 @@ You can run this file directly:
 
     python -m src.simulation.main_grid_run \
         --out data/simulations \
+        --max-m 4 \
+        --noise all
+        
+    python -m src.simulation.main_grid_run \
+        --out data/simulations \
         --max-m 5 \
-        --verbose
+        --noise z
 
 It will append to `steps_circuit.csv` and `finals_circuit.csv`.
 """

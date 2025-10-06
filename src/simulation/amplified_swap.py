@@ -1,90 +1,32 @@
 """
-SWAP test + (emulated) amplitude amplification for purification with Clifford twirling.
+SWAP test + (emulated) amplitude amplification for purification.
 
 This module constructs and applies the SWAP-test unitary to two identical
-M-qubit input states and (optionally) performs:
-1. Clifford twirling for dephasing noise mitigation (Section II.D.2)
-2. Amplitude amplification (emulated via logging Grover iteration count)
+M-qubit input states and performs amplitude amplification (emulated via 
+logging Grover iteration count).
+
+CRITICAL FIX: Clifford twirling has been REMOVED from this module. It is now
+correctly implemented as CHANNEL twirling in noise_engine.py, where it wraps
+the noise application rather than rotating already-noisy states.
 
 The **conditional output state** given ancilla=0 is independent of whether
 amplitude amplification was used; therefore we project onto ancilla |0⟩ and
 extract the purified single-register state.
 
-CLIFFORD TWIRLING PROTOCOL:
-  1. Sample random single-qubit Clifford C (applied identically to both registers)
-  2. Purify under symmetrized noise: Execute SWAP test on C†ρ₁C ⊗ C†ρ₂C
-  3. Undo the frame: Apply C to output register
-
-We use Qiskit's DensityMatrix evolutions with circuits (no hand multiplications),
-then perform projection and partial trace with quantum_info utilities.
+We use Qiskit's DensityMatrix evolutions with explicit matrix operations
+(no Qiskit circuits for the SWAP unitary) to avoid qubit ordering issues.
 """
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
-from typing import Dict, Literal, Optional, Tuple
+from typing import Dict, Tuple
 
 import numpy as np
-from qiskit import QuantumCircuit
 from qiskit.quantum_info import DensityMatrix, partial_trace, Operator
 
-from src.simulation.configs import AASpec, TwirlingSpec
+from src.simulation.configs import AASpec
 
 logger = logging.getLogger(__name__)
-
-# -----------------------------
-# Clifford twirling
-# -----------------------------
-
-def _sample_single_qubit_clifford(mode: Literal["random", "cyclic"], index: int = 0, seed: Optional[int] = None) -> str:
-    """Sample a single-qubit Clifford from {I, H, SH, HS, S†H, HS†}.
-    
-    mode='random': uniformly random from the set
-    mode='cyclic': deterministically cycle through orthogonal Pauli axes
-    
-    Returns a string identifier for the Clifford.
-    """
-    options = ['I', 'H', 'SH', 'HS', 'SdH', 'HSd']
-    
-    if mode == "random":
-        rng = np.random.default_rng(seed)
-        return str(rng.choice(options))
-    else:  # cyclic
-        return options[index % len(options)]
-
-
-def build_clifford_circuit(M: int, mode: Literal["random", "cyclic"], seed: Optional[int] = None) -> QuantumCircuit:
-    """Build a circuit applying single-qubit Cliffords to M qubits.
-    
-    This circuit is applied identically to both registers entering the SWAP test,
-    effectively conjugating the noise channel to make it isotropic.
-    """
-    qc = QuantumCircuit(M, name="clifford_twirl")
-    
-    for q in range(M):
-        # Different seed per qubit for randomness, or cyclic based on qubit index
-        qubit_seed = (seed + q) if seed is not None else None
-        cliff = _sample_single_qubit_clifford(mode, index=q, seed=qubit_seed)
-        
-        if cliff == 'I':
-            pass  # identity
-        elif cliff == 'H':
-            qc.h(q)
-        elif cliff == 'SH':
-            qc.s(q)
-            qc.h(q)
-        elif cliff == 'HS':
-            qc.h(q)
-            qc.s(q)
-        elif cliff == 'SdH':
-            qc.sdg(q)
-            qc.h(q)
-        elif cliff == 'HSd':
-            qc.h(q)
-            qc.sdg(q)
-    
-    logger.debug(f"Built Clifford circuit (mode={mode}) for M={M}")
-    return qc
 
 
 # -----------------------------
@@ -98,8 +40,8 @@ def build_swap_test_unitary(M: int) -> np.ndarray:
     
     Qubit ordering: |anc⟩|A₀...A_{M-1}⟩|B₀...B_{M-1}⟩
     
-    CRITICAL: We build this as an explicit matrix to avoid Qiskit's 
-    qubit ordering conventions which conflict with our state construction.
+    We build this as an explicit matrix to avoid Qiskit's qubit ordering 
+    conventions which can be inconsistent across versions.
     """
     total_qubits = 1 + 2*M
     dim = 2**total_qubits
@@ -240,9 +182,8 @@ def _project_ancilla_zero(rho: DensityMatrix, M: int) -> DensityMatrix:
 def extract_purified_register(rho_after_proj: DensityMatrix, M: int) -> DensityMatrix:
     """Partial trace out ancilla and regB to get ρ_out on regA.
     
-    CRITICAL: We must trace out ONLY register B, keeping ancilla + A, then
-    trace out the ancilla. The ancilla is in |0⟩⟨0| after projection, so 
-    tracing it out is trivial.
+    CRITICAL: We trace out register B, then trace out the ancilla. 
+    The ancilla is in |0⟩⟨0| after projection, so tracing it out is trivial.
     
     System is: [anc=0] [A:1..M] [B:M+1..2M]
     
@@ -268,32 +209,28 @@ def purify_two_from_density(
     rho_A: DensityMatrix,
     rho_B: DensityMatrix,
     aa: AASpec,
-    twirling: Optional[TwirlingSpec] = None,
-    twirling_seed: Optional[int] = None,
 ) -> Tuple[DensityMatrix, Dict]:
     """
-    Purify two M-qubit inputs via the SWAP test with optional Clifford twirling.
+    Purify two M-qubit inputs via the SWAP test.
 
     Inputs
     ------
     rho_A, rho_B : DensityMatrix
         Single-register density matrices on the same number of qubits (M).
         CRITICAL: For the theory to hold, these must be IDENTICAL copies.
+        Clifford twirling (if needed) should already be applied during noisy
+        copy generation in noise_engine.py.
     aa : AASpec
         Amplitude amplification config. We *emulate* AA by computing and logging
         the required Grover iteration count; we do not apply Q^k explicitly.
-    twirling : Optional[TwirlingSpec]
-        If provided and enabled, apply Clifford twirling to symmetrize dephasing noise.
-    twirling_seed : Optional[int]
-        Seed for random Clifford sampling (reproducibility).
 
     Returns
     -------
     rho_out : DensityMatrix
-        The purified single-register state on register A (middle M qubits),
+        The purified single-register state on register A,
         obtained by projecting ancilla to |0⟩ and tracing out ancilla + register B.
     metrics : dict
-        {"P_success": float, "grover_iters": int, "twirling_applied": bool}
+        {"P_success": float, "grover_iters": int}
     """
     if rho_A.dim != rho_B.dim:
         raise ValueError("rho_A and rho_B must have the same dimension")
@@ -301,33 +238,16 @@ def purify_two_from_density(
 
     logger.debug(f"Purifying two M={M} copies (dim={rho_A.dim})")
 
-    # Step 1: Optional Clifford twirling
-    twirling_applied = False
-    C_circuit = None
-    
-    if twirling is not None and twirling.enabled:
-        logger.info("Applying Clifford twirling for dephasing mitigation")
-        C_circuit = build_clifford_circuit(M, mode=twirling.mode, seed=twirling_seed)
-        
-        # Apply C to both copies
-        rho_A = rho_A.evolve(C_circuit)
-        rho_B = rho_B.evolve(C_circuit)
-        twirling_applied = True
-
-    # Step 2: Joint state: |0⟩⟨0|_anc ⊗ rho_A ⊗ rho_B
-    # CRITICAL: Build with explicit ordering to avoid Qiskit's little-endian confusion
+    # Step 1: Joint state: |0⟩⟨0|_anc ⊗ rho_A ⊗ rho_B
+    # Build with explicit ordering to avoid Qiskit's little-endian confusion
     # We want basis states ordered as |anc, A₀, A₁, ..., B₀, B₁, ...⟩
     
-    import itertools
-    
-    # Build the state explicitly in the correct order
     total_qubits = 1 + 2*M
     dim_total = 2**total_qubits
     
     # Create basis states in the order (anc, A_bits, B_bits)
     rho_joint_data = np.zeros((dim_total, dim_total), dtype=complex)
     
-    dim_register = 2**M
     for i in range(dim_total):
         for j in range(dim_total):
             # Decompose indices into (anc_bit, A_index, B_index)
@@ -348,39 +268,32 @@ def purify_two_from_density(
     rho_joint = DensityMatrix(rho_joint_data)
     logger.debug(f"Joint state dimension: {rho_joint.dim} (should be {2**(1+2*M)})")
 
-    # Step 3: SWAP-test unitary (explicit matrix, not Qiskit circuit)
+    # Step 2: SWAP-test unitary (explicit matrix)
     U_swap = build_swap_test_unitary(M)
     
     # Apply unitary: ρ' = U ρ U†
     rho_after_swap_data = U_swap @ rho_joint.data @ U_swap.conj().T
     rho_after_A = DensityMatrix(rho_after_swap_data)
 
-    # Step 4: Pre-AA success probability and emulated Grover iteration count
+    # Step 3: Pre-AA success probability and emulated Grover iteration count
     P0 = ancilla_success_probability(rho_after_A, M)
     k = choose_grover_iters(P0, aa.target_success, aa.max_iters)
 
-    # Step 5: Post-select ancilla=|0⟩, then trace out ancilla + register B → register A
+    # Step 4: Post-select ancilla=|0⟩, then trace out ancilla + register B → register A
     rho_proj = _project_ancilla_zero(rho_after_A, M)
     rho_out = extract_purified_register(rho_proj, M)
-
-    # Step 6: Undo Clifford frame if twirling was applied
-    if twirling_applied and C_circuit is not None:
-        logger.debug("Undoing Clifford frame")
-        rho_out = rho_out.evolve(C_circuit.inverse())
 
     metrics = {
         "P_success": P0,
         "grover_iters": k,
-        "twirling_applied": twirling_applied,
     }
     
-    logger.info(f"Purification complete: P_success={P0:.4f}, k={k}, twirl={twirling_applied}")
+    logger.info(f"Purification complete: P_success={P0:.4f}, k={k}")
     return rho_out, metrics
 
 
 __all__ = [
     "build_swap_test_unitary",
-    "build_clifford_circuit",
     "purify_two_from_density",
     "ancilla_success_probability",
 ]

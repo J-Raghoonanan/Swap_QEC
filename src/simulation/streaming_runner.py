@@ -146,6 +146,13 @@ def run_streaming(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFrame]:
     logger.info(f"Starting streaming run: {spec.synthesize_run_id()}")
     logger.info(f"  M={spec.target.M}, N={spec.N}, noise={spec.noise.noise_type.value}, "
                 f"mode={spec.noise.mode.value}, δ={spec.noise.delta}")
+    
+    # Log twirling status
+    twirling_active = spec._should_apply_twirling()  # ← DEFINE IT HERE
+    if twirling_active:
+        logger.info(f"  Clifford twirling ENABLED (mode={spec.twirling.mode})")
+    else:
+        logger.info("  Clifford twirling disabled")
 
     # Backend
     backend = _make_backend(spec.backend_method)
@@ -159,7 +166,16 @@ def run_streaming(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFrame]:
     iid_cached_dm: Optional[DensityMatrix] = None
     if spec.noise.mode == NoiseMode.iid_p:
         logger.info("Building cached iid_p noisy copy (will reuse for all inputs)")
-        qc_noisy, _ = build_noisy_copy(prep, spec.noise)
+        # Pass twirling config to build_noisy_copy
+        twirl_spec = spec.twirling if twirling_active else None
+        twirl_seed = spec.target.seed if twirl_spec else None
+        
+        qc_noisy, _ = build_noisy_copy(
+            prep, 
+            spec.noise, 
+            twirling=twirl_spec,
+            twirl_seed=twirl_seed,
+        )
         iid_cached_dm = _density_from_circuit(qc_noisy, backend)
 
     # Initial (noisy) single-register density for baseline metrics
@@ -212,7 +228,7 @@ def run_streaming(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFrame]:
             "p_channel": spec.noise.kraus_p(),
             "P_success": meta.get("P_success"),
             "grover_iters": meta.get("grover_iters"),
-            "twirling_applied": meta.get("twirling_applied", False),
+            "twirling_applied": twirling_active,
             "fidelity": fid,
             "eps_L": eps,
             "purity": pur,
@@ -225,7 +241,7 @@ def run_streaming(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFrame]:
             logger.debug(f"  Depth {depth}: |r⃗|={r_mag:.6f}, F={fid:.6f}, ε_L={eps:.6f}")
         
         logger.info(f"Merge {merge_counter} (depth {depth}): F={fid:.6f}, ε_L={eps:.6f}, "
-                   f"P_succ={meta.get('P_success', 0):.4f}, twirl={meta.get('twirling_applied', False)}")
+                   f"P_succ={meta.get('P_success', 0):.4f}, twirl={twirling_active}")
         
         steps_rows.append(row)
 
@@ -300,18 +316,11 @@ def run_streaming(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFrame]:
                     
                     logger.info(f"  Rebuilt identical pair for level 0 merge (pattern: {len(shared_pattern)} errors)")
                 
-                # Determine if we should apply twirling
-                use_twirling = spec._should_apply_twirling()
-                twirl_spec = spec.twirling if use_twirling else None
-                twirl_seed = (spec.target.seed or 0) + merge_counter if use_twirling else None
-                
                 # Purify two identical copies
                 rho_out, meta = purify_two_from_density(
                     left, 
                     carry_dm, 
-                    spec.aa,
-                    twirling=twirl_spec,
-                    twirling_seed=twirl_seed,
+                    spec.aa
                 )
                 
                 _log_step(

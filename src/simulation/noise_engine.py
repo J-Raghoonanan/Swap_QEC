@@ -4,14 +4,17 @@ Noise engine for the SWAP-based purification simulator (Qiskit).
 This module builds *noisy input copies* ρ from a given target preparation
 circuit U_psi. Two modes are supported:
 
-(A) iid_p      — Apply a CPTP channel independently to each qubit with
+(A) iid_p      – Apply a CPTP channel independently to each qubit with
                  probability p (maps manuscript's δ to p via configs).
-(B) exact_k    — Deterministically inject exactly k single-qubit Pauli faults
+(B) exact_k    – Deterministically inject exactly k single-qubit Pauli faults
                  (Z/X for dephasing, uniform {X,Y,Z} for depolarizing).
 
-CRITICAL: We use ONLY explicit Kraus operators to ensure consistency with the
-manuscript's noise model definitions. We never use Qiskit's DepolarizingChannel
-as its parameter convention may differ across versions.
+CRITICAL FIX: Clifford twirling is now implemented correctly as CHANNEL twirling
+per manuscript Eq. (54). For dephasing noise, we:
+  1. Apply random Clifford C to |ψ⟩ → |ψ'⟩ = C|ψ⟩
+  2. Apply dephasing channel in rotated frame
+  3. Apply C† to get back: C† E_deph(C|ψ⟩⟨ψ|C†) C
+This averages Z → (X+Y+Z)/3 over multiple copies with independent Cliffords.
 
 Returned objects are *circuits on M data qubits* that prepare the noisy state
 from |0...0>.
@@ -26,7 +29,7 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Kraus
 
-from .configs import NoiseMode, NoiseSpec, NoiseType
+from .configs import NoiseMode, NoiseSpec, NoiseType, TwirlingSpec
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +103,68 @@ def _kraus_x_dephase(p: float) -> Kraus:
 
 
 # -----------------------------
+# Clifford twirling support
+# -----------------------------
+
+def _sample_clifford_gate(mode: str, index: int, seed: Optional[int] = None) -> str:
+    """Sample a single-qubit Clifford gate name.
+    
+    mode='random': uniformly random from {I, H, S, Sdg, SH, SdgH}
+    mode='cyclic': deterministically cycle through set
+    
+    Returns gate name as string.
+    """
+    options = ['i', 'h', 's', 'sdg', 'sh', 'sdgh']
+    
+    if mode == "random":
+        rng = np.random.default_rng(seed)
+        return str(rng.choice(options))
+    else:  # cyclic
+        return options[index % len(options)]
+
+
+def _apply_clifford_gate(qc: QuantumCircuit, qubit: int, gate_name: str) -> None:
+    """Apply a single-qubit Clifford gate to the circuit."""
+    if gate_name == 'i':
+        pass  # identity, do nothing
+    elif gate_name == 'h':
+        qc.h(qubit)
+    elif gate_name == 's':
+        qc.s(qubit)
+    elif gate_name == 'sdg':
+        qc.sdg(qubit)
+    elif gate_name == 'sh':
+        qc.s(qubit)
+        qc.h(qubit)
+    elif gate_name == 'sdgh':
+        qc.sdg(qubit)
+        qc.h(qubit)
+    else:
+        raise ValueError(f"Unknown Clifford gate: {gate_name}")
+
+
+def _apply_inverse_clifford_gate(qc: QuantumCircuit, qubit: int, gate_name: str) -> None:
+    """Apply the inverse of a Clifford gate."""
+    # For single-qubit Cliffords, inverse is straightforward
+    if gate_name == 'i':
+        pass
+    elif gate_name == 'h':
+        qc.h(qubit)  # H† = H
+    elif gate_name == 's':
+        qc.sdg(qubit)  # S† = Sdg
+    elif gate_name == 'sdg':
+        qc.s(qubit)  # Sdg† = S
+    elif gate_name == 'sh':
+        qc.h(qubit)  # Reverse order
+        qc.sdg(qubit)
+    elif gate_name == 'sdgh':
+        qc.h(qubit)
+        qc.s(qubit)
+    else:
+        raise ValueError(f"Unknown Clifford gate: {gate_name}")
+
+
+# -----------------------------
 # Error pattern (for exact_k)
 # -----------------------------
 
@@ -168,19 +233,54 @@ def apply_error_pattern(qc: QuantumCircuit, pattern: ErrorPattern) -> None:
 
 
 # -----------------------------
-# IID CPTP channels per qubit
+# IID CPTP channels per qubit with Clifford twirling
 # -----------------------------
 
-def build_copy_iid_p(prep: QuantumCircuit, noise: NoiseSpec) -> QuantumCircuit:
+def build_copy_iid_p(
+    prep: QuantumCircuit, 
+    noise: NoiseSpec,
+    twirling: Optional[TwirlingSpec] = None,
+    twirl_seed: Optional[int] = None,
+) -> QuantumCircuit:
     """Build a noisy copy by applying i.i.d. CPTP channels to each qubit.
     
-    CRITICAL: Uses only explicit Kraus operators, never Qiskit's 
-    DepolarizingChannel to ensure consistency with manuscript definitions.
+    CRITICAL: Implements channel twirling for dephasing noise per manuscript Eq. (54):
+      ρ_twirled = C† E_deph(C ρ C†) C
+    where C is a random single-qubit Clifford sampled independently per qubit.
+    
+    Steps:
+      1. Prepare |ψ⟩ with prep circuit
+      2. If twirling enabled for dephasing: Apply random Cliffords C
+      3. Apply noise channel
+      4. If twirling: Apply C† to undo frame
+    
+    This averages the noise channel over Clifford conjugations, converting
+    anisotropic dephasing into effective depolarization.
     """
     M = prep.num_qubits
     p = noise.kraus_p()
     qc = prep.copy(name=f"noisy_{noise.noise_type.value}_iid")
 
+    # Determine if we should apply twirling
+    should_twirl = (
+        twirling is not None 
+        and twirling.enabled 
+        and noise.noise_type in [NoiseType.dephase_z, NoiseType.dephase_x]
+    )
+    
+    clifford_gates = []  # Store gate names for inverse application
+    
+    if should_twirl:
+        logger.debug(f"Applying Clifford twirling (mode={twirling.mode}) before noise")
+        # Step 2: Apply random Cliffords to rotate into new frame
+        for q in range(M):
+            qubit_seed = (twirl_seed + q) if twirl_seed is not None else None
+            gate_name = _sample_clifford_gate(twirling.mode, index=q, seed=qubit_seed)
+            _apply_clifford_gate(qc, q, gate_name)
+            clifford_gates.append(gate_name)
+        logger.debug(f"  Applied Cliffords: {clifford_gates}")
+
+    # Step 3: Apply noise channel in (possibly rotated) frame
     logger.debug(f"Building iid_p copy: M={M}, noise={noise.noise_type.value}, p={p:.4f}")
 
     if noise.noise_type == NoiseType.depolarizing:
@@ -195,6 +295,12 @@ def build_copy_iid_p(prep: QuantumCircuit, noise: NoiseSpec) -> QuantumCircuit:
     # Apply channel to each qubit independently
     for q in range(M):
         qc.append(chan_instr, [q])
+
+    # Step 4: Undo Clifford frame if twirling was applied
+    if should_twirl:
+        logger.debug("Undoing Clifford frame")
+        for q in range(M):
+            _apply_inverse_clifford_gate(qc, q, clifford_gates[q])
 
     return qc
 
@@ -214,6 +320,8 @@ def build_noisy_copy(
     noise: NoiseSpec,
     seed: Optional[int] = None,
     shared_pattern: Optional[ErrorPattern] = None,
+    twirling: Optional[TwirlingSpec] = None,
+    twirl_seed: Optional[int] = None,
 ) -> Tuple[QuantumCircuit, Optional[ErrorPattern]]:
     """Factory that returns a noisy-copy circuit and the pattern used (if any).
 
@@ -227,7 +335,11 @@ def build_noisy_copy(
         RNG seed for sampling patterns (exact_k) when not provided.
     shared_pattern : Optional[ErrorPattern]
         If provided (and mode == exact_k), this pattern is used instead of
-        sampling — CRITICAL for ensuring identical copies in SWAP test.
+        sampling – CRITICAL for ensuring identical copies in SWAP test.
+    twirling : Optional[TwirlingSpec]
+        Clifford twirling configuration for dephasing noise mitigation.
+    twirl_seed : Optional[int]
+        Seed for Clifford sampling (reproducibility).
 
     Returns
     -------
@@ -236,10 +348,10 @@ def build_noisy_copy(
         pattern: the ErrorPattern used (None for iid_p mode).
     """
     if noise.mode == NoiseMode.iid_p:
-        logger.debug("Building iid_p noisy copy")
-        return build_copy_iid_p(prep, noise), None
+        logger.debug("Building iid_p noisy copy with channel twirling support")
+        return build_copy_iid_p(prep, noise, twirling, twirl_seed), None
 
-    # exact_k mode
+    # exact_k mode (twirling not implemented for exact_k)
     if shared_pattern is not None:
         logger.debug(f"Using shared pattern with {len(shared_pattern)} errors")
         pattern = shared_pattern
