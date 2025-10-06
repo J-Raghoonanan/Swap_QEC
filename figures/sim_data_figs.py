@@ -63,7 +63,7 @@ class SimulationPlotter:
         filepath = self.data_dir / filename
         if filepath.exists():
             df = pd.read_csv(filepath)
-            
+        
             # For steps files, extract N from run_id if not present
             if 'steps' in filename and 'N' not in df.columns and 'run_id' in df.columns:
                 def extract_N(run_id):
@@ -73,9 +73,21 @@ class SimulationPlotter:
                         if part.startswith('N'):
                             return int(part[1:])
                     return None
-                
-                df['N'] = df['run_id'].apply(extract_N)
             
+                df['N'] = df['run_id'].apply(extract_N)
+        
+            # Normalize twirling column name and convert to boolean
+            if 'twirling_applied' in df.columns:
+                # Convert string "TRUE"/"FALSE" to boolean and rename column
+                df['twirling_enabled'] = df['twirling_applied'].map(
+                    lambda x: str(x).upper() == 'TRUE' if pd.notna(x) else False
+                )
+            elif 'twirling_enabled' in df.columns and df['twirling_enabled'].dtype == 'object':
+                # Convert string to boolean if needed
+                df['twirling_enabled'] = df['twirling_enabled'].map(
+                    lambda x: str(x).upper() == 'TRUE' if pd.notna(x) else x
+                )
+        
             return df
         else:
             print(f"Warning: {filename} not found")
@@ -85,89 +97,89 @@ class SimulationPlotter:
         """
         Threshold plot for M=1: Final error vs physical error rate for different N.
         """
-        # Select data AND fix the dephasing bug
+        # Select data and set twirling filter
         if noise_type == 'depolarizing':
             df = self.depol_finals
             color = COLORS['depolarizing']
-            # For depolarizing, use non-twirled data
             twirling_filter = False
         else:  # dephasing
-            df = self.dephase_finals  # FIX: was self.depol_finals
+            df = self.dephase_finals
             color = COLORS['dephasing']
-            # For dephasing, use twirled data
             twirling_filter = True
-    
+        
         if df.empty:
             print(f"No data for {noise_type} threshold plot")
             return None
-    
+        
         # Filter M=1 AND twirling condition
         df_m1 = df[(df['M'] == 1) & (df['twirling_enabled'] == twirling_filter)].copy()
-    
+        
         if df_m1.empty:
             print(f"No M=1 data for {noise_type} with twirling={twirling_filter}")
             return None
-    
+        
         fig, ax = plt.subplots(figsize=(10, 8))
-    
+        
         # Get unique N values
         N_values = sorted(df_m1['N'].unique())
         colors = plt.cm.viridis(np.linspace(0, 1, len(N_values)))
-    
+        
         for i, N in enumerate(N_values):
             df_N = df_m1[df_m1['N'] == N].sort_values('delta')
-        
+            
             if len(df_N) > 0:
                 ax.semilogy(df_N['delta'], df_N['eps_L_final'], 'o-',
-                        color=colors[i], linewidth=3, markersize=8,
-                        label=f'N = {N}', alpha=0.8)
-    
+                           color=colors[i], linewidth=3, markersize=8,
+                           label=f'N = {N}', alpha=0.8)
+        
         # No correction reference
         delta_range = np.logspace(-2, 0, 100)
         ax.semilogy(delta_range, delta_range, '--',
-                color='gray', linewidth=2, alpha=0.7, label='No Correction')
-    
+                   color='gray', linewidth=2, alpha=0.7, label='No Correction')
+        
         ax.set_xlabel(r'Physical Error Rate, $\delta$', fontsize=25)
         ax.set_ylabel(r'Final Logical Error Rate, $\varepsilon_L$', fontsize=25)
-    
+        
         title_str = 'Depolarizing' if noise_type == 'depolarizing' else 'Dephasing'
         ax.set_title(f'QEC Threshold\n({title_str} Noise, M=1)', fontsize=30)
-    
+        
         ax.legend(fontsize=14, loc='lower right')
         ax.set_xlim(0.09, 1.0)
         ax.set_ylim(1e-5, 1.0)
-    
+        
         plt.tight_layout()
-    
+        
         filename = f"threshold_{noise_type}_M1.{save_format}"
         filepath = self.figures_dir / filename
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
-    
+        
         print(f"Saved {filename}")
         return str(filepath)
-    
     
     def plot_error_evolution_m1(self, noise_type: str, save_format: str = 'pdf') -> Optional[str]:
         """
         Error evolution for M=1: Error vs purification depth for different delta.
         """
-        # Select data
+        # Select data and set twirling filter
         if noise_type == 'depolarizing':
             df = self.depol_steps
             color = COLORS['depolarizing']
+            twirling_filter = False
         else:
             df = self.dephase_steps
             color = COLORS['dephasing']
+            twirling_filter = True
         
         if df.empty:
             print(f"No steps data for {noise_type}")
             return None
         
-        # Filter M=1
-        df_m1 = df[df['M'] == 1].copy()
+        # Filter M=1 AND twirling condition
+        df_m1 = df[(df['M'] == 1) & (df['twirling_enabled'] == twirling_filter)].copy()
+        
         if df_m1.empty:
-            print(f"No M=1 steps for {noise_type}")
+            print(f"No M=1 steps for {noise_type} with twirling={twirling_filter}")
             return None
         
         # Use max N
@@ -213,18 +225,23 @@ class SimulationPlotter:
         """
         Fidelity evolution for M=1: Fidelity vs purification depth for different delta.
         """
+        # Select data and set twirling filter
         if noise_type == 'depolarizing':
             df = self.depol_steps
+            twirling_filter = False
         else:
             df = self.dephase_steps
+            twirling_filter = True
         
         if df.empty:
             print(f"No steps data for {noise_type}")
             return None
         
-        # Filter M=1
-        df_m1 = df[df['M'] == 1].copy()
+        # Filter M=1 AND twirling condition
+        df_m1 = df[(df['M'] == 1) & (df['twirling_enabled'] == twirling_filter)].copy()
+        
         if df_m1.empty:
+            print(f"No M=1 data for {noise_type} with twirling={twirling_filter}")
             return None
         
         # Use max N
@@ -275,14 +292,25 @@ class SimulationPlotter:
         """
         NEW: Final error vs delta for different M values at fixed max N.
         """
+        # Select data and set twirling filter
         if noise_type == 'depolarizing':
             df = self.depol_finals
             color = COLORS['depolarizing']
+            twirling_filter = False
         else:
             df = self.dephase_finals
             color = COLORS['dephasing']
+            twirling_filter = True
         
         if df.empty:
+            print(f"No data for {noise_type}")
+            return None
+        
+        # Filter by twirling condition
+        df = df[df['twirling_enabled'] == twirling_filter].copy()
+        
+        if df.empty:
+            print(f"No data for {noise_type} with twirling={twirling_filter}")
             return None
         
         # Use max N
@@ -299,16 +327,15 @@ class SimulationPlotter:
             df_M = df_N[df_N['M'] == M].sort_values('delta')
             
             if len(df_M) > 0:
-                ax.loglog(df_M['delta'], df_M['eps_L_final'], 'o-',
-                         color=colors[i], linewidth=3, markersize=8,
-                         label=f'M = {M}', alpha=0.85)
+                ax.semilogy(df_M['delta'], df_M['eps_L_final'], 'o-',
+                           color=colors[i], linewidth=3, markersize=8,
+                           label=f'M = {M}', alpha=0.85)
         
         # No correction reference
         delta_range = np.logspace(-2, 0, 100)
-        ax.loglog(delta_range, delta_range, '--',
-                 color='gray', linewidth=2, alpha=0.7, label='No Correction')
+        ax.semilogy(delta_range, delta_range, '--',
+                   color='gray', linewidth=2, alpha=0.7, label='No Correction')
         
-        ax.set_xscale('linear')
         ax.set_xlabel(r'Physical Error Rate, $\delta$', fontsize=25)
         ax.set_ylabel(r'Final Logical Error Rate, $\varepsilon_L$', fontsize=25)
         
@@ -333,12 +360,23 @@ class SimulationPlotter:
         """
         NEW: Final fidelity vs M for different delta values at fixed max N.
         """
+        # Select data and set twirling filter
         if noise_type == 'depolarizing':
             df = self.depol_finals
+            twirling_filter = False
         else:
             df = self.dephase_finals
+            twirling_filter = True
         
         if df.empty:
+            print(f"No data for {noise_type}")
+            return None
+        
+        # Filter by twirling condition
+        df = df[df['twirling_enabled'] == twirling_filter].copy()
+        
+        if df.empty:
+            print(f"No data for {noise_type} with twirling={twirling_filter}")
             return None
         
         # Use max N
