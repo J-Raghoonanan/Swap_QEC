@@ -102,60 +102,63 @@ class SimulationPlotter:
             df = self.depol_finals
             color = COLORS['depolarizing']
             twirling_filter = False
+            param_label = r'$\delta$'  # Use delta for depolarizing
         else:  # dephasing
             df = self.dephase_finals
             color = COLORS['dephasing']
             twirling_filter = True
-        
+            param_label = r'$p$'  # Use p for dephasing
+    
         if df.empty:
             print(f"No data for {noise_type} threshold plot")
             return None
-        
+    
         # Filter M=1 AND twirling condition
         df_m1 = df[(df['M'] == 1) & (df['twirling_enabled'] == twirling_filter)].copy()
-        
+    
         if df_m1.empty:
             print(f"No M=1 data for {noise_type} with twirling={twirling_filter}")
             return None
-        
+    
         fig, ax = plt.subplots(figsize=(10, 8))
-        
+    
         # Get unique N values
         N_values = sorted(df_m1['N'].unique())
         colors = plt.cm.viridis(np.linspace(0, 1, len(N_values)))
-        
+    
         for i, N in enumerate(N_values):
             df_N = df_m1[df_m1['N'] == N].sort_values('delta')
-            
+        
             if len(df_N) > 0:
                 ax.semilogy(df_N['delta'], df_N['eps_L_final'], 'o-',
-                           color=colors[i], linewidth=3, markersize=8,
-                           label=f'N = {N}', alpha=0.8)
-        
+                        color=colors[i], linewidth=3, markersize=8,
+                        label=f'N = {N}', alpha=0.8)
+    
         # No correction reference
         delta_range = np.logspace(-2, 0, 100)
         ax.semilogy(delta_range, delta_range, '--',
-                   color='gray', linewidth=2, alpha=0.7, label='No Correction')
-        
-        ax.set_xlabel(r'Physical Error Rate, $\delta$', fontsize=25)
+                color='gray', linewidth=2, alpha=0.7, label='No Correction')
+    
+        ax.set_xlabel(f'Physical Error Rate, {param_label}', fontsize=25)
         ax.set_ylabel(r'Final Logical Error Rate, $\varepsilon_L$', fontsize=25)
-        
+    
         title_str = 'Depolarizing' if noise_type == 'depolarizing' else 'Dephasing'
         ax.set_title(f'QEC Threshold\n({title_str} Noise, M=1)', fontsize=30)
-        
+    
         ax.legend(fontsize=14, loc='lower right')
         ax.set_xlim(0.09, 1.0)
         ax.set_ylim(1e-5, 1.0)
-        
+    
         plt.tight_layout()
-        
+    
         filename = f"threshold_{noise_type}_M1.{save_format}"
         filepath = self.figures_dir / filename
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
-        
+    
         print(f"Saved {filename}")
         return str(filepath)
+
     
     def plot_error_evolution_m1(self, noise_type: str, save_format: str = 'pdf') -> Optional[str]:
         """
@@ -166,58 +169,60 @@ class SimulationPlotter:
             df = self.depol_steps
             color = COLORS['depolarizing']
             twirling_filter = False
+            param_symbol = r'\delta'
         else:
             df = self.dephase_steps
             color = COLORS['dephasing']
             twirling_filter = True
-        
+            param_symbol = 'p'
+    
         if df.empty:
             print(f"No steps data for {noise_type}")
             return None
-        
+    
         # Filter M=1 AND twirling condition
         df_m1 = df[(df['M'] == 1) & (df['twirling_enabled'] == twirling_filter)].copy()
-        
+    
         if df_m1.empty:
             print(f"No M=1 steps for {noise_type} with twirling={twirling_filter}")
             return None
-        
+    
         # Use max N
         max_N = df_m1['N'].max()
         df_N = df_m1[df_m1['N'] == max_N].copy()
-        
+    
         fig, ax = plt.subplots(figsize=(10, 8))
-        
+    
         # Get unique deltas
         deltas = sorted(df_N['delta'].unique())
         colors = plt.cm.viridis(np.linspace(0, 1, len(deltas)))
-        
+    
         for i, delta in enumerate(deltas):
             df_delta = df_N[df_N['delta'] == delta].copy()
-            
+        
             # Group by depth and take best (min) error
             evolution = df_delta.groupby('depth')['eps_L'].min().reset_index()
-            
+        
             if len(evolution) > 0:
                 ax.semilogy(evolution['depth'], evolution['eps_L'], 'o-',
-                           color=colors[i], linewidth=3, markersize=6,
-                           label=f'$\delta={delta:.2f}$', alpha=0.8)
-        
+                        color=colors[i], linewidth=3, markersize=6,
+                        label=f'${param_symbol}={delta:.2f}$', alpha=0.8)
+    
         ax.set_xlabel(r'Purification Level, $n$', fontsize=25)
         ax.set_ylabel(r'Logical Error Rate, $\varepsilon_L^{(n)}$', fontsize=25)
-        
+    
         title_str = 'Depolarizing' if noise_type == 'depolarizing' else 'Dephasing'
         ax.set_title(f'Error Evolution\n({title_str}, M=1, N={max_N})', fontsize=30)
-        
+    
         ax.legend(fontsize=14, loc='best')
-        
+
         plt.tight_layout()
-        
+    
         filename = f"error_evolution_{noise_type}_M1.{save_format}"
         filepath = self.figures_dir / filename
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
-        
+    
         print(f"Saved {filename}")
         return str(filepath)
     
@@ -229,62 +234,64 @@ class SimulationPlotter:
         if noise_type == 'depolarizing':
             df = self.depol_steps
             twirling_filter = False
+            param_symbol = r'\delta'
         else:
             df = self.dephase_steps
             twirling_filter = True
-        
+            param_symbol = 'p'
+    
         if df.empty:
             print(f"No steps data for {noise_type}")
             return None
-        
+    
         # Filter M=1 AND twirling condition
         df_m1 = df[(df['M'] == 1) & (df['twirling_enabled'] == twirling_filter)].copy()
-        
+    
         if df_m1.empty:
             print(f"No M=1 data for {noise_type} with twirling={twirling_filter}")
             return None
-        
+    
         # Use max N
         max_N = df_m1['N'].max()
         df_N = df_m1[df_m1['N'] == max_N].copy()
-        
+    
         fig, ax = plt.subplots(figsize=(10, 8))
-        
+    
         # Get unique deltas
         deltas = sorted(df_N['delta'].unique())
         colors = plt.cm.viridis(np.linspace(0, 1, len(deltas)))
-        
+    
         for i, delta in enumerate(deltas):
             df_delta = df_N[df_N['delta'] == delta].copy()
-            
+        
             # Group by depth and take best (max) fidelity
             evolution = df_delta.groupby('depth')['fidelity'].max().reset_index()
-            
+        
             if len(evolution) > 0:
                 ax.plot(evolution['depth'], evolution['fidelity'], 'o-',
-                       color=colors[i], linewidth=3, markersize=8,
-                       label=f'$\delta={delta:.2f}$')
-        
+                    color=colors[i], linewidth=3, markersize=8,
+                    label=f'${param_symbol}={delta:.2f}$')
+    
         # Target fidelity line
         ax.axhline(y=0.99, color='black', linestyle=':', alpha=0.7,
-                  linewidth=2, label='Target 0.99')
-        
+                linewidth=2, label='Target 0.99')
+    
         ax.set_xlabel('Purification Level', fontsize=25)
         ax.set_ylabel('State Fidelity', fontsize=25)
-        
+    
         title_str = 'Depolarizing' if noise_type == 'depolarizing' else 'Dephasing'
         ax.set_title(f'Fidelity Evolution\n({title_str}, M=1, N={max_N})', fontsize=30)
-        
+    
         ax.legend(fontsize=14, loc='best')
         ax.set_ylim(0, 1.05)
-        
+    
         plt.tight_layout()
-        
+    
         filename = f"fidelity_evolution_{noise_type}_M1.{save_format}"
         filepath = self.figures_dir / filename
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
-        
+    
         print(f"Saved {filename}")
         return str(filepath)
     
@@ -297,65 +304,67 @@ class SimulationPlotter:
             df = self.depol_finals
             color = COLORS['depolarizing']
             twirling_filter = False
+            param_label = r'$\delta$'
         else:
             df = self.dephase_finals
             color = COLORS['dephasing']
             twirling_filter = True
-        
+            param_label = r'$p$'
+    
         if df.empty:
             print(f"No data for {noise_type}")
             return None
-        
+    
         # Filter by twirling condition
         df = df[df['twirling_enabled'] == twirling_filter].copy()
-        
+    
         if df.empty:
             print(f"No data for {noise_type} with twirling={twirling_filter}")
             return None
-        
+    
         # Use max N
         max_N = df['N'].max()
         df_N = df[df['N'] == max_N].copy()
-        
+    
         fig, ax = plt.subplots(figsize=(10, 8))
-        
+    
         # Get unique M values
         M_values = sorted(df_N['M'].unique())
         colors = plt.cm.plasma(np.linspace(0, 1, len(M_values)))
-        
+    
         for i, M in enumerate(M_values):
             df_M = df_N[df_N['M'] == M].sort_values('delta')
-            
+        
             if len(df_M) > 0:
                 ax.semilogy(df_M['delta'], df_M['eps_L_final'], 'o-',
-                           color=colors[i], linewidth=3, markersize=8,
-                           label=f'M = {M}', alpha=0.85)
-        
+                        color=colors[i], linewidth=3, markersize=8,
+                        label=f'M = {M}', alpha=0.85)
+    
         # No correction reference
         delta_range = np.logspace(-2, 0, 100)
         ax.semilogy(delta_range, delta_range, '--',
-                   color='gray', linewidth=2, alpha=0.7, label='No Correction')
-        
-        ax.set_xlabel(r'Physical Error Rate, $\delta$', fontsize=25)
+                color='gray', linewidth=2, alpha=0.7, label='No Correction')
+    
+        ax.set_xlabel(f'Physical Error Rate, {param_label}', fontsize=25)
         ax.set_ylabel(r'Final Logical Error Rate, $\varepsilon_L$', fontsize=25)
-        
+    
         title_str = 'Depolarizing' if noise_type == 'depolarizing' else 'Dephasing'
         ax.set_title(f'System Size Scaling\n({title_str}, N={max_N})', fontsize=30)
-        
+    
         ax.legend(fontsize=14, loc='lower right')
         ax.set_xlim(0.09, 1.0)
         ax.set_ylim(1e-5, 1.0)
-        
+    
         plt.tight_layout()
-        
+    
         filename = f"threshold_vs_M_{noise_type}.{save_format}"
         filepath = self.figures_dir / filename
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
-        
+    
         print(f"Saved {filename}")
         return str(filepath)
-    
+
     def plot_fidelity_vs_M(self, noise_type: str, save_format: str = 'pdf') -> Optional[str]:
         """
         NEW: Final fidelity vs M for different delta values at fixed max N.
@@ -364,27 +373,29 @@ class SimulationPlotter:
         if noise_type == 'depolarizing':
             df = self.depol_finals
             twirling_filter = False
+            param_symbol = r'\delta'
         else:
             df = self.dephase_finals
             twirling_filter = True
-        
+            param_symbol = 'p'
+    
         if df.empty:
             print(f"No data for {noise_type}")
             return None
-        
+    
         # Filter by twirling condition
         df = df[df['twirling_enabled'] == twirling_filter].copy()
-        
+    
         if df.empty:
             print(f"No data for {noise_type} with twirling={twirling_filter}")
             return None
-        
+    
         # Use max N
         max_N = df['N'].max()
         df_N = df[df['N'] == max_N].copy()
-        
+    
         fig, ax = plt.subplots(figsize=(10, 8))
-        
+    
         # Get unique deltas (select a representative subset)
         all_deltas = sorted(df_N['delta'].unique())
         # Choose ~5-6 well-spaced deltas
@@ -393,37 +404,37 @@ class SimulationPlotter:
             deltas = all_deltas[::step]
         else:
             deltas = all_deltas
-        
+    
         colors = plt.cm.viridis(np.linspace(0, 1, len(deltas)))
-        
+    
         for i, delta in enumerate(deltas):
             df_delta = df_N[df_N['delta'] == delta].sort_values('M')
-            
+        
             if len(df_delta) > 0:
                 ax.plot(df_delta['M'], df_delta['fidelity_final'], 'o-',
-                       color=colors[i], linewidth=3, markersize=8,
-                       label=f'$\delta={delta:.2f}$')
-        
+                    color=colors[i], linewidth=3, markersize=8,
+                    label=f'${param_symbol}={delta:.2f}$')
+    
         # Target fidelity line
         ax.axhline(y=0.99, color='black', linestyle=':', alpha=0.7,
-                  linewidth=2, label='Target 0.99')
-        
+                linewidth=2, label='Target 0.99')
+    
         ax.set_xlabel('System Size (M qubits)', fontsize=25)
         ax.set_ylabel('Final Fidelity', fontsize=25)
-        
+    
         title_str = 'Depolarizing' if noise_type == 'depolarizing' else 'Dephasing'
         ax.set_title(f'Fidelity vs System Size\n({title_str}, N={max_N})', fontsize=30)
-        
+    
         ax.legend(fontsize=14, loc='best')
         ax.set_ylim(0, 1.05)
-        
+    
         plt.tight_layout()
-        
+    
         filename = f"fidelity_vs_M_{noise_type}.{save_format}"
         filepath = self.figures_dir / filename
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
-        
+    
         print(f"Saved {filename}")
         return str(filepath)
     
