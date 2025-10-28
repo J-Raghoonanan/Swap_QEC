@@ -514,7 +514,7 @@ class SimulationPlotter:
         ax.set_ylim(0.0, 1.02)
         ax.set_xlim(ns.min(), ns.max())
         ax.legend(fontsize=12, loc='best')
-        ax.grid(alpha=0.25)
+        # ax.grid(alpha=0.25)
 
         # Optional mini-plot: f(λ) vs λ with y=x
         # try:
@@ -553,14 +553,14 @@ class SimulationPlotter:
         plots = {}
         
         # M=1 threshold plots
-        print("\n1. Threshold plots (M=1)...")
-        plots['threshold_depol_m1'] = self.plot_threshold_m1('depolarizing', save_format)
-        plots['threshold_dephase_m1'] = self.plot_threshold_m1('dephasing', save_format)
+        # print("\n1. Threshold plots (M=1)...")
+        # plots['threshold_depol_m1'] = self.plot_threshold_m1('depolarizing', save_format)
+        # plots['threshold_dephase_m1'] = self.plot_threshold_m1('dephasing', save_format)
         
         # M=1 error evolution
-        print("\n2. Error evolution (M=1)...")
-        plots['error_evol_depol_m1'] = self.plot_error_evolution_m1('depolarizing', save_format)
-        plots['error_evol_dephase_m1'] = self.plot_error_evolution_m1('dephasing', save_format)
+        # print("\n2. Error evolution (M=1)...")
+        # plots['error_evol_depol_m1'] = self.plot_error_evolution_m1('depolarizing', save_format)
+        # plots['error_evol_dephase_m1'] = self.plot_error_evolution_m1('dephasing', save_format)
         
         # M=1 fidelity evolution
         # print("\n3. Fidelity evolution (M=1)...")
@@ -568,9 +568,9 @@ class SimulationPlotter:
         # plots['fidelity_evol_dephase_m1'] = self.plot_fidelity_evolution_m1('dephasing', save_format)
         
         # NEW: Multi-M threshold
-        print("\n4. Threshold vs M (max N)...")
-        plots['threshold_vs_M_depol'] = self.plot_threshold_vs_M('depolarizing', save_format)
-        plots['threshold_vs_M_dephase'] = self.plot_threshold_vs_M('dephasing', save_format)
+        # print("\n4. Threshold vs M (max N)...")
+        # plots['threshold_vs_M_depol'] = self.plot_threshold_vs_M('depolarizing', save_format)
+        # plots['threshold_vs_M_dephase'] = self.plot_threshold_vs_M('dephasing', save_format)
         
         # NEW: Fidelity vs M
         # print("\n5. Fidelity vs M (max N)...")
@@ -578,8 +578,8 @@ class SimulationPlotter:
         # plots['fidelity_vs_M_dephase'] = self.plot_fidelity_vs_M('dephasing', save_format)
         
         # Plot lambda convergence
-        # print("\n6. Lambda convergence plots...")
-        # plots['lambda_convergence_d2'] = self.plot_lambda_convergence(d=2, save_format=save_format)
+        print("\n6. Lambda convergence plots...")
+        plots['lambda_convergence_d2'] = self.plot_lambda_convergence(d=2, save_format=save_format)
         
         # Summary
         successful = [name for name, path in plots.items() if path is not None]
