@@ -150,7 +150,7 @@ class SimulationPlotter:
         ax.set_ylabel(r'Final Error Rate, $\varepsilon$', fontsize=25)
     
         title_str = 'Depolarizing' if noise_type == 'depolarizing' else 'Dephasing'
-        ax.set_title(f'QEC Threshold\n({title_str} Noise, M=1)', fontsize=30)
+        ax.set_title(f'PEC Threshold\n({title_str} Noise, M=1)', fontsize=30)
     
         ax.legend(fontsize=14, loc='lower right')
         ax.set_xlim(0.09, 1.0)
@@ -589,7 +589,7 @@ class SimulationPlotter:
         # Create 1x5 subplot grid
         fig, axes = plt.subplots(1, 5, figsize=(25, 5))
         title_str = 'Depolarizing' if noise_type == 'depolarizing' else 'Dephasing'
-        fig.suptitle(f'QEC Threshold vs System Size\n({title_str} Noise)', fontsize=32, y=1.02)
+        fig.suptitle(f'PEC Threshold vs System Size\n({title_str} Noise)', fontsize=32, y=1.02)
 
         # M values to plot
         M_values = [1, 2, 3, 4, 5]
@@ -665,7 +665,7 @@ class SimulationPlotter:
 
         # Create 2x5 subplot grid
         fig, axes = plt.subplots(2, 5, figsize=(25, 10))
-        fig.suptitle('QEC Threshold vs System Size', fontsize=36, y=0.95)
+        fig.suptitle('PEC Threshold vs System Size', fontsize=36, y=0.95)
 
         # Noise type configurations
         noise_configs = [
