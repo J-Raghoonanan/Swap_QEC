@@ -109,31 +109,119 @@ class AnalyticTheoryPlotter:
         self.figures_dir.mkdir(parents=True, exist_ok=True)
 
     # (1) F_out vs F, isotropic family (use viridis shades per D)
+    # def plot_fout_vs_f_isotropic(self,
+    #                              D_list: Optional[List[int]] = None,
+    #                              save_format: str = "pdf") -> str:
+    #     if D_list is None:
+    #         D_list = [2, 4, 8, 16, 32]
+    #     F = np.linspace(0.0, 1.0, 500)
+
+    #     fig, ax = plt.subplots(figsize=(10, 8))
+    #     colors = plt.cm.viridis(np.linspace(0.0, 1.0, len(D_list)))
+
+    #     for i, D in enumerate(D_list):
+    #         Fout = Fout_isotropic(F, D)
+    #         ax.plot(F, Fout, marker='', color=colors[i], label=f'D={D}')
+    #     ax.plot(F, F, '--', color='gray', linewidth=2, alpha=0.7, label='Identity')
+
+    #     ax.set_xlabel(r'Input Fidelity, $F$', fontsize=25)
+    #     ax.set_ylabel(r'Output Fidelity, $F_{\mathrm{out}}$', fontsize=25)
+    #     ax.set_title(r'Fidelity Evolution (Isotropic Family)', fontsize=30)
+    #     ax.set_xlim(0, 1); ax.set_ylim(0, 1)
+    #     ax.legend(loc='lower right', fontsize=14)
+    #     plt.tight_layout()
+
+    #     filename = f"fout_vs_f_isotropic.{save_format}"
+    #     filepath = self.figures_dir / filename
+    #     plt.savefig(filepath, dpi=300, bbox_inches='tight'); plt.close()
+    #     print(f"Saved {filename}")
+    #     return str(filepath)
+    
     def plot_fout_vs_f_isotropic(self,
                                  D_list: Optional[List[int]] = None,
                                  save_format: str = "pdf") -> str:
+        """
+        Plot fidelity evolution and error reduction ratio for isotropic family.
+        
+        Creates two vertically aligned subplots:
+        - Top: Output fidelity vs input fidelity 
+        - Bottom: Error reduction ratio vs input fidelity
+        
+        Parameters:
+        -----------
+        D_list : List[int], optional
+            List of D values to plot. Default: [2, 4, 8, 16, 32]
+        save_format : str, optional
+            File format for saving. Default: "pdf"
+            
+        Returns:
+        --------
+        str : Path to saved figure
+        """
         if D_list is None:
             D_list = [2, 4, 8, 16, 32]
         F = np.linspace(0.0, 1.0, 500)
 
-        fig, ax = plt.subplots(figsize=(10, 8))
+        # Create 2x1 subplot layout with shared x-axis
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
         colors = plt.cm.viridis(np.linspace(0.0, 1.0, len(D_list)))
 
+        # Top subplot: Original fidelity plot
         for i, D in enumerate(D_list):
             Fout = Fout_isotropic(F, D)
-            ax.plot(F, Fout, marker='', color=colors[i], label=f'D={D}')
-        ax.plot(F, F, '--', color='gray', linewidth=2, alpha=0.7, label='Identity')
+            ax1.plot(F, Fout, marker='', color=colors[i], linewidth=3, label=f'D={D}')
+        ax1.plot(F, F, '--', color='gray', linewidth=2, alpha=0.7, label='Identity')
+        # ax1.axvline(x=0.5, linestyle='--', color='red', linewidth=2, alpha=0.8)
 
-        ax.set_xlabel(r'Input Fidelity, $F$', fontsize=25)
-        ax.set_ylabel(r'Output Fidelity, $F_{\mathrm{out}}$', fontsize=25)
-        ax.set_title(r'Fidelity Evolution (Isotropic Family)', fontsize=30)
-        ax.set_xlim(0, 1); ax.set_ylim(0, 1)
-        ax.legend(loc='lower right', fontsize=14)
+        ax1.set_ylabel(r'Output Fidelity, $F_{\mathrm{out}}$', fontsize=25)
+        ax1.set_title(r'Fidelity Evolution (Isotropic Family)', fontsize=30)
+        ax1.set_xlim(0, 1)
+        ax1.set_ylim(0, 1)
+        ax1.legend(loc='lower right', fontsize=14)
+        # ax1.grid(True, alpha=0.3)
+
+        # Bottom subplot: Error reduction ratio
+        for i, D in enumerate(D_list):
+            # Calculate error reduction ratio using the formula:
+            # ε_out/ε = [1 - 2F + (1-F)²/(D-1)] / [(1-F)(1+F²+(1-F)²/(D-1))]
+            
+            F_calc = F[F <= 0.99999]  # Avoid numerical issues near F=1
+            
+            # Calculate components
+            one_minus_F = 1 - F_calc
+            term = one_minus_F**2 / (D - 1)
+            
+            # Numerator and denominator
+            numerator = 1 - F_calc + term
+            denominator = one_minus_F * (1 + F_calc**2 + term)
+            
+            # Calculate ratio with error handling
+            with np.errstate(divide='ignore', invalid='ignore'):
+                error_ratio = numerator / denominator
+                
+            # Filter valid values
+            valid_mask = np.isfinite(error_ratio)
+            ax2.plot(F_calc[valid_mask], error_ratio[valid_mask], 
+                    marker='', color=colors[i], linewidth=3, label=f'D={D}')
+
+        # Reference line at y=1 (no improvement)
+        ax2.axhline(y=1, linestyle='--', color='gray', linewidth=2, alpha=0.7, label='No Improvement')
+        # ax2.axvline(x=0.5, linestyle='--', color='red', linewidth=2, alpha=0.8)
+        
+        ax2.set_xlabel(r'Input Fidelity, $F$', fontsize=25)
+        ax2.set_ylabel(r'Error Reduction Ratio, $\frac{\varepsilon_{\mathrm{out}}}{\varepsilon}$', fontsize=25)
+        ax2.set_title(r'Error Reduction Ratio (Isotropic Family)', fontsize=30)
+        ax2.set_xlim(0, 1)
+        ax2.set_ylim(0, 1.2)
+        ax2.legend(loc='upper right', fontsize=14)
+        # ax2.grid(True, alpha=0.3)
+
         plt.tight_layout()
 
-        filename = f"fout_vs_f_isotropic.{save_format}"
+        filename = f"fout_vs_f_isotropic_combined.{save_format}"
         filepath = self.figures_dir / filename
-        plt.savefig(filepath, dpi=300, bbox_inches='tight'); plt.close()
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
         print(f"Saved {filename}")
         return str(filepath)
 
@@ -322,6 +410,79 @@ class AnalyticTheoryPlotter:
         plt.savefig(filepath, dpi=300, bbox_inches='tight'); plt.close()
         print(f"Saved {filename}")
         return str(filepath)
+    
+    
+    def plot_fout_vs_f_gamma_system(self,
+                                    save_format: str = "pdf") -> str:
+        """
+        Plot fidelity evolution and error reduction ratio for gamma-based system.
+        
+        Uses the equations:
+        - γ ∈ [0,1]
+        - γ' = 4γ/(3+γ²)  
+        - F = (1+γ)/2
+        - F_out = (1+γ')/2
+        - Error reduction ratio = (3-γ)/(3+γ²)
+        
+        Creates two vertically aligned subplots:
+        - Top: Output fidelity vs input fidelity 
+        - Bottom: Error reduction ratio vs input fidelity
+        Both plots include a vertical red dashed line at F = 0.5
+        """
+        
+        # Create F range - since γ ∈ [0,1] and F = (1+γ)/2, valid F ∈ [0.5, 1]
+        # But keeping full range [0, 1] for consistency with previous plots
+        F = np.linspace(0.0, 1.0, 500)
+        
+        # Convert F to γ: F = (1+γ)/2 => γ = 2F - 1
+        gamma = 2 * F - 1
+        
+        # Only use values where γ ∈ [0, 1] (i.e., F ∈ [0.5, 1])
+        valid_mask = (gamma >= 0) & (gamma <= 1)
+        F_valid = F[valid_mask]
+        gamma_valid = gamma[valid_mask]
+        
+        # Apply transformations
+        gamma_prime = 4 * gamma_valid / (3 + gamma_valid**2)
+        F_out = (1 + gamma_prime) / 2
+        error_reduction_ratio = (3 - gamma_valid) / (3 + gamma_valid**2)
+
+        # Create subplots
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
+
+        # Top subplot: Fidelity evolution
+        ax1.plot(F_valid, F_out, marker='', color='blue', linewidth=3)
+        ax1.plot(F, F, '--', color='gray', linewidth=2, alpha=0.7, label='Identity')
+        # ax1.axvline(x=0.5, linestyle='--', color='red', linewidth=2, alpha=0.8)
+
+        ax1.set_ylabel(r'Output Fidelity, $F_{\mathrm{out}}$', fontsize=25)
+        ax1.set_title(r'Fidelity Evolution (GHZ Family)', fontsize=30)
+        ax1.set_xlim(0.5, 1)
+        ax1.set_ylim(0, 1)
+        ax1.legend(loc='lower right', fontsize=14)
+        # ax1.grid(True, alpha=0.3)
+
+        # Bottom subplot: Error reduction ratio
+        ax2.plot(F_valid, error_reduction_ratio, marker='', color='blue', linewidth=3)
+        ax2.axhline(y=1, linestyle='--', color='gray', linewidth=2, alpha=0.7, label='No Improvement')
+        # ax2.axvline(x=0.5, linestyle='--', color='red', linewidth=2, alpha=0.8)
+        
+        ax2.set_xlabel(r'Input Fidelity, $F$', fontsize=25)
+        ax2.set_ylabel(r'Error Reduction Ratio, $\frac{\varepsilon_{\mathrm{out}}}{\varepsilon}$', fontsize=25)
+        ax2.set_title(r'Error Reduction Ratio (GHZ Family)', fontsize=30)
+        ax2.set_xlim(0.5, 1)
+        ax2.set_ylim(0, 1.2)
+        ax2.legend(loc='upper left', fontsize=14)
+        # ax2.grid(True, alpha=0.3)
+
+        plt.tight_layout()
+
+        filename = f"fout_vs_f_gamma_system.{save_format}"
+        filepath = self.figures_dir / filename
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Saved {filename}")
+        return str(filepath)
 
     # Convenience driver
     def generate_all_requested(self, save_format: str = "pdf") -> Dict[str, Optional[str]]:
@@ -331,31 +492,34 @@ class AnalyticTheoryPlotter:
 
         out: Dict[str, Optional[str]] = {}
 
-        print("\n1) F_out vs F (isotropic family)...")
-        out['fout_vs_f'] = self.plot_fout_vs_f_isotropic(save_format=save_format)
+        # print("\n1) F_out vs F (isotropic family)...")
+        # out['fout_vs_f'] = self.plot_fout_vs_f_isotropic(save_format=save_format)
 
-        print("\n2) Error evolution with bounds (isotropic family)...")
-        out['err_evolution_bounds'] = self.plot_error_evolution_with_bounds(
-            F0=0.7, D=8, n_steps=12, save_format=save_format
-        )
+        # print("\n2) Error evolution with bounds (isotropic family)...")
+        # out['err_evolution_bounds'] = self.plot_error_evolution_with_bounds(
+        #     F0=0.7, D=8, n_steps=12, save_format=save_format
+        # )
 
-        print("\n5) GHZ per-round error ratio vs gamma...")
-        out['ghz_err_ratio'] = self.plot_ghz_error_ratio(save_format=save_format)
+        # print("\n5) GHZ per-round error ratio vs gamma...")
+        # out['ghz_err_ratio'] = self.plot_ghz_error_ratio(save_format=save_format)
 
-        print("\n7) Dephasing anisotropy vs isotropy (single qubit)...")
-        out['anisotropy_vs_iso'] = self.plot_anisotropy_vs_isotropy_single_qubit(
-            beta_z=0.5, n_steps=12, save_format=save_format
-        )
+        # print("\n7) Dephasing anisotropy vs isotropy (single qubit)...")
+        # out['anisotropy_vs_iso'] = self.plot_anisotropy_vs_isotropy_single_qubit(
+        #     beta_z=0.5, n_steps=12, save_format=save_format
+        # )
 
-        print("\n8) Round-count scaling n_* vs M (GHZ)...")
-        out['round_count_vs_M'] = self.plot_round_count_vs_M(
-            beta_z_list=[0.6, 0.8, 0.9],
-            M_list=list(range(2, 65, 2)),
-            save_format=save_format
-        )
+        # print("\n8) Round-count scaling n_* vs M (GHZ)...")
+        # out['round_count_vs_M'] = self.plot_round_count_vs_M(
+        #     beta_z_list=[0.6, 0.8, 0.9],
+        #     M_list=list(range(2, 65, 2)),
+        #     save_format=save_format
+        # )
 
-        print("\n9) F_out vs D at fixed F...")
-        out['fout_vs_D'] = self.plot_fout_vs_D_fixedF(F0=0.7, save_format=save_format)
+        # print("\n9) F_out vs D at fixed F...")
+        # out['fout_vs_D'] = self.plot_fout_vs_D_fixedF(F0=0.7, save_format=save_format)
+        
+        print("\n10. F_out vs F (GHZ system with gamma)...") 
+        out['fout_vs_f_GHZ_system'] = self.plot_fout_vs_f_gamma_system(save_format=save_format)
 
         print("\n" + "="*70)
         print("COMPLETE")

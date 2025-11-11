@@ -359,7 +359,8 @@ class SimulationPlotter:
         ax.set_ylabel(r'Final Error Rate, $\varepsilon$', fontsize=25)
     
         title_str = 'Depolarizing' if noise_type == 'depolarizing' else 'Dephasing'
-        ax.set_title(f'System Size Scaling\n({title_str}, N={max_N})', fontsize=30)
+        # ax.set_title(f'System Size Scaling\n({title_str}, N={max_N})', fontsize=30)
+        ax.set_title(f'System Size Scaling ({title_str})', fontsize=30)
     
         ax.legend(fontsize=14, loc='lower right')
         ax.set_xlim(0.09, 1.0)
@@ -436,7 +437,8 @@ class SimulationPlotter:
         ax.set_ylabel('Final Fidelity', fontsize=25)
     
         title_str = 'Depolarizing' if noise_type == 'depolarizing' else 'Dephasing'
-        ax.set_title(f'Fidelity vs System Size\n({title_str}, N={max_N})', fontsize=30)
+        # ax.set_title(f'Fidelity vs System Size\n({title_str}, N={max_N})', fontsize=30)
+        ax.set_title(f'Fidelity vs System Size ({title_str})', fontsize=30)
     
         ax.legend(fontsize=14, loc='best')
         ax.set_ylim(0, 1.05)
@@ -505,7 +507,7 @@ class SimulationPlotter:
         # Create 3x3 subplot grid
         fig, axes = plt.subplots(3, 3, figsize=(18, 15))
         fig.suptitle(f'Fidelity Evolution Grid ({noise_type.title()})', 
-                    fontsize=30, y=0.96)
+                    fontsize=30, y=0.97)
 
         # Flatten axes for easier iteration
         axes_flat = axes.flatten()
@@ -831,19 +833,19 @@ class SimulationPlotter:
         # plots['threshold_vs_M_dephase'] = self.plot_threshold_vs_M('dephasing', save_format)
         
         # # NEW: Fidelity vs M
-        # print("\n5. Fidelity vs M (max N)...")
-        # plots['fidelity_vs_M_depol'] = self.plot_fidelity_vs_M('depolarizing', save_format)
-        # plots['fidelity_vs_M_dephase'] = self.plot_fidelity_vs_M('dephasing', save_format)
+        print("\n5. Fidelity vs M (max N)...")
+        plots['fidelity_vs_M_depol'] = self.plot_fidelity_vs_M('depolarizing', save_format)
+        plots['fidelity_vs_M_dephase'] = self.plot_fidelity_vs_M('dephasing', save_format)
         
         # Fidelity grid vs depth
         # print("\n6. Fidelity grid vs purification level...")
         # plots['fidelity_grid_depol'] = self.plot_fidelity_grid_vs_depth('depolarizing', save_format)
         # plots['fidelity_grid_dephase'] = self.plot_fidelity_grid_vs_depth('dephasing', save_format)
         
-        print("\n7. Multi-M threshold plots...")
-        # plots['threshold_multi_M_depol'] = self.plot_threshold_multi_M('depolarizing', save_format)
-        # plots['threshold_multi_M_dephase'] = self.plot_threshold_multi_M('dephasing', save_format)
-        plots['threshold_combined_M'] = self.plot_threshold_combined_M(save_format)
+        # print("\n7. Multi-M threshold plots...")
+        ## plots['threshold_multi_M_depol'] = self.plot_threshold_multi_M('depolarizing', save_format)
+        ## plots['threshold_multi_M_dephase'] = self.plot_threshold_multi_M('dephasing', save_format)
+        # plots['threshold_combined_M'] = self.plot_threshold_combined_M(save_format)
 
         
         # Summary
