@@ -637,7 +637,7 @@ class SimulationPlotter:
             
             ax.set_xlim(0.09, 1.0)
             ax.set_ylim(1e-5, 1.0)
-            ax.grid(True, alpha=0.3)
+            # ax.grid(True, alpha=0.3)
             
             # Add legend only to first subplot to avoid clutter
             if subplot_idx == 0 and len(N_values) > 0:
@@ -666,7 +666,7 @@ class SimulationPlotter:
             return None
 
         # Create 2x5 subplot grid
-        fig, axes = plt.subplots(2, 5, figsize=(25, 10))
+        fig, axes = plt.subplots(2, 5, figsize=(25, 12))
         fig.suptitle('PEC Threshold vs System Size', fontsize=36, y=0.95)
 
         # Noise type configurations
@@ -750,7 +750,7 @@ class SimulationPlotter:
                             ax.semilogy(df_N['p_channel'], df_N['eps_L_final'],
                                     linestyle='-', marker=_mk(i),
                                     color=colors[i], linewidth=2, markersize=6,
-                                    label=f'N = {N}', alpha=0.8)
+                                    label=rf'$\ell$ = {int(np.log2(N))}', alpha=0.8)
 
                     # No correction reference line
                     p_range = np.logspace(-2, 0, 100)
@@ -833,9 +833,9 @@ class SimulationPlotter:
         # plots['threshold_vs_M_dephase'] = self.plot_threshold_vs_M('dephasing', save_format)
         
         # # NEW: Fidelity vs M
-        print("\n5. Fidelity vs M (max N)...")
-        plots['fidelity_vs_M_depol'] = self.plot_fidelity_vs_M('depolarizing', save_format)
-        plots['fidelity_vs_M_dephase'] = self.plot_fidelity_vs_M('dephasing', save_format)
+        # print("\n5. Fidelity vs M (max N)...")
+        # plots['fidelity_vs_M_depol'] = self.plot_fidelity_vs_M('depolarizing', save_format)
+        # plots['fidelity_vs_M_dephase'] = self.plot_fidelity_vs_M('dephasing', save_format)
         
         # Fidelity grid vs depth
         # print("\n6. Fidelity grid vs purification level...")
@@ -845,7 +845,7 @@ class SimulationPlotter:
         # print("\n7. Multi-M threshold plots...")
         ## plots['threshold_multi_M_depol'] = self.plot_threshold_multi_M('depolarizing', save_format)
         ## plots['threshold_multi_M_dephase'] = self.plot_threshold_multi_M('dephasing', save_format)
-        # plots['threshold_combined_M'] = self.plot_threshold_combined_M(save_format)
+        plots['threshold_combined_M'] = self.plot_threshold_combined_M(save_format)
 
         
         # Summary

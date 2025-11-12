@@ -213,7 +213,7 @@ class AnalyticTheoryPlotter:
         ax2.set_title(r'Error Reduction Ratio (Isotropic Family)', fontsize=30)
         ax2.set_xlim(0, 1)
         ax2.set_ylim(0, 1.2)
-        ax2.legend(loc='upper right', fontsize=14)
+        # ax2.legend(loc='upper right', fontsize=14)
         # ax2.grid(True, alpha=0.3)
 
         plt.tight_layout()
@@ -492,34 +492,34 @@ class AnalyticTheoryPlotter:
 
         out: Dict[str, Optional[str]] = {}
 
-        # print("\n1) F_out vs F (isotropic family)...")
-        # out['fout_vs_f'] = self.plot_fout_vs_f_isotropic(save_format=save_format)
+        print("\n1) F_out vs F (isotropic family)...")
+        out['fout_vs_f'] = self.plot_fout_vs_f_isotropic(save_format=save_format)
 
-        # print("\n2) Error evolution with bounds (isotropic family)...")
-        # out['err_evolution_bounds'] = self.plot_error_evolution_with_bounds(
-        #     F0=0.7, D=8, n_steps=12, save_format=save_format
-        # )
+        ## print("\n2) Error evolution with bounds (isotropic family)...")
+        ## out['err_evolution_bounds'] = self.plot_error_evolution_with_bounds(
+        ##     F0=0.7, D=8, n_steps=12, save_format=save_format
+        ## )
 
-        # print("\n5) GHZ per-round error ratio vs gamma...")
-        # out['ghz_err_ratio'] = self.plot_ghz_error_ratio(save_format=save_format)
+        ## print("\n5) GHZ per-round error ratio vs gamma...")
+        ## out['ghz_err_ratio'] = self.plot_ghz_error_ratio(save_format=save_format)
 
-        # print("\n7) Dephasing anisotropy vs isotropy (single qubit)...")
-        # out['anisotropy_vs_iso'] = self.plot_anisotropy_vs_isotropy_single_qubit(
-        #     beta_z=0.5, n_steps=12, save_format=save_format
-        # )
+        ## print("\n7) Dephasing anisotropy vs isotropy (single qubit)...")
+        ## out['anisotropy_vs_iso'] = self.plot_anisotropy_vs_isotropy_single_qubit(
+        ##     beta_z=0.5, n_steps=12, save_format=save_format
+        ## )
 
-        # print("\n8) Round-count scaling n_* vs M (GHZ)...")
-        # out['round_count_vs_M'] = self.plot_round_count_vs_M(
-        #     beta_z_list=[0.6, 0.8, 0.9],
-        #     M_list=list(range(2, 65, 2)),
-        #     save_format=save_format
-        # )
+        ## print("\n8) Round-count scaling n_* vs M (GHZ)...")
+        ## out['round_count_vs_M'] = self.plot_round_count_vs_M(
+        ##     beta_z_list=[0.6, 0.8, 0.9],
+        ##     M_list=list(range(2, 65, 2)),
+        ##     save_format=save_format
+        ## )
 
-        # print("\n9) F_out vs D at fixed F...")
-        # out['fout_vs_D'] = self.plot_fout_vs_D_fixedF(F0=0.7, save_format=save_format)
+        ## print("\n9) F_out vs D at fixed F...")
+        ## out['fout_vs_D'] = self.plot_fout_vs_D_fixedF(F0=0.7, save_format=save_format)
         
-        print("\n10. F_out vs F (GHZ system with gamma)...") 
-        out['fout_vs_f_GHZ_system'] = self.plot_fout_vs_f_gamma_system(save_format=save_format)
+        # print("\n10. F_out vs F (GHZ system with gamma)...") 
+        # out['fout_vs_f_GHZ_system'] = self.plot_fout_vs_f_gamma_system(save_format=save_format)
 
         print("\n" + "="*70)
         print("COMPLETE")
