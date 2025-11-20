@@ -1,5 +1,0 @@
-run_id,timestamp,M,N,noise_type,p,apply_twirling,backend_name,shots,step,level,copies_consumed,attempts,measurements_used,success_probability,estimated_fidelity,grover_iters,raw_counts,notes
-IBM_M1_depolarizing_p0.100_aer_simulator_20251118_144803,20251118_144803,1,2,depolarizing,0.1,True,aer_simulator,1024,1,1,2,1,1024,1.0,1.0,0,"{""0"": 1024}","success=True, error=None"
-IBM_M1_depolarizing_p0.200_aer_simulator_20251118_144803,20251118_144803,1,2,depolarizing,0.2,True,aer_simulator,1024,1,1,2,1,1024,1.0,1.0,0,"{""0"": 1024}","success=True, error=None"
-IBM_M2_depolarizing_p0.100_aer_simulator_20251118_144803,20251118_144803,2,2,depolarizing,0.1,True,aer_simulator,1024,1,1,2,1,1024,1.0,1.0,0,"{""0"": 1024}","success=True, error=None"
-IBM_M2_depolarizing_p0.200_aer_simulator_20251118_144803,20251118_144803,2,2,depolarizing,0.2,True,aer_simulator,1024,1,1,2,1,1024,1.0,1.0,0,"{""0"": 1024}","success=True, error=None"

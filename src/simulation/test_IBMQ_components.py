@@ -152,7 +152,7 @@ class TestNoiseApplication(unittest.TestCase):
         original_length = len(qc)
         
         # With p=0, no noise should be added
-        apply_depolarizing_noise_stochastic(qc, 0, 0.0, rng_seed=42)
+        apply_depolarizing_noise_stochastic(qc, 0, 0.0, 42)
         self.assertEqual(len(qc), original_length)
     
     def test_apply_depolarizing_noise_with_seed(self):
@@ -161,8 +161,8 @@ class TestNoiseApplication(unittest.TestCase):
         qc2 = self.test_qc.copy()
         
         # Same seed should give same noise
-        apply_depolarizing_noise_stochastic(qc1, 0, 0.5, rng_seed=42)
-        apply_depolarizing_noise_stochastic(qc2, 0, 0.5, rng_seed=42)
+        apply_depolarizing_noise_stochastic(qc1, 0, 0.5, 42)
+        apply_depolarizing_noise_stochastic(qc2, 0, 0.5, 42)
         
         # Check that circuits are identical
         self.assertEqual(len(qc1), len(qc2))
@@ -175,7 +175,7 @@ class TestNoiseApplication(unittest.TestCase):
         original_length = len(qc)
         
         # With p=1, should always add Z gate
-        apply_z_dephasing_noise(qc, 0, 1.0, rng_seed=42)
+        apply_z_dephasing_noise(qc, 0, 1.0, 42)
         
         # Should have one more gate
         self.assertEqual(len(qc), original_length + 1)
@@ -184,7 +184,7 @@ class TestNoiseApplication(unittest.TestCase):
         
         # With p=0, no noise should be added
         qc_no_noise = self.test_qc.copy()
-        apply_z_dephasing_noise(qc_no_noise, 0, 0.0, rng_seed=42)
+        apply_z_dephasing_noise(qc_no_noise, 0, 0.0, 42)
         self.assertEqual(len(qc_no_noise), original_length)
     
     def test_apply_x_dephasing_noise(self):
@@ -193,7 +193,7 @@ class TestNoiseApplication(unittest.TestCase):
         original_length = len(qc)
         
         # With p=1, should always add X gate
-        apply_x_dephasing_noise(qc, 0, 1.0, rng_seed=42)
+        apply_x_dephasing_noise(qc, 0, 1.0, 42)
         
         # Should have one more gate
         self.assertEqual(len(qc), original_length + 1)
