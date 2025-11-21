@@ -23,7 +23,7 @@ plt.rcParams.update({
     'ytick.labelsize': 20,
     'legend.fontsize': 20,
     'figure.titlesize': 30,
-    'font.family': 'DejaVu Sans',
+    'font.family': 'Times New Roman',
     'mathtext.fontset': 'dejavusans',
     'axes.linewidth': 1.2,
     'grid.linewidth': 0.8,
@@ -812,35 +812,35 @@ class SimulationPlotter:
         
         plots = {}
         
-        # # M=1 threshold plots
-        # print("\n1. Threshold plots (M=1)...")
-        # plots['threshold_depol_m1'] = self.plot_threshold_m1('depolarizing', save_format)
-        # plots['threshold_dephase_m1'] = self.plot_threshold_m1('dephasing', save_format)
+        # M=1 threshold plots
+        print("\n1. Threshold plots (M=1)...")
+        plots['threshold_depol_m1'] = self.plot_threshold_m1('depolarizing', save_format)
+        plots['threshold_dephase_m1'] = self.plot_threshold_m1('dephasing', save_format)
         
-        # # M=1 error evolution
-        # print("\n2. Error evolution (M=1)...")
-        # plots['error_evol_depol_m1'] = self.plot_error_evolution_m1('depolarizing', save_format)
-        # plots['error_evol_dephase_m1'] = self.plot_error_evolution_m1('dephasing', save_format)
+        # M=1 error evolution
+        print("\n2. Error evolution (M=1)...")
+        plots['error_evol_depol_m1'] = self.plot_error_evolution_m1('depolarizing', save_format)
+        plots['error_evol_dephase_m1'] = self.plot_error_evolution_m1('dephasing', save_format)
         
-        # # M=1 fidelity evolution
-        # print("\n3. Fidelity evolution (M=1)...")
-        # plots['fidelity_evol_depol_m1'] = self.plot_fidelity_evolution_m1('depolarizing', save_format)
-        # plots['fidelity_evol_dephase_m1'] = self.plot_fidelity_evolution_m1('dephasing', save_format)
+        # M=1 fidelity evolution
+        print("\n3. Fidelity evolution (M=1)...")
+        plots['fidelity_evol_depol_m1'] = self.plot_fidelity_evolution_m1('depolarizing', save_format)
+        plots['fidelity_evol_dephase_m1'] = self.plot_fidelity_evolution_m1('dephasing', save_format)
         
-        # # NEW: Multi-M threshold
-        # print("\n4. Threshold vs M (max N)...")
-        # plots['threshold_vs_M_depol'] = self.plot_threshold_vs_M('depolarizing', save_format)
-        # plots['threshold_vs_M_dephase'] = self.plot_threshold_vs_M('dephasing', save_format)
+        # NEW: Multi-M threshold
+        print("\n4. Threshold vs M (max N)...")
+        plots['threshold_vs_M_depol'] = self.plot_threshold_vs_M('depolarizing', save_format)
+        plots['threshold_vs_M_dephase'] = self.plot_threshold_vs_M('dephasing', save_format)
         
-        # # NEW: Fidelity vs M
-        # print("\n5. Fidelity vs M (max N)...")
-        # plots['fidelity_vs_M_depol'] = self.plot_fidelity_vs_M('depolarizing', save_format)
-        # plots['fidelity_vs_M_dephase'] = self.plot_fidelity_vs_M('dephasing', save_format)
+        # NEW: Fidelity vs M
+        print("\n5. Fidelity vs M (max N)...")
+        plots['fidelity_vs_M_depol'] = self.plot_fidelity_vs_M('depolarizing', save_format)
+        plots['fidelity_vs_M_dephase'] = self.plot_fidelity_vs_M('dephasing', save_format)
         
         # Fidelity grid vs depth
-        # print("\n6. Fidelity grid vs purification level...")
-        # plots['fidelity_grid_depol'] = self.plot_fidelity_grid_vs_depth('depolarizing', save_format)
-        # plots['fidelity_grid_dephase'] = self.plot_fidelity_grid_vs_depth('dephasing', save_format)
+        print("\n6. Fidelity grid vs purification level...")
+        plots['fidelity_grid_depol'] = self.plot_fidelity_grid_vs_depth('depolarizing', save_format)
+        plots['fidelity_grid_dephase'] = self.plot_fidelity_grid_vs_depth('dephasing', save_format)
         
         # print("\n7. Multi-M threshold plots...")
         ## plots['threshold_multi_M_depol'] = self.plot_threshold_multi_M('depolarizing', save_format)

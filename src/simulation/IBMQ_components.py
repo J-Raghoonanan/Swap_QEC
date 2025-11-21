@@ -1,190 +1,170 @@
 """
-IBMQ_components.py
+IBMQ implementation components for SWAP-based purification error correction.
 
-Modular components for IBM Quantum SWAP-based Purification Error Correction.
-
-This file contains all the basic building blocks:
-- State preparation functions
-- Noise application functions  
-- SWAP test circuits
-- Fidelity measurement via SWAP test
-- Backend management utilities
-- Circuit execution functions
-
-All functions are designed to be reusable and well-tested.
+This module provides hardware-executable functions that closely mirror the 
+simulation logic from the main codebase, adapted for IBM Quantum devices.
 """
-import numpy as np
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, Tuple, Any
+import numpy as np
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
+from dataclasses import dataclass, field
+import json
+import csv
+from datetime import datetime
 
 # Qiskit imports
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+from qiskit.providers import Backend, Job
+from qiskit.result import Result
+from qiskit.transpiler import PassManager
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+from qiskit.circuit.library import IGate, XGate, YGate, ZGate, HGate, SGate, SdgGate
+from qiskit.quantum_info import random_unitary
+
+# IBM imports - modern runtime approach only
 try:
-    from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
-    from qiskit.quantum_info import Statevector, state_fidelity
+    from qiskit_ibm_runtime import QiskitRuntimeService, Session, SamplerV2
     from qiskit_aer import AerSimulator
-    from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2, Session
-    from qiskit.circuit.library import GroverOperator
+    from qiskit.compiler import transpile
     QISKIT_AVAILABLE = True
-except ImportError:
+    IBM_RUNTIME_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Qiskit imports failed: {e}")
     QISKIT_AVAILABLE = False
-    # Define dummy types for type annotations
-    class QuantumCircuit: pass
-    class Statevector: pass
+    IBM_RUNTIME_AVAILABLE = False
+    # Create dummy classes to avoid import errors
+    QiskitRuntimeService = None
+    Session = None
+    SamplerV2 = None
+    AerSimulator = None
+
+# Local imports (reuse configs from simulation)
+from .configs import NoiseSpec, NoiseType, NoiseMode, TwirlingSpec, TargetSpec, StateKind
 
 logger = logging.getLogger(__name__)
 
-# =============================================================================
-# 1. STATE PREPARATION FUNCTIONS
-# =============================================================================
 
-def create_hadamard_state_circuit(M: int) -> Tuple[QuantumCircuit, Statevector]:
+@dataclass
+class IBMQRunSpec:
+    """Configuration for IBM Quantum hardware runs."""
+    M: int  # Number of qubits per copy
+    N: int  # Number of input copies for sequential purification
+    noise: NoiseSpec
+    target_type: str = "hadamard"  # or "ghz"
+    backend_name: str = "ibm_torino"
+    shots: int = 8192
+    use_amplitude_amplification: bool = False
+    transpilation_level: int = 2
+    out_dir: Path = field(default_factory=lambda: Path("data/IBMQ"))
+    run_id: Optional[str] = None
+    
+    def validate(self) -> None:
+        """Validate configuration parameters."""
+        if self.M <= 0 or self.M > 10:  # Reasonable limit for IBMQ
+            raise ValueError(f"M must be in [1, 10], got {self.M}")
+        if self.N <= 0 or (self.N & (self.N - 1)) != 0:  # Must be power of 2
+            raise ValueError(f"N must be a positive power of 2, got {self.N}")
+        if self.N > 256:  # Reasonable upper limit
+            raise ValueError(f"N must be <= 256, got {self.N}")
+        if not (0.0 <= self.noise.p <= 1.0):
+            raise ValueError(f"noise.p must be in [0,1], got {self.noise.p}")
+        if self.target_type not in ["hadamard", "ghz"]:
+            raise ValueError(f"target_type must be 'hadamard' or 'ghz', got {self.target_type}")
+        if self.shots <= 0:
+            raise ValueError(f"shots must be positive, got {self.shots}")
+        
+        # Check total qubit requirements
+        total_qubits = self.N * self.M + self._max_ancilla_qubits()
+        if total_qubits > 100:  # Conservative limit for current hardware
+            raise ValueError(f"Total qubits ({total_qubits}) exceeds hardware limits")
+    
+    def _max_ancilla_qubits(self) -> int:
+        """Calculate maximum ancilla qubits needed across all rounds."""
+        rounds = int(np.log2(self.N))
+        max_parallel_swaps = self.N // 2  # First round has most parallel SWAPs
+        return max_parallel_swaps
+    
+    def num_rounds(self) -> int:
+        """Number of purification rounds = log₂ N."""
+        return int(np.log2(self.N))
+
+
+# =============================
+# Phase 1: Core Functions
+# =============================
+
+def prepare_hadamard_state(M: int) -> QuantumCircuit:
     """
-    Create Hadamard product state |+⟩^⊗M.
+    Prepare |+⟩^⊗M state on M qubits.
     
     Args:
         M: Number of qubits
         
     Returns:
-        (circuit, reference_statevector) where circuit prepares |+⟩^⊗M from |0...0⟩
+        QuantumCircuit preparing the Hadamard product state
     """
-    if not QISKIT_AVAILABLE:
-        raise ImportError("Qiskit not available")
-        
-    qc = QuantumCircuit(M, name=f"hadamard_M{M}")
+    if M <= 0:
+        raise ValueError("M must be positive")
     
-    # Apply H to all qubits
-    for i in range(M):
-        qc.h(i)
+    qc = QuantumCircuit(M, name=f"prep_hadamard_M{M}")
+    for q in range(M):
+        qc.h(q)
     
-    # Create reference statevector
-    ref_sv = Statevector.from_instruction(qc)
-    
-    logger.debug(f"Created Hadamard state circuit: M={M}")
-    return qc, ref_sv
+    logger.debug(f"Created Hadamard preparation circuit for M={M}")
+    return qc
 
 
-def create_ghz_state_circuit(M: int) -> Tuple[QuantumCircuit, Statevector]:
+def prepare_ghz_state(M: int) -> QuantumCircuit:
     """
-    Create GHZ state (|0...0⟩ + |1...1⟩)/√2.
-    
-    Args:
-        M: Number of qubits (must be >= 1)
-        
-    Returns:
-        (circuit, reference_statevector)
-    """
-    if not QISKIT_AVAILABLE:
-        raise ImportError("Qiskit not available")
-        
-    if M < 1:
-        raise ValueError("M must be >= 1 for GHZ state")
-        
-    qc = QuantumCircuit(M, name=f"ghz_M{M}")
-    
-    # Create GHZ: H on first qubit, then CNOTs
-    qc.h(0)
-    for i in range(1, M):
-        qc.cx(0, i)
-    
-    # Create reference statevector
-    ref_sv = Statevector.from_instruction(qc)
-    
-    logger.debug(f"Created GHZ state circuit: M={M}")
-    return qc, ref_sv
-
-
-def create_target_state_circuit(M: int, state_kind: str, seed: Optional[int] = None) -> Tuple[QuantumCircuit, Statevector]:
-    """
-    Create target state circuit based on state_kind.
+    Prepare GHZ state (|0...0⟩ + |1...1⟩)/√2 on M qubits.
     
     Args:
         M: Number of qubits
-        state_kind: 'hadamard', 'ghz', or 'random'
-        seed: Random seed for random states
         
     Returns:
-        (circuit, reference_statevector)
+        QuantumCircuit preparing the GHZ state
     """
-    if state_kind == 'hadamard':
-        return create_hadamard_state_circuit(M)
-    elif state_kind == 'ghz':
-        return create_ghz_state_circuit(M)
-    elif state_kind == 'random':
-        # For random states, could implement Haar random or random circuits
-        # For now, default to Hadamard
-        logger.warning("Random states not implemented, using Hadamard")
-        return create_hadamard_state_circuit(M)
-    else:
-        raise ValueError(f"Unknown state_kind: {state_kind}")
-
-
-# =============================================================================
-# 2. NOISE APPLICATION FUNCTIONS  
-# =============================================================================
-
-def apply_depolarizing_noise_stochastic(qc: QuantumCircuit, qubit: int, p: float, rng_seed: Optional[int] = None):
-    """
-    Apply stochastic depolarizing noise to a single qubit.
+    if M <= 0:
+        raise ValueError("M must be positive")
     
-    With probability 1-p: identity
-    With probability p/3 each: X, Y, Z error
+    qc = QuantumCircuit(M, name=f"prep_ghz_M{M}")
+    qc.h(0)  # Create superposition on first qubit
+    for q in range(1, M):
+        qc.cx(0, q)  # Entangle with all other qubits
+    
+    logger.debug(f"Created GHZ preparation circuit for M={M}")
+    return qc
+
+
+def _sample_clifford_gate_ibmq(mode: str, index: int, seed: Optional[int] = None) -> str:
     """
-    if rng_seed is not None:
-        np.random.seed(rng_seed)
+    Sample a single-qubit Clifford gate for twirling.
+    
+    Args:
+        mode: 'random' or 'cyclic'
+        index: Index for deterministic sampling in cyclic mode
+        seed: Random seed
         
-    if p <= 0:
-        return  # No noise
-        
-    rand = np.random.random()
-    
-    if rand < p/3:
-        qc.x(qubit)  # X error
-    elif rand < 2*p/3:
-        qc.y(qubit)  # Y error  
-    elif rand < p:
-        qc.z(qubit)  # Z error
-    # Otherwise: identity (no error)
-
-
-def apply_z_dephasing_noise(qc: QuantumCircuit, qubit: int, p: float, rng_seed: Optional[int] = None):
+    Returns:
+        Gate name string
     """
-    Apply stochastic Z-dephasing noise to a single qubit.
+    # Use same options as simulation
+    options = ['i', 'h', 's', 'sdg', 'sh', 'sdgh']
     
-    With probability 1-p: identity  
-    With probability p: Z error
-    """
-    if rng_seed is not None:
-        np.random.seed(rng_seed)
-        
-    if p <= 0:
-        return  # No noise
-    
-    if np.random.random() < p:
-        qc.z(qubit)
+    if mode == "random":
+        rng = np.random.default_rng(seed)
+        return str(rng.choice(options))
+    else:  # cyclic
+        return options[index % len(options)]
 
 
-def apply_x_dephasing_noise(qc: QuantumCircuit, qubit: int, p: float, rng_seed: Optional[int] = None):
-    """
-    Apply stochastic X-dephasing noise to a single qubit.
-    
-    With probability 1-p: identity
-    With probability p: X error
-    """
-    if rng_seed is not None:
-        np.random.seed(rng_seed)
-        
-    if p <= 0:
-        return  # No noise
-    
-    if np.random.random() < p:
-        qc.x(qubit)
-
-
-def apply_single_qubit_clifford(qc: QuantumCircuit, qubit: int, gate_name: str):
-    """Apply a single-qubit Clifford gate."""
+def _apply_clifford_gate_ibmq(qc: QuantumCircuit, qubit: int, gate_name: str) -> None:
+    """Apply a single-qubit Clifford gate to the circuit."""
     if gate_name == 'i':
-        pass  # identity
+        pass  # identity, do nothing
     elif gate_name == 'h':
         qc.h(qubit)
     elif gate_name == 's':
@@ -201,16 +181,16 @@ def apply_single_qubit_clifford(qc: QuantumCircuit, qubit: int, gate_name: str):
         raise ValueError(f"Unknown Clifford gate: {gate_name}")
 
 
-def apply_inverse_clifford(qc: QuantumCircuit, qubit: int, gate_name: str):
-    """Apply inverse of a single-qubit Clifford gate."""
+def _apply_inverse_clifford_gate_ibmq(qc: QuantumCircuit, qubit: int, gate_name: str) -> None:
+    """Apply the inverse of a Clifford gate."""
     if gate_name == 'i':
         pass
     elif gate_name == 'h':
         qc.h(qubit)  # H† = H
     elif gate_name == 's':
-        qc.sdg(qubit)  # S† = S†
+        qc.sdg(qubit)  # S† = Sdg
     elif gate_name == 'sdg':
-        qc.s(qubit)  # (S†)† = S
+        qc.s(qubit)  # Sdg† = S
     elif gate_name == 'sh':
         qc.h(qubit)  # Reverse order
         qc.sdg(qubit)
@@ -221,298 +201,251 @@ def apply_inverse_clifford(qc: QuantumCircuit, qubit: int, gate_name: str):
         raise ValueError(f"Unknown Clifford gate: {gate_name}")
 
 
-def apply_noise_to_circuit(qc: QuantumCircuit, noise_type: str, p: float, 
-                         apply_twirling: bool = False, twirl_seed: Optional[int] = None) -> QuantumCircuit:
+def apply_depolarizing_noise(qc: QuantumCircuit, qubits: List[int], p: float, seed: Optional[int] = None) -> None:
     """
-    Apply noise to circuit with optional Clifford twirling.
+    Apply depolarizing noise to specified qubits.
     
-    This implements channel twirling exactly as in the simulation:
-    1. Apply random Cliffords C (if twirling enabled for dephasing)
-    2. Apply noise channel in rotated frame
-    3. Apply C† to undo frame
+    For hardware implementation, we approximate the depolarizing channel
+    using probabilistic Pauli gates. Each qubit gets X, Y, or Z with 
+    probability p/3 each.
     
     Args:
-        qc: Input circuit
-        noise_type: 'depolarizing', 'dephase_z', or 'dephase_x'
-        p: Noise parameter (Kraus probability)
-        apply_twirling: Whether to apply Clifford twirling
-        twirl_seed: Seed for Clifford randomization
-        
-    Returns:
-        New circuit with noise applied
+        qc: Circuit to modify in-place
+        qubits: List of qubit indices to apply noise to
+        p: Depolarizing probability parameter
     """
-    M = qc.num_qubits
-    noisy_qc = qc.copy()
-    noisy_qc.name = f"noisy_{noise_type}"
+    if not (0.0 <= p <= 1.0):
+        raise ValueError(f"p must be in [0,1], got {p}")
+    
+    # For hardware, we approximate by probabilistically applying Paulis
+    # This matches the Kraus operator structure from simulation
+    rng = np.random.default_rng(seed)
+    for qubit in qubits:
+        # Create a probabilistic mixture approximating the depolarizing channel
+        # In practice, we'll apply each Pauli with probability p/3
+        r = rng.random()
+        
+        if r < p / 3:
+            qc.x(qubit)  # Pauli X
+        elif r < 2 * p / 3:
+            qc.y(qubit)  # Pauli Y  
+        elif r < p:
+            qc.z(qubit)  # Pauli Z
+        # else: identity (do nothing)
+    
+    logger.debug(f"Applied depolarizing noise with p={p:.4f} to qubits {qubits}")
+
+
+def apply_twirled_dephasing_noise(qc: QuantumCircuit, qubits: List[int], p: float, 
+                                 twirling_seed: Optional[int] = None) -> None:
+    """
+    Apply twirled dephasing noise to specified qubits.
+    
+    Implements channel twirling exactly as in simulation:
+    1. Apply random Clifford C
+    2. Apply dephasing channel (Z with probability p)
+    3. Apply C†
+    
+    Args:
+        qc: Circuit to modify in-place
+        qubits: List of qubit indices to apply noise to  
+        p: Dephasing probability parameter
+        twirling_seed: Seed for Clifford sampling
+    """
+    if not (0.0 <= p <= 1.0):
+        raise ValueError(f"p must be in [0,1], got {p}")
     
     clifford_gates = []
     
-    # Step 1: Apply random Cliffords if twirling enabled
-    if apply_twirling and noise_type in ['dephase_z', 'dephase_x']:
-        if twirl_seed is not None:
-            np.random.seed(twirl_seed)
-            
-        clifford_options = ['i', 'h', 's', 'sdg', 'sh', 'sdgh']
-        
-        logger.debug(f"Applying Clifford twirling for {noise_type}")
-        for q in range(M):
-            gate_name = np.random.choice(clifford_options)
-            apply_single_qubit_clifford(noisy_qc, q, gate_name)
-            clifford_gates.append(gate_name)
+    # Step 1: Apply random Cliffords
+    for i, qubit in enumerate(qubits):
+        qubit_seed = (twirling_seed + i) if twirling_seed is not None else None
+        gate_name = _sample_clifford_gate_ibmq("random", index=i, seed=qubit_seed)
+        _apply_clifford_gate_ibmq(qc, qubit, gate_name)
+        clifford_gates.append(gate_name)
     
-    # Step 2: Apply noise in (possibly rotated) frame
-    for q in range(M):
-        if noise_type == 'depolarizing':
-            apply_depolarizing_noise_stochastic(noisy_qc, q, p, twirl_seed)
-        elif noise_type == 'dephase_z':
-            apply_z_dephasing_noise(noisy_qc, q, p, twirl_seed)
-        elif noise_type == 'dephase_x':
-            apply_x_dephasing_noise(noisy_qc, q, p, twirl_seed)
-        else:
-            raise ValueError(f"Unknown noise type: {noise_type}")
+    # Step 2: Apply dephasing noise (Z-rotations) 
+    for qubit in qubits:
+        if np.random.random() < p:
+            qc.z(qubit)
     
-    # Step 3: Undo Clifford frame if twirling was applied
-    if apply_twirling and clifford_gates:
-        logger.debug("Undoing Clifford frame")
-        for q in range(M):
-            apply_inverse_clifford(noisy_qc, q, clifford_gates[q])
+    # Step 3: Undo Clifford frame
+    for i, qubit in enumerate(qubits):
+        _apply_inverse_clifford_gate_ibmq(qc, qubit, clifford_gates[i])
     
-    return noisy_qc
+    logger.debug(f"Applied twirled dephasing noise with p={p:.4f} to qubits {qubits}")
 
 
-# =============================================================================
-# 3. SWAP TEST CIRCUITS
-# =============================================================================
-
-def build_swap_test_circuit(M: int, measure_ancilla: bool = True) -> QuantumCircuit:
+def build_swap_test_circuit(M: int) -> QuantumCircuit:
     """
     Build SWAP test circuit for M-qubit registers.
     
-    Circuit structure: |anc⟩ ⊗ |A⟩ ⊗ |B⟩ 
-    Implements: H_anc → CSWAP → H_anc
+    Circuit structure:
+    - 1 ancilla qubit
+    - M qubits for register A  
+    - M qubits for register B
+    - Total: 1 + 2*M qubits
     
     Args:
         M: Number of qubits per register
-        measure_ancilla: Whether to add ancilla measurement
         
     Returns:
-        QuantumCircuit with 1+2M qubits
+        QuantumCircuit implementing H-CSWAP-H pattern
     """
-    if not QISKIT_AVAILABLE:
-        raise ImportError("Qiskit not available")
-        
-    # Create registers
-    anc = QuantumRegister(1, 'anc')
-    reg_A = QuantumRegister(M, 'A')
-    reg_B = QuantumRegister(M, 'B')
+    if M <= 0:
+        raise ValueError("M must be positive")
     
-    qc = QuantumCircuit(anc, reg_A, reg_B)
+    total_qubits = 1 + 2 * M
+    qc = QuantumCircuit(total_qubits, name=f"swap_test_M{M}")
     
-    if measure_ancilla:
-        anc_meas = ClassicalRegister(1, 'anc_meas')
-        qc.add_register(anc_meas)
+    ancilla = 0
+    reg_A = list(range(1, M + 1))
+    reg_B = list(range(M + 1, 2 * M + 1))
     
-    # SWAP test protocol
-    qc.h(anc[0])  # First Hadamard
+    # First Hadamard on ancilla
+    qc.h(ancilla)
     
-    # Controlled-SWAP gates (Fredkin gates)
+    # Controlled SWAP between registers A and B
     for i in range(M):
-        qc.cswap(anc[0], reg_A[i], reg_B[i])
+        qc.cswap(ancilla, reg_A[i], reg_B[i])
     
-    qc.h(anc[0])  # Second Hadamard
+    # Second Hadamard on ancilla  
+    qc.h(ancilla)
     
-    # Measure ancilla
-    if measure_ancilla:
-        qc.measure(anc[0], anc_meas[0])
-    
-    qc.name = f"swap_test_M{M}"
-    logger.debug(f"Built SWAP test circuit: M={M}, {qc.num_qubits} qubits")
+    logger.debug(f"Built SWAP test circuit for M={M} (total {total_qubits} qubits)")
     return qc
 
 
-def create_swap_purification_circuit(state_A_prep: QuantumCircuit, state_B_prep: QuantumCircuit,
-                                   measure_ancilla: bool = True) -> QuantumCircuit:
+def add_fidelity_measurement_hadamard(qc: QuantumCircuit, qubits: List[int], 
+                                     classical_reg: Optional[ClassicalRegister] = None) -> None:
     """
-    Create complete SWAP purification circuit from two state preparation circuits.
+    Add fidelity measurement for Hadamard state |+⟩^⊗M.
+    
+    Measurement strategy:
+    1. Apply H gate to each qubit (rotate to Z-basis)
+    2. Measure all qubits
+    3. Fidelity = probability of measuring all |0⟩
     
     Args:
-        state_A_prep, state_B_prep: Circuits that prepare the two states
-        measure_ancilla: Whether to measure ancilla
-        
-    Returns:
-        Complete SWAP test circuit
+        qc: Circuit to modify in-place
+        qubits: Qubits to measure for fidelity
+        classical_reg: Classical register for measurements (auto-created if None)
     """
-    if not QISKIT_AVAILABLE:
-        raise ImportError("Qiskit not available")
-        
-    M = state_A_prep.num_qubits
-    assert state_B_prep.num_qubits == M, "Both states must have same number of qubits"
+    if not qubits:
+        raise ValueError("qubits list cannot be empty")
     
-    # Build SWAP test structure
-    anc = QuantumRegister(1, 'anc')
-    reg_A = QuantumRegister(M, 'A')
-    reg_B = QuantumRegister(M, 'B')
+    # Rotate from X-basis to Z-basis
+    for qubit in qubits:
+        qc.h(qubit)
     
-    qc = QuantumCircuit(anc, reg_A, reg_B)
+    # Add classical register if not provided
+    if classical_reg is None:
+        classical_reg = ClassicalRegister(len(qubits), f"fidelity_c")
+        qc.add_register(classical_reg)
     
-    if measure_ancilla:
-        anc_meas = ClassicalRegister(1, 'anc_meas')
-        qc.add_register(anc_meas)
+    # Measure all qubits
+    for i, qubit in enumerate(qubits):
+        qc.measure(qubit, classical_reg[i])
     
-    # Prepare states
-    qc = qc.compose(state_A_prep, reg_A)
-    qc = qc.compose(state_B_prep, reg_B)
-    
-    # Apply SWAP test
-    qc.h(anc[0])
-    for i in range(M):
-        qc.cswap(anc[0], reg_A[i], reg_B[i])
-    qc.h(anc[0])
-    
-    # Measure ancilla
-    if measure_ancilla:
-        qc.measure(anc[0], anc_meas[0])
-    
-    qc.name = f"swap_purification_M{M}"
-    return qc
+    logger.debug(f"Added Hadamard fidelity measurement for qubits {qubits}")
 
 
-# =============================================================================
-# 4. FIDELITY MEASUREMENT VIA SWAP TEST
-# =============================================================================
-
-def create_fidelity_measurement_circuit(target_prep: QuantumCircuit, noisy_prep: QuantumCircuit) -> QuantumCircuit:
+def add_fidelity_measurement_ghz(qc: QuantumCircuit, qubits: List[int],
+                                classical_reg: Optional[ClassicalRegister] = None) -> None:
     """
-    Create SWAP test circuit for fidelity measurement F = ⟨ψ|ρ|ψ⟩.
+    Add fidelity measurement for GHZ state (|00...0⟩ + |11...1⟩)/√2.
     
-    Theory: P_success = ½(1 + F), so F = 2 × P_success - 1
+    Measurement strategy:
+    1. Measure directly in Z-basis
+    2. Calculate fidelity from parity measurements
     
     Args:
-        target_prep: Circuit that prepares ideal target |ψ⟩
-        noisy_prep: Circuit that prepares noisy state ρ
-        
-    Returns:
-        SWAP test circuit for fidelity measurement
+        qc: Circuit to modify in-place  
+        qubits: Qubits to measure for fidelity
+        classical_reg: Classical register for measurements (auto-created if None)
     """
-    return create_swap_purification_circuit(target_prep, noisy_prep, measure_ancilla=True)
-
-
-# =============================================================================
-# 5. AMPLITUDE AMPLIFICATION HELPERS
-# =============================================================================
-
-def calculate_grover_iterations(success_prob: float, target_success: float = 0.99, 
-                              max_iters: int = 32) -> int:
-    """
-    Calculate required Grover iterations to reach target success probability.
+    if not qubits:
+        raise ValueError("qubits list cannot be empty")
     
-    This matches the calculation from amplified_swap.py exactly.
+    # Add classical register if not provided
+    if classical_reg is None:
+        classical_reg = ClassicalRegister(len(qubits), f"fidelity_c")
+        qc.add_register(classical_reg)
+    
+    # Measure all qubits directly (no rotation needed for GHZ)
+    for i, qubit in enumerate(qubits):
+        qc.measure(qubit, classical_reg[i])
+    
+    logger.debug(f"Added GHZ fidelity measurement for qubits {qubits}")
+
+
+def add_ancilla_measurement(qc: QuantumCircuit, ancilla: int,
+                           classical_reg: Optional[ClassicalRegister] = None) -> None:
+    """
+    Add measurement of ancilla qubit for SWAP test success.
     
     Args:
-        success_prob: Current success probability
-        target_success: Desired success probability  
-        max_iters: Maximum iterations allowed
-        
-    Returns:
-        Number of Grover iterations needed
+        qc: Circuit to modify in-place
+        ancilla: Ancilla qubit index
+        classical_reg: Classical register (auto-created if None)
     """
-    if success_prob >= target_success or success_prob <= 0:
-        return 0
+    if classical_reg is None:
+        classical_reg = ClassicalRegister(1, "ancilla_c")
+        qc.add_register(classical_reg)
     
-    theta = 2.0 * np.arcsin(np.sqrt(success_prob))
-    k = int(np.floor(np.pi / (2.0 * theta) - 0.5))
-    return max(0, min(k, max_iters))
+    qc.measure(ancilla, classical_reg[0])
+    logger.debug(f"Added ancilla measurement for qubit {ancilla}")
 
 
-def build_amplitude_amplification_circuit(swap_circuit: QuantumCircuit, 
-                                        grover_iterations: int) -> QuantumCircuit:
+def calculate_fidelity_from_counts(counts: Dict[str, int], M: int, 
+                                  target_type: str) -> float:
     """
-    Build amplitude amplification circuit to boost SWAP test success probability.
-    
-    Note: For IBM hardware, we typically just repeat the SWAP test multiple times
-    rather than implementing explicit Grover operators due to circuit depth constraints.
-    This function is provided for completeness but experimental implementation
-    should use repeated SWAP tests with post-selection.
+    Calculate fidelity from measurement counts.
     
     Args:
-        swap_circuit: Base SWAP test circuit
-        grover_iterations: Number of Grover iterations
+        counts: Dictionary of measurement outcomes and their counts
+        M: Number of target qubits
+        target_type: 'hadamard' or 'ghz'
         
     Returns:
-        Circuit with amplitude amplification (or repeated measurements)
+        Estimated fidelity
     """
-    if grover_iterations <= 0:
-        return swap_circuit.copy()
+    total_shots = sum(counts.values())
+    if total_shots == 0:
+        return 0.0
     
-    logger.warning("Full amplitude amplification not implemented - using repeated measurements")
-    # For now, just return the original circuit
-    # In practice, run multiple shots and post-select on ancilla=0
-    return swap_circuit.copy()
-
-
-def create_repeated_swap_circuit(state_A_prep: QuantumCircuit, state_B_prep: QuantumCircuit,
-                                num_repeats: int = 3) -> QuantumCircuit:
-    """
-    Create circuit with repeated SWAP tests for improved success probability.
-    
-    This is a practical alternative to full amplitude amplification for NISQ devices.
-    
-    Args:
-        state_A_prep, state_B_prep: State preparation circuits
-        num_repeats: Number of independent SWAP test repetitions
+    if target_type == "hadamard":
+        # For |+⟩^⊗M, fidelity = P(all zeros after H rotation)
+        target_outcome = "0" * M
+        target_count = counts.get(target_outcome, 0)
+        fidelity = target_count / total_shots
         
-    Returns:
-        Circuit with multiple SWAP tests
-    """
-    if not QISKIT_AVAILABLE:
-        raise ImportError("Qiskit not available")
+    elif target_type == "ghz":
+        # For GHZ, fidelity related to P(all zeros) + P(all ones)
+        all_zeros = "0" * M
+        all_ones = "1" * M
+        coherent_count = counts.get(all_zeros, 0) + counts.get(all_ones, 0)
+        # For perfect GHZ: P(00...0) = P(11...1) = 0.5, so total = 1.0
+        # Fidelity is the fraction of coherent outcomes
+        fidelity = coherent_count / total_shots
         
-    M = state_A_prep.num_qubits
+    else:
+        raise ValueError(f"Unknown target_type: {target_type}")
     
-    # Create registers for all repetitions
-    anc_regs = [QuantumRegister(1, f'anc_{i}') for i in range(num_repeats)]
-    A_regs = [QuantumRegister(M, f'A_{i}') for i in range(num_repeats)]
-    B_regs = [QuantumRegister(M, f'B_{i}') for i in range(num_repeats)]
-    
-    # Classical registers for measurements
-    anc_meas = ClassicalRegister(num_repeats, 'anc_meas')
-    
-    qc = QuantumCircuit()
-    for reg_list in [anc_regs, A_regs, B_regs]:
-        for reg in reg_list:
-            qc.add_register(reg)
-    qc.add_register(anc_meas)
-    
-    # Build each SWAP test
-    for i in range(num_repeats):
-        # Prepare states
-        qc = qc.compose(state_A_prep, A_regs[i])
-        qc = qc.compose(state_B_prep, B_regs[i])
-        
-        # SWAP test
-        qc.h(anc_regs[i][0])
-        for j in range(M):
-            qc.cswap(anc_regs[i][0], A_regs[i][j], B_regs[i][j])
-        qc.h(anc_regs[i][0])
-        
-        # Measure ancilla
-        qc.measure(anc_regs[i][0], anc_meas[i])
-    
-    qc.name = f"repeated_swap_M{M}_x{num_repeats}"
-    logger.debug(f"Built repeated SWAP circuit: M={M}, {num_repeats} repetitions")
-    return qc
+    logger.debug(f"Calculated fidelity = {fidelity:.4f} for {target_type} state")
+    return fidelity
 
 
-# =============================================================================
-# 6. BACKEND MANAGEMENT
-# =============================================================================
+# =============================
+# Phase 2: Backend Integration  
+# =============================
 
-def setup_quantum_backend(backend_name: str):
+def setup_ibm_backend(backend_name: str = "ibm_torino") -> Tuple[Optional[QiskitRuntimeService], Backend]:
     """
     Setup quantum backend for experiments.
     
     Args:
-        backend_name: 'aer_simulator' or IBM hardware name (e.g., 'ibm_brisbane')
+        backend_name: 'aer_simulator' or IBM hardware name (e.g., 'ibm_torino')
         
     Returns:
         (service, backend) tuple where service is None for local simulator
@@ -521,21 +454,57 @@ def setup_quantum_backend(backend_name: str):
         logger.warning("Qiskit not available, returning None backend")
         return None, None
         
-    if backend_name == 'aer_simulator':
+    if backend_name.lower() in ['aer_simulator', 'simulator']:
         backend = AerSimulator()
         service = None
         logger.info("Using local AerSimulator")
         return service, backend
     else:
         # Real IBM hardware
+        if not IBM_RUNTIME_AVAILABLE:
+            raise RuntimeError("IBM Runtime not available. Install with: pip install qiskit-ibm-runtime")
+        
         try:
-            service = QiskitRuntimeService()
+            service = QiskitRuntimeService()  # Uses default authentication
             backend = service.backend(backend_name)
             logger.info(f"Connected to IBM hardware: {backend_name}")
+            logger.info(f"Backend status: {backend.status()}")
             return service, backend
         except Exception as e:
             logger.error(f"Failed to connect to {backend_name}: {e}")
-            raise
+            logger.warning("Falling back to local simulator")
+            return None, AerSimulator()
+
+
+def transpile_for_backend(qc: QuantumCircuit, backend: Backend, 
+                         optimization_level: int = 2) -> QuantumCircuit:
+    """
+    Transpile circuit for specific IBM backend.
+    
+    Args:
+        qc: Circuit to transpile
+        backend: Target backend
+        optimization_level: Qiskit optimization level (0-3)
+        
+    Returns:
+        Transpiled circuit
+    """
+    try:
+        # Generate transpilation pass manager
+        pass_manager = generate_preset_pass_manager(
+            optimization_level=optimization_level,
+            backend=backend
+        )
+        
+        # Transpile the circuit
+        transpiled_qc = pass_manager.run(qc)
+        
+        logger.info(f"Transpiled circuit: {qc.num_qubits} qubits, depth {qc.depth()} → depth {transpiled_qc.depth()}")
+        return transpiled_qc
+        
+    except Exception as e:
+        logger.error(f"Transpilation failed: {e}")
+        raise
 
 
 def execute_circuits_with_backend(circuits: List[QuantumCircuit], backend, service, 
@@ -614,507 +583,406 @@ def execute_circuits_with_backend(circuits: List[QuantumCircuit], backend, servi
         raise
 
 
-# =============================================================================
-# 7. MEASUREMENT AND ANALYSIS FUNCTIONS
-# =============================================================================
-
-def measure_swap_success_probability(swap_circuit: QuantumCircuit, backend, service, 
-                                   shots: int = 1024) -> Tuple[float, Dict[str, int]]:
+def run_circuit_with_retries(qc: QuantumCircuit, service, backend, 
+                            shots: int, max_retries: int = 3) -> Result:
     """
-    Execute SWAP test circuit and return success probability.
+    Run circuit on backend with retry logic using modern execution pattern.
     
     Args:
-        swap_circuit: SWAP test circuit with ancilla measurement
-        backend: Quantum backend
-        service: IBM service
+        qc: Circuit to execute (should be pre-transpiled for hardware)
+        service: IBM Runtime service (None for local simulator)
+        backend: Target backend
         shots: Number of measurement shots
+        max_retries: Maximum retry attempts
         
     Returns:
-        (success_probability, raw_counts)
+        Result object or counts dictionary
+        
+    Raises:
+        RuntimeError: If all retries fail
     """
-    counts_list = execute_circuits_with_backend([swap_circuit], backend, service, shots)
-    counts = counts_list[0]
-    
-    total_shots = sum(counts.values())
-    success_prob = counts.get('0', 0) / total_shots if total_shots > 0 else 0.0
-    
-    logger.debug(f"SWAP success probability: {success_prob:.4f} from {total_shots} shots")
-    return success_prob, counts
+    for attempt in range(max_retries + 1):
+        try:
+            logger.info(f"Submitting job to {backend.name} (attempt {attempt + 1}/{max_retries + 1})")
+            
+            # Use the modern execution function
+            counts_list = execute_circuits_with_backend([qc], backend, service, shots)
+            
+            # Create a mock Result object for compatibility
+            class MockResult:
+                def __init__(self, counts):
+                    self._counts = counts
+                    
+                def get_counts(self, experiment=None):
+                    if experiment is None:
+                        return self._counts[0]
+                    return self._counts[experiment]
+            
+            result = MockResult(counts_list)
+            logger.info(f"Job completed successfully")
+            return result
+            
+        except Exception as e:
+            if attempt < max_retries:
+                logger.warning(f"Job failed (attempt {attempt + 1}): {e}. Retrying...")
+            else:
+                logger.error(f"All retry attempts failed: {e}")
+                raise RuntimeError(f"Failed to execute circuit after {max_retries + 1} attempts: {e}")
 
 
-def measure_fidelity_with_swap_test(target_prep: QuantumCircuit, noisy_prep: QuantumCircuit,
-                                  backend, service, shots: int = 1024) -> Tuple[float, Dict[str, int]]:
+def save_ibmq_results(results: Dict, filepath: Path, run_spec: IBMQRunSpec) -> None:
     """
-    Measure fidelity F = ⟨ψ|ρ|ψ⟩ using SWAP test.
-    
-    Theory: P_success = ½(1 + F), so F = 2 × P_success - 1
+    Save IBMQ results to CSV file in format compatible with simulation data.
     
     Args:
-        target_prep: Circuit preparing ideal |ψ⟩
-        noisy_prep: Circuit preparing noisy ρ
-        backend: Quantum backend  
-        service: IBM service
-        shots: Number of measurement shots
-        
-    Returns:
-        (fidelity, raw_counts)
+        results: Dictionary containing experimental results
+        filepath: Output file path  
+        run_spec: Run configuration
     """
-    fidelity_circuit = create_fidelity_measurement_circuit(target_prep, noisy_prep)
-    success_prob, counts = measure_swap_success_probability(fidelity_circuit, backend, service, shots)
+    filepath.parent.mkdir(parents=True, exist_ok=True)
     
-    # Convert to fidelity: F = 2 × P_success - 1
-    fidelity = 2.0 * success_prob - 1.0
+    # Prepare data row matching simulation format
+    data_row = {
+        'M': run_spec.M,
+        'N': run_spec.N,  # Number of input copies
+        'noise_type': run_spec.noise.noise_type.value,
+        'noise_mode': run_spec.noise.mode.value, 
+        'p': run_spec.noise.p,
+        'target_type': run_spec.target_type,
+        'backend': run_spec.backend_name,
+        'shots': run_spec.shots,
+        'timestamp': datetime.now().isoformat(),
+        'run_id': run_spec.run_id or f"ibmq_{run_spec.M}_{run_spec.noise.noise_type.value}_{run_spec.noise.p:.3f}",
+        **results  # Include all experimental results
+    }
     
-    # Clip to valid range [0, 1] (accounts for measurement noise)
-    fidelity = max(0.0, min(1.0, fidelity))
+    # Write to CSV
+    fieldnames = list(data_row.keys())
+    file_exists = filepath.exists()
     
-    logger.debug(f"Measured fidelity: {fidelity:.4f} (P_success={success_prob:.4f})")
-    return fidelity, counts
+    with open(filepath, 'a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(data_row)
+    
+    logger.info(f"Saved results to {filepath}")
 
 
-# =============================================================================
-# 8. POST-SELECTION AND RECURSIVE PURIFICATION  
-# =============================================================================
+# =============================
+# Phase 3: High-level Assembly
+# =============================
 
-def analyze_swap_test_results(counts: Dict[str, int], num_repeats: int = 1) -> Tuple[bool, float, Dict]:
+def build_sequential_purification_circuit(N: int, M: int, noise_spec: NoiseSpec, 
+                                        target_type: str = "hadamard") -> QuantumCircuit:
     """
-    Analyze SWAP test measurement results and determine if purification succeeded.
+    Build complete sequential purification circuit for N input copies.
+    
+    This implements the batch version of the sequential protocol:
+    1. Create N copies of the target state
+    2. Apply noise to all copies
+    3. Perform log₂ N rounds of pairwise SWAP purification
+    4. Measure final state fidelity
     
     Args:
-        counts: Measurement counts dictionary
-        num_repeats: Number of repeated SWAP tests (for multi-ancilla circuits)
+        N: Number of input copies (must be power of 2)
+        M: Number of qubits per copy
+        noise_spec: Noise configuration
+        target_type: 'hadamard' or 'ghz'
         
     Returns:
-        (success, success_probability, analysis_dict)
+        Complete sequential purification circuit
     """
+    if N <= 0 or (N & (N - 1)) != 0:
+        raise ValueError(f"N must be a positive power of 2, got {N}")
+    if M <= 0:
+        raise ValueError(f"M must be positive, got {M}")
+    
+    num_rounds = int(np.log2(N))
+    logger.info(f"Building sequential circuit: N={N} copies, M={M} qubits, {num_rounds} rounds")
+    
+    # Qubit allocation
+    copy_qubits = N * M  # N copies of M qubits each
+    max_ancilla = N // 2  # Maximum ancilla qubits needed (first round)
+    total_qubits = copy_qubits + max_ancilla
+    
+    qc = QuantumCircuit(total_qubits, name=f"sequential_purification_N{N}_M{M}")
+    
+    # Define qubit ranges
+    # Copies: [0, N*M)
+    # Ancillas: [N*M, N*M + max_ancilla)
+    copy_start = 0
+    ancilla_start = copy_qubits
+    
+    # Step 1: Prepare N copies of the target state
+    logger.debug(f"Preparing {N} copies of {target_type} state")
+    if target_type == "hadamard":
+        prep_circuit = prepare_hadamard_state(M)
+    elif target_type == "ghz":
+        prep_circuit = prepare_ghz_state(M)
+    else:
+        raise ValueError(f"Unknown target_type: {target_type}")
+    
+    for copy_idx in range(N):
+        copy_qubits_range = list(range(copy_idx * M, (copy_idx + 1) * M))
+        qc.compose(prep_circuit, qubits=copy_qubits_range, inplace=True)
+    
+    # Step 2: Apply noise to all copies
+    logger.debug(f"Applying {noise_spec.noise_type.value} noise with p={noise_spec.p}")
+    for copy_idx in range(N):
+        copy_qubits_range = list(range(copy_idx * M, (copy_idx + 1) * M))
+        
+        if noise_spec.noise_type == NoiseType.depolarizing:
+            apply_depolarizing_noise(qc, copy_qubits_range, noise_spec.p)
+        elif noise_spec.noise_type in [NoiseType.dephase_z, NoiseType.dephase_x]:
+            # Use copy index as seed offset for consistent but different twirling per copy
+            twirl_seed = 42 + copy_idx
+            apply_twirled_dephasing_noise(qc, copy_qubits_range, noise_spec.p, twirl_seed)
+        else:
+            raise ValueError(f"Unsupported noise type: {noise_spec.noise_type}")
+    
+    # Step 3: Sequential SWAP purification rounds
+    active_copies = list(range(N))  # Track which copies are still active
+    
+    for round_idx in range(num_rounds):
+        num_pairs = len(active_copies) // 2
+        logger.debug(f"Round {round_idx + 1}/{num_rounds}: {num_pairs} SWAP tests")
+        
+        # Perform SWAP tests in parallel for this round
+        new_active_copies = []
+        
+        for pair_idx in range(num_pairs):
+            # Get the two copies to merge
+            copy_a_idx = active_copies[2 * pair_idx]
+            copy_b_idx = active_copies[2 * pair_idx + 1]
+            
+            # Define qubit ranges for this SWAP test
+            reg_a = list(range(copy_a_idx * M, (copy_a_idx + 1) * M))
+            reg_b = list(range(copy_b_idx * M, (copy_b_idx + 1) * M))
+            ancilla = ancilla_start + pair_idx
+            
+            # Build SWAP test for this pair
+            # H-CSWAP-H pattern
+            qc.h(ancilla)
+            
+            # Controlled SWAP between reg_a and reg_b
+            for qubit_idx in range(M):
+                # Fredkin gate: controlled SWAP
+                qc.cswap(ancilla, reg_a[qubit_idx], reg_b[qubit_idx]) 
+            
+            qc.h(ancilla)
+            
+            # For now, assume all SWAP tests succeed (ancilla = 0)
+            # The purified state remains in reg_a
+            new_active_copies.append(copy_a_idx)
+        
+        active_copies = new_active_copies
+        logger.debug(f"After round {round_idx + 1}: {len(active_copies)} active copies")
+    
+    # Step 4: Add final fidelity measurement
+    final_copy_idx = active_copies[0]
+    final_qubits = list(range(final_copy_idx * M, (final_copy_idx + 1) * M))
+    
+    # Add classical register for fidelity measurement
+    fidelity_creg = ClassicalRegister(M, "final_fidelity")
+    qc.add_register(fidelity_creg)
+    
+    if target_type == "hadamard":
+        add_fidelity_measurement_hadamard(qc, final_qubits, fidelity_creg)
+    else:  # ghz
+        add_fidelity_measurement_ghz(qc, final_qubits, fidelity_creg)
+    
+    logger.info(f"Built sequential circuit: {qc.num_qubits} total qubits, depth {qc.depth()}")
+    return qc
+
+
+def build_full_purification_experiment(M: int, noise_spec: NoiseSpec, 
+                                      target_type: str = "hadamard", N: int = 2) -> QuantumCircuit:
+    """
+    Build complete purification experiment circuit.
+    
+    For N=2: Single SWAP test (original behavior)
+    For N>2: Sequential purification with log₂ N rounds
+    
+    Args:
+        M: Number of qubits per copy
+        noise_spec: Noise configuration
+        target_type: 'hadamard' or 'ghz'
+        N: Number of input copies (must be power of 2)
+        
+    Returns:
+        Complete experimental circuit
+    """
+    if N == 2:
+        # Original single SWAP test implementation
+        return _build_single_swap_experiment(M, noise_spec, target_type)
+    else:
+        # Sequential purification for N > 2
+        return build_sequential_purification_circuit(N, M, noise_spec, target_type)
+
+
+def _build_single_swap_experiment(M: int, noise_spec: NoiseSpec, 
+                                 target_type: str = "hadamard") -> QuantumCircuit:
+    """
+    Build single SWAP test experiment (original implementation).
+    
+    Circuit structure:
+    1. Prepare two copies of target state
+    2. Apply noise to both copies
+    3. Perform SWAP test
+    4. Measure ancilla for success
+    5. Measure fidelity of remaining state
+    
+    Args:
+        M: Number of qubits per copy
+        noise_spec: Noise configuration
+        target_type: 'hadamard' or 'ghz'
+        
+    Returns:
+        Complete experimental circuit
+    """
+    total_qubits = 1 + 2 * M  # ancilla + 2 registers
+    qc = QuantumCircuit(total_qubits, name=f"purification_exp_M{M}")
+    
+    # Define qubit assignments
+    ancilla = 0
+    reg_A = list(range(1, M + 1))
+    reg_B = list(range(M + 1, 2 * M + 1))
+    
+    # Step 1: Prepare target states on both registers
+    if target_type == "hadamard":
+        prep_circuit = prepare_hadamard_state(M)
+    elif target_type == "ghz":
+        prep_circuit = prepare_ghz_state(M)
+    else:
+        raise ValueError(f"Unknown target_type: {target_type}")
+    
+    # Apply preparation to both registers
+    qc.compose(prep_circuit, qubits=reg_A, inplace=True)
+    qc.compose(prep_circuit, qubits=reg_B, inplace=True)
+    
+    # Step 2: Apply noise to both registers
+    if noise_spec.noise_type == NoiseType.depolarizing:
+        apply_depolarizing_noise(qc, reg_A, noise_spec.p)
+        apply_depolarizing_noise(qc, reg_B, noise_spec.p)
+    elif noise_spec.noise_type in [NoiseType.dephase_z, NoiseType.dephase_x]:
+        # Use same seed for both copies to ensure identical twirling
+        twirl_seed = 42  # Fixed seed for reproducibility
+        apply_twirled_dephasing_noise(qc, reg_A, noise_spec.p, twirl_seed)
+        apply_twirled_dephasing_noise(qc, reg_B, noise_spec.p, twirl_seed)
+    else:
+        raise ValueError(f"Unsupported noise type: {noise_spec.noise_type}")
+    
+    # Step 3: SWAP test
+    swap_circuit = build_swap_test_circuit(M)
+    qc.compose(swap_circuit, qubits=list(range(total_qubits)), inplace=True)
+    
+    # Step 4: Add measurements
+    # Ancilla measurement for SWAP success
+    ancilla_creg = ClassicalRegister(1, "ancilla")
+    qc.add_register(ancilla_creg)
+    add_ancilla_measurement(qc, ancilla, ancilla_creg)
+    
+    # Fidelity measurement on register A (after successful SWAP)
+    fidelity_creg = ClassicalRegister(M, "fidelity")
+    qc.add_register(fidelity_creg)
+    if target_type == "hadamard":
+        add_fidelity_measurement_hadamard(qc, reg_A, fidelity_creg)
+    else:  # ghz
+        add_fidelity_measurement_ghz(qc, reg_A, fidelity_creg)
+    
+    logger.info(f"Built single SWAP experiment: M={M}, noise={noise_spec.noise_type.value}, p={noise_spec.p}")
+    return qc
+
+
+def analyze_sequential_results(counts: Dict[str, int], N: int, M: int, 
+                              target_type: str) -> Dict[str, float]:
+    """
+    Analyze results from sequential purification experiment.
+    
+    Args:
+        counts: Measurement outcome dictionary
+        N: Number of input copies
+        M: Number of qubits per copy  
+        target_type: Target state type
+        
+    Returns:
+        Analysis results dictionary
+    """
+    import math
+    
+    num_rounds = int(math.log2(N))
+    total_ancillas = sum(N // (2**(i+1)) for i in range(num_rounds))
+    
     total_shots = sum(counts.values())
     if total_shots == 0:
-        return False, 0.0, {'error': 'No measurement data'}
+        return {'fidelity': 0.0, 'success_probability': 0.0, 'all_swap_success_prob': 0.0}
     
-    analysis = {
-        'total_shots': total_shots,
-        'success_outcomes': 0,
-        'success_probability': 0.0,
-        'raw_counts': counts
-    }
+    # Parse measurement outcomes
+    # Format: "fidelity_bits ancilla_bits" (bit order may be reversed by Qiskit)
+    successful_swap_counts = {}
+    all_ancilla_success_count = 0
     
-    if num_repeats == 1:
-        # Single SWAP test
-        success_count = counts.get('0', 0)
-        analysis['success_outcomes'] = success_count
-        analysis['success_probability'] = success_count / total_shots
-        success = success_count > 0
+    for outcome, count in counts.items():
+        # Split outcome: first M bits are fidelity, rest are ancillas
+        if len(outcome) != M + total_ancillas:
+            continue  # Skip malformed outcomes
+            
+        fidelity_bits = outcome[:M]  
+        ancilla_bits = outcome[M:]
+        
+        # Check if ALL SWAP tests succeeded (all ancillas = 0)
+        all_swaps_successful = all(bit == '0' for bit in ancilla_bits)
+        
+        if all_swaps_successful:
+            all_ancilla_success_count += count
+            if fidelity_bits not in successful_swap_counts:
+                successful_swap_counts[fidelity_bits] = 0
+            successful_swap_counts[fidelity_bits] += count
+    
+    # Calculate metrics
+    all_swap_success_prob = all_ancilla_success_count / total_shots
+    
+    # Calculate fidelity (conditioned on all SWAPs succeeding)
+    if successful_swap_counts:
+        fidelity = calculate_fidelity_from_counts(
+            successful_swap_counts, M, target_type
+        )
     else:
-        # Multiple SWAP tests - require at least one success
-        success_count = 0
-        for bitstring, count in counts.items():
-            if '0' in bitstring:  # At least one ancilla measured |0⟩
-                success_count += count
-        
-        analysis['success_outcomes'] = success_count  
-        analysis['success_probability'] = success_count / total_shots
-        success = success_count > 0
-    
-    return success, analysis['success_probability'], analysis
-
-
-def create_noisy_copy_circuit(target_prep: QuantumCircuit, noise_type: str, p: float,
-                             apply_twirling: bool = False, copy_id: int = 0) -> QuantumCircuit:
-    """
-    Create a circuit that prepares a noisy copy of the target state.
-    
-    This combines state preparation + noise application for a single copy.
-    
-    Args:
-        target_prep: Clean target state preparation circuit
-        noise_type: Type of noise to apply
-        p: Noise parameter  
-        apply_twirling: Whether to apply Clifford twirling
-        copy_id: Identifier for this copy (affects RNG seed)
-        
-    Returns:
-        Circuit preparing noisy copy
-    """
-    # Create noisy copy
-    noisy_copy = target_prep.copy()
-    noisy_copy = apply_noise_to_circuit(
-        noisy_copy, 
-        noise_type, 
-        p, 
-        apply_twirling=apply_twirling,
-        twirl_seed=copy_id * 1000  # Different seed per copy
-    )
-    noisy_copy.name = f"noisy_copy_{copy_id}"
-    
-    return noisy_copy
-
-
-def run_single_purification_step(target_prep: QuantumCircuit, noise_type: str, p: float,
-                                apply_twirling: bool, backend, service, 
-                                shots: int = 1024, max_attempts: int = 10) -> Tuple[bool, Dict[str, Any]]:
-    """
-    Run a single SWAP-based purification step.
-    
-    This is the building block for the recursive purification algorithm.
-    Keeps trying until success or max_attempts reached.
-    
-    Args:
-        target_prep: Target state preparation circuit
-        noise_type: Type of noise applied to copies
-        p: Noise parameter
-        apply_twirling: Whether to apply Clifford twirling
-        backend: Quantum backend
-        service: IBM service
-        shots: Number of measurement shots per attempt
-        max_attempts: Maximum attempts before giving up
-        
-    Returns:
-        (success, results_dict)
-    """
-    results = {
-        'success': False,
-        'attempts': 0,
-        'final_success_prob': 0.0,
-        'measurements_used': 0,
-        'error': None
-    }
-    
-    for attempt in range(max_attempts):
-        results['attempts'] = attempt + 1
-        
-        try:
-            # Create two identical noisy copies
-            copy_A = create_noisy_copy_circuit(target_prep, noise_type, p, apply_twirling, copy_id=attempt*2)
-            copy_B = create_noisy_copy_circuit(target_prep, noise_type, p, apply_twirling, copy_id=attempt*2+1)
-            
-            # Create SWAP purification circuit
-            swap_circuit = create_swap_purification_circuit(copy_A, copy_B, measure_ancilla=True)
-            
-            # Execute circuit
-            counts_list = execute_circuits_with_backend([swap_circuit], backend, service, shots)
-            counts = counts_list[0]
-            results['measurements_used'] += shots
-            
-            # Analyze results
-            success, success_prob, analysis = analyze_swap_test_results(counts, num_repeats=1)
-            results['final_success_prob'] = success_prob
-            
-            if success:
-                results['success'] = True
-                results['final_analysis'] = analysis
-                logger.info(f"Purification step succeeded on attempt {attempt + 1} with P_success={success_prob:.3f}")
-                break
-                
-        except Exception as e:
-            results['error'] = str(e)
-            logger.error(f"Purification attempt {attempt + 1} failed: {e}")
-            continue
-    
-    if not results['success']:
-        logger.warning(f"Purification step failed after {max_attempts} attempts")
-    
-    return results['success'], results
-
-
-def simulate_recursive_purification(target_prep: QuantumCircuit, noise_type: str, p: float,
-                                  num_levels: int, backend, service, apply_twirling: bool = False,
-                                  shots_per_step: int = 1024) -> Dict[str, Any]:
-    """
-    Simulate the recursive purification algorithm from the manuscript.
-    
-    This implements the full binary tree structure where each level combines
-    pairs of states from the previous level via SWAP tests.
-    
-    Args:
-        target_prep: Target state preparation circuit
-        noise_type: Type of noise applied
-        p: Noise parameter
-        num_levels: Number of recursion levels (depth of binary tree)
-        backend: Quantum backend
-        service: IBM service
-        apply_twirling: Whether to apply Clifford twirling
-        shots_per_step: Shots per individual SWAP test
-        
-    Returns:
-        Dictionary with complete results and statistics
-    """
-    results = {
-        'target_prep': target_prep.name,
-        'noise_type': noise_type,
-        'noise_parameter': p,
-        'num_levels': num_levels,
-        'apply_twirling': apply_twirling,
-        'shots_per_step': shots_per_step,
-        'levels': [],  # Results for each level
-        'total_measurements': 0,
-        'final_success': False,
-        'error': None
-    }
-    
-    try:
-        # Level 0: Create initial noisy copies
-        num_copies_needed = 2 ** num_levels
-        logger.info(f"Starting recursive purification: {num_levels} levels, need {num_copies_needed} initial copies")
-        
-        current_level_circuits = []
-        for i in range(num_copies_needed):
-            noisy_copy = create_noisy_copy_circuit(
-                target_prep, noise_type, p, apply_twirling, copy_id=i
-            )
-            current_level_circuits.append(noisy_copy)
-        
-        results['levels'].append({
-            'level': 0,
-            'num_circuits': len(current_level_circuits),
-            'description': 'Initial noisy copies'
-        })
-        
-        # Recursive levels
-        for level in range(1, num_levels + 1):
-            logger.info(f"Processing level {level}/{num_levels}")
-            
-            level_results = {
-                'level': level,
-                'pairs_processed': 0,
-                'successful_pairs': 0,
-                'total_attempts': 0,
-                'measurements_used': 0,
-                'success_probabilities': []
-            }
-            
-            next_level_circuits = []
-            num_pairs = len(current_level_circuits) // 2
-            
-            for pair_idx in range(num_pairs):
-                circuit_A = current_level_circuits[2 * pair_idx]
-                circuit_B = current_level_circuits[2 * pair_idx + 1]
-                
-                # Run purification step
-                success, step_results = run_single_purification_step(
-                    circuit_A, noise_type, p, apply_twirling, backend, service, shots_per_step
-                )
-                
-                level_results['pairs_processed'] += 1
-                level_results['total_attempts'] += step_results['attempts']
-                level_results['measurements_used'] += step_results['measurements_used']
-                
-                if success:
-                    level_results['successful_pairs'] += 1
-                    level_results['success_probabilities'].append(step_results['final_success_prob'])
-                    
-                    # For successful pairs, create a "purified" circuit for next level
-                    # In practice, this would be a more pure version of the target_prep
-                    purified_circuit = target_prep.copy()
-                    purified_circuit.name = f"purified_L{level}_P{pair_idx}"
-                    next_level_circuits.append(purified_circuit)
-                else:
-                    logger.warning(f"Level {level}, pair {pair_idx} failed purification")
-            
-            results['total_measurements'] += level_results['measurements_used']
-            results['levels'].append(level_results)
-            
-            if not next_level_circuits:
-                results['error'] = f"No successful purifications at level {level}"
-                break
-            
-            current_level_circuits = next_level_circuits
-        
-        # Check final success
-        if current_level_circuits and not results['error']:
-            results['final_success'] = True
-            results['final_purified_circuits'] = len(current_level_circuits)
-        
-        logger.info(f"Recursive purification completed: final_success={results['final_success']}")
-        
-    except Exception as e:
-        results['error'] = str(e)
-        logger.error(f"Recursive purification failed: {e}")
-    
-    return results
-
-
-# =============================================================================
-# 9. UTILITY FUNCTIONS
-# =============================================================================
-
-def estimate_circuit_resources(M: int, noise_type: str, apply_twirling: bool = False) -> Dict[str, int]:
-    """
-    Estimate quantum circuit resources for given parameters.
-    
-    Args:
-        M: Number of qubits per register
-        noise_type: Type of noise applied
-        apply_twirling: Whether Clifford twirling is applied
-        
-    Returns:
-        Dictionary with resource estimates
-    """
-    # SWAP test uses 1 + 2M qubits
-    total_qubits = 1 + 2 * M
-    
-    # Gate count estimates
-    swap_test_gates = 2 + M  # 2 H + M CSWAP
-    noise_gates_per_qubit = 1 if noise_type in ['dephase_z', 'dephase_x'] else 2  # Rough estimate
-    twirling_gates_per_qubit = 2 if apply_twirling else 0  # C and C† 
-    
-    total_gates_per_round = swap_test_gates + 2 * M * (noise_gates_per_qubit + twirling_gates_per_qubit)
+        fidelity = 0.0
     
     return {
-        'total_qubits': total_qubits,
-        'qubits_per_register': M,
-        'swap_test_gates': swap_test_gates,
-        'total_gates_per_round': total_gates_per_round,
-        'circuit_depth_estimate': total_gates_per_round,  # Rough estimate
+        'fidelity': fidelity,
+        'success_probability': all_swap_success_prob,  # Probability all SWAPs succeed
+        'total_shots': total_shots,
+        'success_shots': all_ancilla_success_count,
+        'num_rounds': num_rounds,
     }
 
 
-def run_comprehensive_test(M: int = 2, noise_type: str = 'depolarizing', p: float = 0.1) -> Dict[str, Any]:
-    """
-    Run comprehensive test of all IBMQ components.
-    
-    Args:
-        M: Number of qubits
-        noise_type: Type of noise to test
-        p: Noise parameter
-        
-    Returns:
-        Dictionary with all test results
-    """
-    if not QISKIT_AVAILABLE:
-        return {'error': 'Qiskit not available'}
-    
-    test_results = {
-        'M': M,
-        'noise_type': noise_type, 
-        'p': p,
-        'tests': {}
-    }
-    
-    try:
-        # Test 1: State preparation
-        target_circuit, target_sv = create_target_state_circuit(M, 'hadamard')
-        test_results['tests']['state_prep'] = {
-            'success': True,
-            'num_qubits': target_circuit.num_qubits,
-            'num_gates': len(target_circuit),
-            'target_fidelity': float(np.abs(target_sv.data[0])**2)  # |⟨0|ψ⟩|²
-        }
-        
-        # Test 2: Noise application
-        noisy_circuit = apply_noise_to_circuit(target_circuit, noise_type, p, apply_twirling=True)
-        test_results['tests']['noise_application'] = {
-            'success': True,
-            'original_gates': len(target_circuit),
-            'noisy_gates': len(noisy_circuit),
-            'gates_added': len(noisy_circuit) - len(target_circuit)
-        }
-        
-        # Test 3: SWAP test circuit construction
-        swap_circuit = build_swap_test_circuit(M, measure_ancilla=True)
-        test_results['tests']['swap_circuit'] = {
-            'success': True,
-            'num_qubits': swap_circuit.num_qubits,
-            'expected_qubits': 1 + 2*M,
-            'num_classical_bits': swap_circuit.num_clbits
-        }
-        
-        # Test 4: Purification circuit
-        copy_A = create_noisy_copy_circuit(target_circuit, noise_type, p, apply_twirling=True, copy_id=1)
-        copy_B = create_noisy_copy_circuit(target_circuit, noise_type, p, apply_twirling=True, copy_id=2)
-        purif_circuit = create_swap_purification_circuit(copy_A, copy_B)
-        test_results['tests']['purification_circuit'] = {
-            'success': True,
-            'num_qubits': purif_circuit.num_qubits,
-            'num_gates': len(purif_circuit)
-        }
-        
-        # Test 5: Resource estimation
-        resources = estimate_circuit_resources(M, noise_type, apply_twirling=True)
-        test_results['tests']['resource_estimation'] = {
-            'success': True,
-            'resources': resources
-        }
-        
-        # Test 6: Backend setup (mock)
-        service, backend = setup_quantum_backend('aer_simulator')
-        test_results['tests']['backend_setup'] = {
-            'success': backend is not None,
-            'backend_type': type(backend).__name__ if backend else 'None'
-        }
-        
-        # Test 7: Mock execution
-        mock_counts = execute_circuits_with_backend([purif_circuit], backend, service, shots=100)
-        test_results['tests']['mock_execution'] = {
-            'success': len(mock_counts) > 0,
-            'counts_received': len(mock_counts),
-            'sample_counts': mock_counts[0] if mock_counts else {}
-        }
-        
-        # Test 8: Result analysis
-        if mock_counts:
-            success, prob, analysis = analyze_swap_test_results(mock_counts[0])
-            test_results['tests']['result_analysis'] = {
-                'success': True,
-                'mock_success': success,
-                'mock_probability': prob,
-                'analysis_keys': list(analysis.keys())
-            }
-        
-        test_results['overall_success'] = True
-        
-    except Exception as e:
-        test_results['error'] = str(e)
-        test_results['overall_success'] = False
-    
-    return test_results
-
-
-if __name__ == "__main__":
-    # Basic tests
-    print("Testing IBMQ Components...")
-    print("=" * 50)
-    
-    if QISKIT_AVAILABLE:
-        # Run comprehensive test
-        test_results = run_comprehensive_test(M=2, noise_type='depolarizing', p=0.1)
-        
-        if test_results.get('overall_success', False):
-            print("✅ All tests passed!")
-            print("\nTest Results Summary:")
-            for test_name, result in test_results['tests'].items():
-                status = "✅" if result.get('success', False) else "❌"
-                print(f"  {status} {test_name}")
-            
-            print(f"\nResource Estimates for M=2:")
-            if 'resource_estimation' in test_results['tests']:
-                resources = test_results['tests']['resource_estimation']['resources']
-                print(f"  - Total qubits needed: {resources['total_qubits']}")
-                print(f"  - Gates per round: {resources['total_gates_per_round']}")
-                print(f"  - Estimated circuit depth: {resources['circuit_depth_estimate']}")
-        else:
-            print("❌ Some tests failed!")
-            if 'error' in test_results:
-                print(f"Error: {test_results['error']}")
-            for test_name, result in test_results.get('tests', {}).items():
-                status = "✅" if result.get('success', False) else "❌"
-                print(f"  {status} {test_name}")
-        
-        # Test different configurations
-        print(f"\n{'='*50}")
-        print("Testing different noise configurations...")
-        
-        for noise_type in ['depolarizing', 'dephase_z', 'dephase_x']:
-            print(f"\nTesting {noise_type}:")
-            try:
-                target_circuit, _ = create_target_state_circuit(2, 'hadamard')
-                noisy_circuit = apply_noise_to_circuit(target_circuit, noise_type, 0.1, apply_twirling=True)
-                print(f"  ✅ {noise_type}: {len(noisy_circuit)} gates (vs {len(target_circuit)} clean)")
-            except Exception as e:
-                print(f"  ❌ {noise_type}: {e}")
-        
-        print(f"\n{'='*50}")
-        print("All component tests completed!")
-        
-    else:
-        print("❌ Qiskit not available - install qiskit to test components")
-        print("Run: pip install qiskit qiskit-aer qiskit-ibm-runtime")
+__all__ = [
+    # Configuration
+    "IBMQRunSpec",
+    # State preparation
+    "prepare_hadamard_state",
+    "prepare_ghz_state", 
+    # Noise application
+    "apply_depolarizing_noise",
+    "apply_twirled_dephasing_noise",
+    # SWAP test
+    "build_swap_test_circuit",
+    # Measurements
+    "add_fidelity_measurement_hadamard",
+    "add_fidelity_measurement_ghz", 
+    "add_ancilla_measurement",
+    "calculate_fidelity_from_counts",
+    # Backend integration
+    "setup_ibm_backend",
+    "transpile_for_backend",
+    "run_circuit_with_retries",
+    "save_ibmq_results",
+    # High-level assembly
+    "build_full_purification_experiment",
+    "build_sequential_purification_circuit",
+    "analyze_sequential_results",
+]

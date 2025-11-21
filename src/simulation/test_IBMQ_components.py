@@ -1,865 +1,569 @@
 """
-Comprehensive unit tests for IBMQ_components.py
+Unit tests for IBMQ_components.py
 
-This test suite validates all functions in the IBMQ components library to ensure
-correct behavior before running experiments on quantum hardware.
-
-Run with: python -m pytest test_ibmq_components.py -v
-Or: python test_ibmq_components.py
+Tests all functions for correctness, error handling, and compatibility
+with the simulation codebase patterns.
 """
-
-import unittest
+import pytest
 import numpy as np
-import sys
-import os
+import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
-import json
+
+# Qiskit imports
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+from qiskit.quantum_info import Statevector
+from qiskit.result import Result
+
+# Import functions to test
+from IBMQ_components import (
+    # Configuration
+    IBMQRunSpec,
+    # State preparation
+    prepare_hadamard_state,
+    prepare_ghz_state,
+    # Noise application
+    apply_depolarizing_noise,
+    apply_twirled_dephasing_noise,
+    # SWAP test
+    build_swap_test_circuit,
+    # Measurements
+    add_fidelity_measurement_hadamard,
+    add_fidelity_measurement_ghz,
+    add_ancilla_measurement,
+    calculate_fidelity_from_counts,
+    # Backend integration
+    transpile_for_backend,
+    save_ibmq_results,
+    # High-level assembly
+    build_full_purification_experiment,
+    # Internal functions
+    _sample_clifford_gate_ibmq,
+    _apply_clifford_gate_ibmq,
+    _apply_inverse_clifford_gate_ibmq,
+)
+
+# Import configs for testing
+from configs import NoiseSpec, NoiseType, NoiseMode, TwirlingSpec
 
 
-# Add the source directory to path for imports
-sys.path.append('src/simulation')
-from IBMQ_components import *
-COMPONENTS_AVAILABLE = True
+class TestIBMQRunSpec:
+    """Test the IBMQRunSpec configuration class."""
+    
+    def test_valid_config(self):
+        """Test valid configuration creation."""
+        noise = NoiseSpec(noise_type=NoiseType.depolarizing, mode=NoiseMode.iid_p, p=0.1)
+        spec = IBMQRunSpec(M=3, N=8, noise=noise)
+        
+        assert spec.M == 3
+        assert spec.N == 8
+        assert spec.noise.p == 0.1
+        assert spec.target_type == "hadamard"  # default
+        assert spec.backend_name == "ibm_torino"  # default
+        assert spec.shots == 8192  # default
+        assert spec.num_rounds() == 3  # log₂(8) = 3
+        
+        # Should not raise
+        spec.validate()
+    
+    def test_invalid_M(self):
+        """Test invalid M values."""
+        noise = NoiseSpec(noise_type=NoiseType.depolarizing, mode=NoiseMode.iid_p, p=0.1)
+        
+        # M <= 0
+        spec = IBMQRunSpec(M=0, N=4, noise=noise)
+        with pytest.raises(ValueError, match="M must be in"):
+            spec.validate()
+        
+        # M too large
+        spec = IBMQRunSpec(M=20, N=4, noise=noise)
+        with pytest.raises(ValueError, match="M must be in"):
+            spec.validate()
+    
+    def test_invalid_N(self):
+        """Test invalid N values."""
+        noise = NoiseSpec(noise_type=NoiseType.depolarizing, mode=NoiseMode.iid_p, p=0.1)
+        
+        # N not power of 2
+        spec = IBMQRunSpec(M=2, N=3, noise=noise)
+        with pytest.raises(ValueError, match="N must be a positive power of 2"):
+            spec.validate()
+        
+        # N <= 0
+        spec = IBMQRunSpec(M=2, N=0, noise=noise)
+        with pytest.raises(ValueError, match="N must be a positive power of 2"):
+            spec.validate()
+    
+    def test_num_rounds(self):
+        """Test num_rounds calculation."""
+        noise = NoiseSpec(noise_type=NoiseType.depolarizing, mode=NoiseMode.iid_p, p=0.1)
+        
+        test_cases = [(2, 1), (4, 2), (8, 3), (16, 4), (32, 5), (64, 6), (128, 7), (256, 8)]
+        
+        for N, expected_rounds in test_cases:
+            spec = IBMQRunSpec(M=2, N=N, noise=noise)
+            assert spec.num_rounds() == expected_rounds
+    
+    def test_invalid_noise_p(self):
+        """Test invalid noise probability."""
+        noise = NoiseSpec(noise_type=NoiseType.depolarizing, mode=NoiseMode.iid_p, p=1.5)
+        spec = IBMQRunSpec(M=2, N=4, noise=noise)
+        
+        with pytest.raises(ValueError, match="noise.p must be in"):
+            spec.validate()
+    
+    def test_invalid_target_type(self):
+        """Test invalid target type."""
+        noise = NoiseSpec(noise_type=NoiseType.depolarizing, mode=NoiseMode.iid_p, p=0.1)
+        spec = IBMQRunSpec(M=2, N=4, noise=noise, target_type="invalid")
+        
+        with pytest.raises(ValueError, match="target_type must be"):
+            spec.validate()
 
-# Import Qiskit for testing if available
-try:
-    from qiskit import QuantumCircuit
-    from qiskit.quantum_info import Statevector
-    from qiskit_aer import AerSimulator
-    QISKIT_TEST_AVAILABLE = True
-except ImportError:
-    QISKIT_TEST_AVAILABLE = False
 
-
-class TestStatePreparation(unittest.TestCase):
+class TestStatePreperation:
     """Test state preparation functions."""
     
-    def setUp(self):
-        """Set up test fixtures."""
-        if not COMPONENTS_AVAILABLE:
-            self.skipTest("IBMQ components not available")
+    def test_prepare_hadamard_state(self):
+        """Test Hadamard state preparation."""
+        for M in [1, 2, 3, 5]:
+            qc = prepare_hadamard_state(M)
+            
+            # Check circuit structure
+            assert qc.num_qubits == M
+            assert qc.name == f"prep_hadamard_M{M}"
+            
+            # Check that all qubits get H gate
+            h_count = sum(1 for instr in qc.data if instr.operation.name == 'h')
+            assert h_count == M
+            
+            # Verify state vector
+            sv = Statevector.from_instruction(qc)
+            expected = np.ones(2**M) / np.sqrt(2**M)
+            np.testing.assert_allclose(sv.data, expected, atol=1e-10)
     
-    def test_create_hadamard_state_circuit_basic(self):
-        """Test basic Hadamard state creation."""
-        M = 2
-        qc, sv = create_hadamard_state_circuit(M)
-        
-        # Check circuit structure
-        self.assertEqual(qc.num_qubits, M)
-        self.assertIn('hadamard', qc.name.lower())
-        
-        # Check that we have M Hadamard gates
-        h_gates = sum(1 for instruction in qc.data if instruction.operation.name == 'h')
-        self.assertEqual(h_gates, M)
-        
-        # Check statevector properties
-        self.assertEqual(sv.dim, 2**M)
-        self.assertAlmostEqual(float(np.abs(sv.data).sum()), 2**(M/2), places=10)
+    def test_prepare_ghz_state(self):
+        """Test GHZ state preparation."""
+        for M in [2, 3, 4, 5]:
+            qc = prepare_ghz_state(M)
+            
+            # Check circuit structure
+            assert qc.num_qubits == M
+            assert qc.name == f"prep_ghz_M{M}"
+            
+            # Check gate counts
+            h_count = sum(1 for instr in qc.data if instr.operation.name == 'h')
+            cx_count = sum(1 for instr in qc.data if instr.operation.name == 'cx')
+            assert h_count == 1  # H on first qubit only
+            assert cx_count == M - 1  # CX from first to all others
+            
+            # Verify state vector (should be |00...0> + |11...1>)/sqrt(2)
+            sv = Statevector.from_instruction(qc)
+            expected = np.zeros(2**M, dtype=complex)
+            expected[0] = 1/np.sqrt(2)  # |00...0>
+            expected[-1] = 1/np.sqrt(2)  # |11...1>
+            np.testing.assert_allclose(sv.data, expected, atol=1e-10)
     
-    def test_create_hadamard_state_circuit_edge_cases(self):
-        """Test Hadamard state creation edge cases."""
-        # Single qubit
-        qc1, sv1 = create_hadamard_state_circuit(1)
-        self.assertEqual(qc1.num_qubits, 1)
-        expected_sv = np.array([1, 1]) / np.sqrt(2)
-        np.testing.assert_array_almost_equal(sv1.data, expected_sv)
+    def test_invalid_M_state_prep(self):
+        """Test error handling for invalid M."""
+        with pytest.raises(ValueError, match="M must be positive"):
+            prepare_hadamard_state(0)
         
-        # Larger system
-        qc3, sv3 = create_hadamard_state_circuit(3)
-        self.assertEqual(qc3.num_qubits, 3)
-        self.assertEqual(sv3.dim, 8)
-        
-        # Check all amplitudes are equal for |+>^⊗M
-        expected_amplitude = 1.0 / (2**(3/2))
-        for amplitude in sv3.data:
-            self.assertAlmostEqual(abs(amplitude), expected_amplitude, places=10)
-    
-    def test_create_ghz_state_circuit_basic(self):
-        """Test basic GHZ state creation."""
-        M = 3
-        qc, sv = create_ghz_state_circuit(M)
-        
-        # Check circuit structure
-        self.assertEqual(qc.num_qubits, M)
-        self.assertIn('ghz', qc.name.lower())
-        
-        # Check gates: 1 H + (M-1) CNOTs
-        h_gates = sum(1 for instruction in qc.data if instruction.operation.name == 'h')
-        cx_gates = sum(1 for instruction in qc.data if instruction.operation.name == 'cx')
-        self.assertEqual(h_gates, 1)
-        self.assertEqual(cx_gates, M-1)
-        
-        # Check GHZ statevector properties
-        sv_data = sv.data
-        self.assertEqual(sv.dim, 2**M)
-        
-        # GHZ state: (|000> + |111>)/√2
-        expected_nonzero_indices = [0, 2**M - 1]  # |000...> and |111...>
-        for i, amplitude in enumerate(sv_data):
-            if i in expected_nonzero_indices:
-                self.assertAlmostEqual(abs(amplitude), 1/np.sqrt(2), places=10)
-            else:
-                self.assertAlmostEqual(abs(amplitude), 0.0, places=10)
-    
-    def test_create_ghz_state_invalid_input(self):
-        """Test GHZ state creation with invalid inputs."""
-        with self.assertRaises(ValueError):
-            create_ghz_state_circuit(0)  # M must be >= 1
-    
-    def test_create_target_state_circuit_all_types(self):
-        """Test target state creation for all supported types."""
-        M = 2
-        
-        # Test hadamard type
-        qc_h, sv_h = create_target_state_circuit(M, 'hadamard')
-        self.assertEqual(qc_h.num_qubits, M)
-        self.assertIn('hadamard', qc_h.name.lower())
-        
-        # Test GHZ type
-        qc_ghz, sv_ghz = create_target_state_circuit(M, 'ghz')
-        self.assertEqual(qc_ghz.num_qubits, M)
-        self.assertIn('ghz', qc_ghz.name.lower())
-        
-        # Test random type (should default to hadamard with warning)
-        with patch('IBMQ_components.logger') as mock_logger:
-            qc_rand, sv_rand = create_target_state_circuit(M, 'random', seed=42)
-            mock_logger.warning.assert_called_once()
-            self.assertEqual(qc_rand.num_qubits, M)
-    
-    def test_create_target_state_circuit_invalid_type(self):
-        """Test target state creation with invalid state type."""
-        with self.assertRaises(ValueError):
-            create_target_state_circuit(2, 'invalid_state_type')
+        with pytest.raises(ValueError, match="M must be positive"):
+            prepare_ghz_state(-1)
 
 
-class TestNoiseApplication(unittest.TestCase):
+class TestNoiseApplication:
     """Test noise application functions."""
     
-    def setUp(self):
-        """Set up test fixtures."""
-        if not COMPONENTS_AVAILABLE:
-            self.skipTest("IBMQ components not available")
+    def test_apply_depolarizing_noise_structure(self):
+        """Test that depolarizing noise is applied correctly."""
+        M = 3
+        qc = QuantumCircuit(M)
+        qubits = list(range(M))
+        p = 0.3
         
-        # Create a simple test circuit
-        self.test_qc = QuantumCircuit(2)
-        self.test_qc.h(0)
-        self.test_qc.h(1)
+        # Apply noise (with fixed seed for reproducibility)
+        np.random.seed(42)
+        apply_depolarizing_noise(qc, qubits, p)
+        
+        # Check that some Pauli gates were added
+        pauli_count = sum(1 for instr, qargs, cargs in qc.data 
+                         if instr.name in ['x', 'y', 'z'])
+        
+        # With p=0.3 and 3 qubits, expect some Paulis (exact count depends on random)
+        # Just check structure is reasonable
+        assert pauli_count >= 0
+        assert pauli_count <= M  # At most one Pauli per qubit
     
-    def test_apply_depolarizing_noise_no_noise(self):
-        """Test depolarizing noise with p=0 (no noise)."""
-        qc = self.test_qc.copy()
-        original_length = len(qc)
+    def test_apply_twirled_dephasing_noise_structure(self):
+        """Test that twirled dephasing noise includes proper twirling."""
+        M = 2
+        qc = QuantumCircuit(M)
+        qubits = list(range(M))
+        p = 0.5
         
-        # With p=0, no noise should be added
-        apply_depolarizing_noise_stochastic(qc, 0, 0.0, 42)
-        self.assertEqual(len(qc), original_length)
+        initial_gates = len(qc.data)
+        apply_twirled_dephasing_noise(qc, qubits, p, twirling_seed=42)
+        final_gates = len(qc.data)
+        
+        # Should have added gates (twirling + dephasing + inverse twirling)
+        assert final_gates > initial_gates
+        
+        # Check for presence of various gates used in twirling
+        gate_names = [instr.operation.name for instr in qc.data]
+        
+        # Should have some combination of h, s, sdg, z gates
+        twirl_gates = set(['h', 's', 'sdg', 'z'])
+        applied_gates = set(gate_names)
+        
+        # At least some twirling gates should be present
+        assert len(twirl_gates & applied_gates) > 0
     
-    def test_apply_depolarizing_noise_with_seed(self):
-        """Test depolarizing noise with fixed seed for reproducibility."""
-        qc1 = self.test_qc.copy()
-        qc2 = self.test_qc.copy()
+    def test_noise_probability_bounds(self):
+        """Test error handling for invalid probabilities."""
+        qc = QuantumCircuit(2)
+        qubits = [0, 1]
         
-        # Same seed should give same noise
-        apply_depolarizing_noise_stochastic(qc1, 0, 0.5, 42)
-        apply_depolarizing_noise_stochastic(qc2, 0, 0.5, 42)
+        # Test depolarizing bounds
+        with pytest.raises(ValueError, match="p must be in"):
+            apply_depolarizing_noise(qc, qubits, -0.1)
         
-        # Check that circuits are identical
-        self.assertEqual(len(qc1), len(qc2))
-        for i, (instr1, instr2) in enumerate(zip(qc1.data, qc2.data)):
-            self.assertEqual(instr1.operation.name, instr2.operation.name)
+        with pytest.raises(ValueError, match="p must be in"):
+            apply_depolarizing_noise(qc, qubits, 1.1)
+        
+        # Test dephasing bounds  
+        with pytest.raises(ValueError, match="p must be in"):
+            apply_twirled_dephasing_noise(qc, qubits, -0.1)
+        
+        with pytest.raises(ValueError, match="p must be in"):
+            apply_twirled_dephasing_noise(qc, qubits, 1.1)
     
-    def test_apply_z_dephasing_noise(self):
-        """Test Z-dephasing noise application."""
-        qc = self.test_qc.copy()
-        original_length = len(qc)
+    def test_clifford_gate_sampling(self):
+        """Test Clifford gate sampling for twirling."""
+        options = ['i', 'h', 's', 'sdg', 'sh', 'sdgh']
         
-        # With p=1, should always add Z gate
-        apply_z_dephasing_noise(qc, 0, 1.0, 42)
+        # Test random mode
+        gate = _sample_clifford_gate_ibmq("random", 0, seed=42)
+        assert gate in options
         
-        # Should have one more gate
-        self.assertEqual(len(qc), original_length + 1)
-        # Last added gate should be Z
-        self.assertEqual(qc.data[-1].operation.name, 'z')
-        
-        # With p=0, no noise should be added
-        qc_no_noise = self.test_qc.copy()
-        apply_z_dephasing_noise(qc_no_noise, 0, 0.0, 42)
-        self.assertEqual(len(qc_no_noise), original_length)
+        # Test cyclic mode
+        for i in range(len(options) * 2):
+            gate = _sample_clifford_gate_ibmq("cyclic", i)
+            assert gate == options[i % len(options)]
     
-    def test_apply_x_dephasing_noise(self):
-        """Test X-dephasing noise application."""
-        qc = self.test_qc.copy()
-        original_length = len(qc)
-        
-        # With p=1, should always add X gate
-        apply_x_dephasing_noise(qc, 0, 1.0, 42)
-        
-        # Should have one more gate
-        self.assertEqual(len(qc), original_length + 1)
-        # Last added gate should be X
-        self.assertEqual(qc.data[-1].operation.name, 'x')
-    
-    def test_clifford_gates_application(self):
-        """Test all Clifford gate applications."""
-        test_gates = ['i', 'h', 's', 'sdg', 'sh', 'sdgh']
-        
-        for gate_name in test_gates:
-            qc = QuantumCircuit(1)
-            original_length = len(qc)
-            
-            apply_single_qubit_clifford(qc, 0, gate_name)
-            
-            if gate_name == 'i':
-                # Identity should not add gates
-                self.assertEqual(len(qc), original_length)
-            else:
-                # Other gates should add at least one gate
-                self.assertGreaterEqual(len(qc), original_length + 1)
-    
-    def test_inverse_clifford_gates(self):
-        """Test inverse Clifford gate applications."""
-        test_gates = ['i', 'h', 's', 'sdg', 'sh', 'sdgh']
-        
-        for gate_name in test_gates:
-            qc = QuantumCircuit(1)
-            
-            # Apply gate then its inverse
-            apply_single_qubit_clifford(qc, 0, gate_name)
-            apply_inverse_clifford(qc, 0, gate_name)
-            
-            # For testable cases, check if we get back to identity
-            # (This is a simplified test; full verification would need statevector comparison)
-            if gate_name == 'h':
-                # H * H = I, so we should have 2 H gates
-                h_count = sum(1 for instr in qc.data if instr.operation.name == 'h')
-                self.assertEqual(h_count, 2)
-    
-    def test_invalid_clifford_gates(self):
-        """Test error handling for invalid Clifford gates."""
+    def test_clifford_gate_application(self):
+        """Test Clifford gate application and inversion."""
         qc = QuantumCircuit(1)
         
-        with self.assertRaises(ValueError):
-            apply_single_qubit_clifford(qc, 0, 'invalid_gate')
+        test_gates = ['i', 'h', 's', 'sdg', 'sh', 'sdgh']
         
-        with self.assertRaises(ValueError):
-            apply_inverse_clifford(qc, 0, 'invalid_gate')
-    
-    def test_apply_noise_to_circuit_basic(self):
-        """Test applying noise to circuit without twirling."""
-        qc = self.test_qc.copy()
-        original_length = len(qc)
-        
-        # Test depolarizing noise
-        noisy_qc = apply_noise_to_circuit(qc, 'depolarizing', 0.1, apply_twirling=False)
-        
-        self.assertIsInstance(noisy_qc, QuantumCircuit)
-        self.assertEqual(noisy_qc.num_qubits, qc.num_qubits)
-        self.assertIn('noisy_depolarizing', noisy_qc.name)
-    
-    def test_apply_noise_to_circuit_with_twirling(self):
-        """Test applying noise with Clifford twirling."""
-        qc = self.test_qc.copy()
-        
-        # Test with dephasing noise (should trigger twirling)
-        noisy_qc = apply_noise_to_circuit(qc, 'dephase_z', 0.1, 
-                                         apply_twirling=True, twirl_seed=42)
-        
-        self.assertIsInstance(noisy_qc, QuantumCircuit)
-        # Should have more gates due to twirling
-        self.assertGreater(len(noisy_qc), len(qc))
-    
-    def test_apply_noise_invalid_type(self):
-        """Test error handling for invalid noise types."""
-        qc = self.test_qc.copy()
-        
-        with self.assertRaises(ValueError):
-            apply_noise_to_circuit(qc, 'invalid_noise_type', 0.1)
+        for gate_name in test_gates:
+            qc_test = QuantumCircuit(1)
+            
+            # Apply gate then its inverse
+            _apply_clifford_gate_ibmq(qc_test, 0, gate_name)
+            _apply_inverse_clifford_gate_ibmq(qc_test, 0, gate_name)
+            
+            # Should return to identity (up to global phase)
+            if gate_name == 'i':
+                assert len(qc_test.data) == 0  # No gates applied
+            else:
+                # Check that we can compute state vector without error
+                try:
+                    sv = Statevector.from_instruction(qc_test)
+                    # Should be close to |0> state (up to global phase)
+                    assert abs(abs(sv.data[0]) - 1.0) < 1e-10
+                except:
+                    pytest.fail(f"Failed to compute statevector for gate {gate_name}")
 
 
-class TestSWAPTestCircuits(unittest.TestCase):
+class TestSWAPTest:
     """Test SWAP test circuit construction."""
     
-    def setUp(self):
-        """Set up test fixtures."""
-        if not COMPONENTS_AVAILABLE:
-            self.skipTest("IBMQ components not available")
+    def test_swap_test_structure(self):
+        """Test SWAP test circuit structure."""
+        for M in [1, 2, 3]:
+            qc = build_swap_test_circuit(M)
+            
+            # Check qubit count
+            expected_qubits = 1 + 2 * M  # ancilla + 2 registers
+            assert qc.num_qubits == expected_qubits
+            assert qc.name == f"swap_test_M{M}"
+            
+            # Check for Hadamard gates on ancilla (qubit 0)
+            h_count = sum(1 for instr in qc.data 
+                         if instr.operation.name == 'h' and instr.qubits[0]._index == 0)
+            assert h_count == 2  # H before and after CSWAP
+            
+            # Check for controlled operations
+            ccx_count = sum(1 for instr in qc.data if instr.operation.name == 'ccx')
+            assert ccx_count == 3 * M  # 3 CCX gates per qubit pair for Fredkin
     
-    def test_build_swap_test_circuit_basic(self):
-        """Test basic SWAP test circuit construction."""
+    def test_swap_test_invalid_M(self):
+        """Test error handling for invalid M in SWAP test."""
+        with pytest.raises(ValueError, match="M must be positive"):
+            build_swap_test_circuit(0)
+
+
+class TestMeasurements:
+    """Test measurement functions."""
+    
+    def test_hadamard_fidelity_measurement(self):
+        """Test Hadamard fidelity measurement setup."""
+        M = 3
+        qc = QuantumCircuit(M)
+        qubits = [0, 1, 2]
+        
+        add_fidelity_measurement_hadamard(qc, qubits)
+        
+        # Check that H gates were added
+        h_count = sum(1 for instr in qc.data if instr.operation.name == 'h')
+        assert h_count == M
+        
+        # Check that classical register was added
+        assert len(qc.cregs) == 1
+        assert qc.cregs[0].size == M
+        
+        # Check that measurements were added
+        measure_count = sum(1 for instr in qc.data if instr.operation.name == 'measure')
+        assert measure_count == M
+    
+    def test_ghz_fidelity_measurement(self):
+        """Test GHZ fidelity measurement setup."""
+        M = 3
+        qc = QuantumCircuit(M)
+        qubits = [0, 1, 2]
+        
+        add_fidelity_measurement_ghz(qc, qubits)
+        
+        # Check that NO H gates were added (direct Z measurement)
+        h_count = sum(1 for instr in qc.data if instr.operation.name == 'h')
+        assert h_count == 0
+        
+        # Check classical register and measurements
+        assert len(qc.cregs) == 1
+        assert qc.cregs[0].size == M
+        
+        measure_count = sum(1 for instr in qc.data if instr.operation.name == 'measure')
+        assert measure_count == M
+    
+    def test_ancilla_measurement(self):
+        """Test ancilla measurement setup."""
+        qc = QuantumCircuit(5)
+        ancilla = 0
+        
+        add_ancilla_measurement(qc, ancilla)
+        
+        # Check classical register and measurement
+        assert len(qc.cregs) == 1
+        assert qc.cregs[0].size == 1
+        
+        measure_count = sum(1 for instr in qc.data if instr.operation.name == 'measure')
+        assert measure_count == 1
+    
+    def test_empty_qubits_error(self):
+        """Test error handling for empty qubit lists."""
+        qc = QuantumCircuit(3)
+        
+        with pytest.raises(ValueError, match="qubits list cannot be empty"):
+            add_fidelity_measurement_hadamard(qc, [])
+        
+        with pytest.raises(ValueError, match="qubits list cannot be empty"):
+            add_fidelity_measurement_ghz(qc, [])
+
+
+class TestFidelityCalculation:
+    """Test fidelity calculation from measurement counts."""
+    
+    def test_hadamard_fidelity_perfect(self):
+        """Test fidelity calculation for perfect Hadamard state."""
+        M = 3
+        # Perfect Hadamard state should give all zeros after H rotation
+        counts = {"000": 1000}
+        
+        fidelity = calculate_fidelity_from_counts(counts, M, "hadamard")
+        assert fidelity == 1.0
+    
+    def test_hadamard_fidelity_mixed(self):
+        """Test fidelity calculation for mixed Hadamard state."""
         M = 2
-        qc = build_swap_test_circuit(M, measure_ancilla=True)
+        counts = {"00": 600, "01": 200, "10": 150, "11": 50}
         
-        # Check qubit count: 1 ancilla + 2M data qubits
-        self.assertEqual(qc.num_qubits, 1 + 2*M)
-        
-        # Check classical bits for measurement
-        self.assertEqual(qc.num_clbits, 1)
-        
-        # Check circuit name
-        self.assertIn('swap_test', qc.name.lower())
-        self.assertIn(f'M{M}', qc.name)
-        
-        # Check for required gates
-        gate_names = [instr.operation.name for instr in qc.data]
-        self.assertIn('h', gate_names)  # Should have Hadamard gates
-        self.assertIn('cswap', gate_names)  # Should have CSWAP gates
-        self.assertIn('measure', gate_names)  # Should have measurement
-        
-        # Count CSWAP gates (should be M)
-        cswap_count = sum(1 for name in gate_names if name == 'cswap')
-        self.assertEqual(cswap_count, M)
+        fidelity = calculate_fidelity_from_counts(counts, M, "hadamard")
+        assert fidelity == 0.6  # 600/1000
     
-    def test_build_swap_test_circuit_no_measurement(self):
-        """Test SWAP test circuit without measurement."""
-        M = 1
-        qc = build_swap_test_circuit(M, measure_ancilla=False)
+    def test_ghz_fidelity_perfect(self):
+        """Test fidelity calculation for perfect GHZ state."""
+        M = 3
+        # Perfect GHZ should give only |000> and |111>
+        counts = {"000": 500, "111": 500}
         
-        # Should have no classical bits
-        self.assertEqual(qc.num_clbits, 0)
-        
-        # Should not have measurement gates
-        gate_names = [instr.operation.name for instr in qc.data]
-        self.assertNotIn('measure', gate_names)
+        fidelity = calculate_fidelity_from_counts(counts, M, "ghz")
+        assert fidelity == 1.0
     
-    def test_create_swap_purification_circuit(self):
-        """Test complete SWAP purification circuit creation."""
+    def test_ghz_fidelity_mixed(self):
+        """Test fidelity calculation for mixed GHZ state."""
         M = 2
+        counts = {"00": 300, "01": 100, "10": 200, "11": 400}
         
-        # Create test state preparation circuits
-        prep_A = QuantumCircuit(M)
-        prep_A.h(0)
-        prep_B = QuantumCircuit(M) 
-        prep_B.h(1)
-        
-        qc = create_swap_purification_circuit(prep_A, prep_B, measure_ancilla=True)
-        
-        # Check structure
-        self.assertEqual(qc.num_qubits, 1 + 2*M)
-        self.assertEqual(qc.num_clbits, 1)
-        self.assertIn('swap_purification', qc.name.lower())
-        
-        # Should contain preparation gates plus SWAP test
-        gate_names = [instr.operation.name for instr in qc.data]
-        self.assertIn('h', gate_names)
-        self.assertIn('cswap', gate_names)
-        self.assertIn('measure', gate_names)
+        fidelity = calculate_fidelity_from_counts(counts, M, "ghz")
+        assert fidelity == 0.7  # (300 + 400)/1000
     
-    def test_create_swap_purification_circuit_mismatched_qubits(self):
-        """Test error handling for mismatched qubit numbers."""
-        prep_A = QuantumCircuit(2)
-        prep_B = QuantumCircuit(3)  # Different number of qubits
-        
-        with self.assertRaises(AssertionError):
-            create_swap_purification_circuit(prep_A, prep_B)
+    def test_fidelity_no_counts(self):
+        """Test fidelity calculation with no counts."""
+        fidelity = calculate_fidelity_from_counts({}, 2, "hadamard")
+        assert fidelity == 0.0
     
-    def test_create_fidelity_measurement_circuit(self):
-        """Test fidelity measurement circuit creation."""
-        M = 1
-        target_prep = QuantumCircuit(M)
-        target_prep.h(0)
-        
-        noisy_prep = QuantumCircuit(M)
-        noisy_prep.h(0)
-        noisy_prep.z(0)  # Add some noise
-        
-        qc = create_fidelity_measurement_circuit(target_prep, noisy_prep)
-        
-        # Should be equivalent to SWAP purification circuit
-        self.assertEqual(qc.num_qubits, 1 + 2*M)
-        self.assertEqual(qc.num_clbits, 1)
+    def test_fidelity_invalid_target(self):
+        """Test error handling for invalid target type."""
+        with pytest.raises(ValueError, match="Unknown target_type"):
+            calculate_fidelity_from_counts({"00": 100}, 2, "invalid")
 
 
-class TestAmplitudeAmplification(unittest.TestCase):
-    """Test amplitude amplification helper functions."""
+class TestBackendIntegration:
+    """Test backend integration functions (using mocks)."""
     
-    def setUp(self):
-        """Set up test fixtures."""
-        if not COMPONENTS_AVAILABLE:
-            self.skipTest("IBMQ components not available")
-    
-    def test_calculate_grover_iterations_basic(self):
-        """Test basic Grover iteration calculation."""
-        # Test case where no amplification needed
-        k = calculate_grover_iterations(success_prob=0.99, target_success=0.95)
-        self.assertEqual(k, 0)
+    @patch('IBMQ_components.generate_preset_pass_manager')
+    def test_transpile_for_backend(self, mock_pass_manager):
+        """Test circuit transpilation."""
+        # Setup mocks
+        mock_pm = Mock()
+        mock_transpiled = QuantumCircuit(2)
+        mock_pm.run.return_value = mock_transpiled
+        mock_pass_manager.return_value = mock_pm
         
-        # Test case where amplification needed
-        k = calculate_grover_iterations(success_prob=0.25, target_success=0.9)
-        self.assertGreater(k, 0)
-        self.assertLessEqual(k, 32)  # Should respect max_iters
-    
-    def test_calculate_grover_iterations_edge_cases(self):
-        """Test Grover iteration calculation edge cases."""
-        # Zero success probability
-        k = calculate_grover_iterations(success_prob=0.0, target_success=0.9)
-        self.assertEqual(k, 0)
-        
-        # Perfect success probability  
-        k = calculate_grover_iterations(success_prob=1.0, target_success=0.9)
-        self.assertEqual(k, 0)
-        
-        # Very low success probability
-        k = calculate_grover_iterations(success_prob=0.001, target_success=0.9, max_iters=10)
-        self.assertEqual(k, 10)  # Should hit max_iters limit
-    
-    def test_build_amplitude_amplification_circuit(self):
-        """Test amplitude amplification circuit construction."""
-        M = 1
-        base_circuit = build_swap_test_circuit(M)
-        
-        # Test with 0 iterations (should return copy)
-        aa_circuit = build_amplitude_amplification_circuit(base_circuit, 0)
-        self.assertEqual(aa_circuit.num_qubits, base_circuit.num_qubits)
-        self.assertEqual(aa_circuit.name, base_circuit.name)
-        
-        # Test with positive iterations (currently returns copy with warning)
-        with patch('IBMQ_components.logger') as mock_logger:
-            aa_circuit = build_amplitude_amplification_circuit(base_circuit, 3)
-            mock_logger.warning.assert_called_once()
-    
-    def test_create_repeated_swap_circuit(self):
-        """Test repeated SWAP circuit creation."""
-        M = 1
-        num_repeats = 3
-        
-        prep_A = QuantumCircuit(M)
-        prep_A.h(0)
-        prep_B = QuantumCircuit(M)
-        prep_B.x(0)
-        
-        qc = create_repeated_swap_circuit(prep_A, prep_B, num_repeats)
-        
-        # Check structure
-        expected_qubits = num_repeats * (1 + 2*M)  # Each repeat: 1 ancilla + 2M data
-        self.assertEqual(qc.num_qubits, expected_qubits)
-        self.assertEqual(qc.num_clbits, num_repeats)  # One measurement per repeat
-        
-        # Check name
-        self.assertIn('repeated_swap', qc.name.lower())
-        self.assertIn(f'x{num_repeats}', qc.name)
-
-
-class TestBackendManagement(unittest.TestCase):
-    """Test backend management functions."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        if not COMPONENTS_AVAILABLE:
-            self.skipTest("IBMQ components not available")
-    
-    def test_setup_quantum_backend_aer_simulator(self):
-        """Test setting up local AER simulator."""
-        service, backend = setup_quantum_backend('aer_simulator')
-        
-        if QISKIT_TEST_AVAILABLE:
-            self.assertIsNone(service)
-            self.assertIsInstance(backend, AerSimulator)
-        else:
-            # If Qiskit not available, should return None
-            self.assertIsNone(service)
-            self.assertIsNone(backend)
-    
-    @patch('IBMQ_components.QiskitRuntimeService')
-    def test_setup_quantum_backend_ibm_hardware(self, mock_service_class):
-        """Test setting up IBM hardware backend."""
-        # Mock the service and backend
-        mock_service = Mock()
         mock_backend = Mock()
-        mock_service.backend.return_value = mock_backend
-        mock_service_class.return_value = mock_service
         
-        service, backend = setup_quantum_backend('ibm_brisbane')
+        # Test transpilation
+        qc = QuantumCircuit(2)
+        result = transpile_for_backend(qc, mock_backend, optimization_level=2)
         
-        self.assertEqual(service, mock_service)
-        self.assertEqual(backend, mock_backend)
-        mock_service.backend.assert_called_once_with('ibm_brisbane')
-    
-    @patch('IBMQ_components.QiskitRuntimeService')
-    def test_setup_quantum_backend_connection_error(self, mock_service_class):
-        """Test handling of connection errors."""
-        # Mock connection failure
-        mock_service_class.side_effect = Exception("Connection failed")
-        
-        with self.assertRaises(Exception):
-            setup_quantum_backend('ibm_brisbane')
-    
-    def test_execute_circuits_mock_mode(self):
-        """Test circuit execution in mock mode."""
-        # Create test circuit
-        qc = QuantumCircuit(1, 1)
-        qc.h(0)
-        qc.measure(0, 0)
-        
-        # Execute with None backend (should trigger mock mode)
-        counts_list = execute_circuits_with_backend([qc], None, None, shots=1000)
-        
-        self.assertEqual(len(counts_list), 1)
-        counts = counts_list[0]
-        self.assertIsInstance(counts, dict)
-        self.assertIn('0', counts)
-        self.assertIn('1', counts)
-        
-        # Check total counts approximately equal to shots
-        total_counts = sum(counts.values())
-        self.assertGreaterEqual(total_counts, 900)  # Allow some tolerance
-
-
-class TestMeasurementAnalysis(unittest.TestCase):
-    """Test measurement and analysis functions."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        if not COMPONENTS_AVAILABLE:
-            self.skipTest("IBMQ components not available")
-    
-    def test_analyze_swap_test_results_single_test(self):
-        """Test analysis of single SWAP test results."""
-        # Test successful case
-        counts = {'0': 700, '1': 300}
-        success, prob, analysis = analyze_swap_test_results(counts, num_repeats=1)
-        
-        self.assertTrue(success)
-        self.assertAlmostEqual(prob, 0.7, places=3)
-        self.assertEqual(analysis['total_shots'], 1000)
-        self.assertEqual(analysis['success_outcomes'], 700)
-        
-        # Test failure case
-        counts_fail = {'1': 1000}  # No successful outcomes
-        success, prob, analysis = analyze_swap_test_results(counts_fail, num_repeats=1)
-        
-        self.assertFalse(success)
-        self.assertEqual(prob, 0.0)
-    
-    def test_analyze_swap_test_results_multiple_tests(self):
-        """Test analysis of multiple SWAP test results."""
-        # Test with multiple ancilla measurements
-        counts = {'00': 100, '01': 200, '10': 300, '11': 400}  # 2 ancillas
-        success, prob, analysis = analyze_swap_test_results(counts, num_repeats=2)
-        
-        # Any outcome with at least one '0' should count as success
-        expected_success = 100 + 200 + 300  # '00', '01', '10'
-        self.assertEqual(analysis['success_outcomes'], expected_success)
-        self.assertAlmostEqual(prob, 0.6, places=3)
-    
-    def test_analyze_swap_test_results_empty_data(self):
-        """Test analysis with empty measurement data."""
-        success, prob, analysis = analyze_swap_test_results({}, num_repeats=1)
-        
-        self.assertFalse(success)
-        self.assertEqual(prob, 0.0)
-        self.assertIn('error', analysis)
-    
-    def test_measure_swap_success_probability(self):
-        """Test SWAP success probability measurement."""
-        # Create a simple SWAP test circuit
-        qc = build_swap_test_circuit(1, measure_ancilla=True)
-        
-        # Mock the execution
-        with patch('IBMQ_components.execute_circuits_with_backend') as mock_execute:
-            mock_execute.return_value = [{'0': 600, '1': 400}]
-            
-            prob, counts = measure_swap_success_probability(qc, None, None, shots=1000)
-            
-            self.assertAlmostEqual(prob, 0.6, places=3)
-            self.assertEqual(counts, {'0': 600, '1': 400})
-    
-    def test_measure_fidelity_with_swap_test(self):
-        """Test fidelity measurement via SWAP test."""
-        # Create test preparation circuits
-        target_prep = QuantumCircuit(1)
-        target_prep.h(0)
-        
-        noisy_prep = QuantumCircuit(1)
-        noisy_prep.h(0)
-        
-        # Mock the SWAP test execution
-        with patch('IBMQ_components.measure_swap_success_probability') as mock_measure:
-            # P_success = 0.75 should give fidelity = 2*0.75 - 1 = 0.5
-            mock_measure.return_value = (0.75, {'0': 750, '1': 250})
-            
-            fidelity, counts = measure_fidelity_with_swap_test(
-                target_prep, noisy_prep, None, None, shots=1000
-            )
-            
-            expected_fidelity = 2 * 0.75 - 1
-            self.assertAlmostEqual(fidelity, expected_fidelity, places=3)
-    
-    def test_measure_fidelity_boundary_cases(self):
-        """Test fidelity measurement boundary cases."""
-        target_prep = QuantumCircuit(1)
-        noisy_prep = QuantumCircuit(1)
-        
-        with patch('IBMQ_components.measure_swap_success_probability') as mock_measure:
-            # Perfect fidelity case: P_success = 1.0
-            mock_measure.return_value = (1.0, {'0': 1000})
-            fidelity, _ = measure_fidelity_with_swap_test(target_prep, noisy_prep, None, None)
-            self.assertAlmostEqual(fidelity, 1.0, places=3)
-            
-            # Worst case: P_success = 0.5  
-            mock_measure.return_value = (0.5, {'0': 500, '1': 500})
-            fidelity, _ = measure_fidelity_with_swap_test(target_prep, noisy_prep, None, None)
-            self.assertAlmostEqual(fidelity, 0.0, places=3)
-            
-            # Edge case: P_success = 0.0 (should clip to 0.0)
-            mock_measure.return_value = (0.0, {'1': 1000})
-            fidelity, _ = measure_fidelity_with_swap_test(target_prep, noisy_prep, None, None)
-            self.assertAlmostEqual(fidelity, 0.0, places=3)
-
-
-class TestRecursivePurification(unittest.TestCase):
-    """Test recursive purification functions."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        if not COMPONENTS_AVAILABLE:
-            self.skipTest("IBMQ components not available")
-        
-        # Create test target preparation circuit
-        self.target_prep = QuantumCircuit(1)
-        self.target_prep.h(0)
-    
-    def test_create_noisy_copy_circuit(self):
-        """Test noisy copy circuit creation."""
-        noisy_copy = create_noisy_copy_circuit(
-            self.target_prep, 'depolarizing', 0.1, apply_twirling=True, copy_id=42
+        # Verify calls
+        mock_pass_manager.assert_called_once_with(
+            optimization_level=2,
+            backend=mock_backend
         )
-        
-        self.assertIsInstance(noisy_copy, QuantumCircuit)
-        self.assertEqual(noisy_copy.num_qubits, self.target_prep.num_qubits)
-        self.assertIn('noisy_copy_42', noisy_copy.name)
-        
-        # Should have more gates than original due to noise
-        self.assertGreaterEqual(len(noisy_copy), len(self.target_prep))
+        mock_pm.run.assert_called_once_with(qc)
+        assert result == mock_transpiled
     
-    def test_run_single_purification_step_success(self):
-        """Test single purification step with mocked success."""
-        with patch('IBMQ_components.execute_circuits_with_backend') as mock_execute:
-            # Mock successful SWAP test
-            mock_execute.return_value = [{'0': 800, '1': 200}]  # 80% success
+    def test_save_ibmq_results(self):
+        """Test results saving functionality."""
+        # Create temporary directory
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            filepath = Path(tmp_dir) / "test_results.csv"
             
-            success, results = run_single_purification_step(
-                self.target_prep, 'depolarizing', 0.1, True, None, None,
-                shots=1000, max_attempts=3
-            )
+            # Create test data
+            noise = NoiseSpec(noise_type=NoiseType.depolarizing, mode=NoiseMode.iid_p, p=0.1)
+            run_spec = IBMQRunSpec(M=2, N=4, noise=noise)
+            results = {
+                'fidelity': 0.85,
+                'success_probability': 0.78,
+                'ancilla_counts': {'0': 780, '1': 220}
+            }
             
-            self.assertTrue(success)
-            self.assertEqual(results['attempts'], 1)
-            self.assertEqual(results['measurements_used'], 1000)
-            self.assertAlmostEqual(results['final_success_prob'], 0.8, places=3)
-    
-    def test_run_single_purification_step_failure(self):
-        """Test single purification step with mocked failures."""
-        with patch('IBMQ_components.execute_circuits_with_backend') as mock_execute:
-            # Mock failed SWAP tests (only measure |1⟩)
-            mock_execute.return_value = [{'1': 1000}]  # 0% success
+            # Save results
+            save_ibmq_results(results, filepath, run_spec)
             
-            success, results = run_single_purification_step(
-                self.target_prep, 'depolarizing', 0.1, True, None, None,
-                shots=1000, max_attempts=3
-            )
+            # Verify file was created and has correct content
+            assert filepath.exists()
             
-            self.assertFalse(success)
-            self.assertEqual(results['attempts'], 3)  # Should try all attempts
-            self.assertEqual(results['measurements_used'], 3000)  # 3 attempts × 1000 shots
-            self.assertEqual(results['final_success_prob'], 0.0)
-    
-    def test_simulate_recursive_purification_basic(self):
-        """Test basic recursive purification simulation."""
-        with patch('IBMQ_components.run_single_purification_step') as mock_step:
-            # Mock successful purification steps
-            mock_step.return_value = (True, {
-                'attempts': 1,
-                'measurements_used': 1000,
-                'final_success_prob': 0.8,
-                'error': None
-            })
-            
-            results = simulate_recursive_purification(
-                self.target_prep, 'depolarizing', 0.1, num_levels=1,
-                backend=None, service=None, apply_twirling=True, shots_per_step=1000
-            )
-            
-            self.assertTrue(results['final_success'])
-            self.assertEqual(results['num_levels'], 1)
-            self.assertEqual(len(results['levels']), 2)  # Level 0 + Level 1
-            self.assertGreater(results['total_measurements'], 0)
-    
-    def test_simulate_recursive_purification_failure(self):
-        """Test recursive purification with step failures."""
-        with patch('IBMQ_components.run_single_purification_step') as mock_step:
-            # Mock failed purification steps
-            mock_step.return_value = (False, {
-                'attempts': 5,
-                'measurements_used': 5000,
-                'final_success_prob': 0.0,
-                'error': 'All attempts failed'
-            })
-            
-            results = simulate_recursive_purification(
-                self.target_prep, 'depolarizing', 0.5, num_levels=1,
-                backend=None, service=None, apply_twirling=True, shots_per_step=1000
-            )
-            
-            self.assertFalse(results['final_success'])
-            self.assertIn('error', results)
+            with open(filepath, 'r') as f:
+                content = f.read()
+                assert 'M,N,noise_type' in content  # Header
+                assert '2,4,depolarizing' in content  # Data
+                assert '0.85' in content  # Fidelity
 
 
-class TestUtilityFunctions(unittest.TestCase):
-    """Test utility functions."""
+class TestHighLevelAssembly:
+    """Test high-level circuit assembly functions."""
     
-    def setUp(self):
-        """Set up test fixtures."""
-        if not COMPONENTS_AVAILABLE:
-            self.skipTest("IBMQ components not available")
-    
-    def test_estimate_circuit_resources_basic(self):
-        """Test basic circuit resource estimation."""
+    def test_build_full_purification_hadamard_depolarizing(self):
+        """Test complete purification circuit for Hadamard + depolarizing."""
         M = 2
-        resources = estimate_circuit_resources(M, 'depolarizing', apply_twirling=False)
+        N = 4  # Test with sequential purification
+        noise = NoiseSpec(noise_type=NoiseType.depolarizing, mode=NoiseMode.iid_p, p=0.2)
         
-        # Check required keys
-        expected_keys = [
-            'total_qubits', 'qubits_per_register', 'swap_test_gates',
-            'total_gates_per_round', 'circuit_depth_estimate'
-        ]
-        for key in expected_keys:
-            self.assertIn(key, resources)
+        qc = build_full_purification_experiment(M, noise, "hadamard", N)
         
-        # Check values
-        self.assertEqual(resources['total_qubits'], 1 + 2*M)
-        self.assertEqual(resources['qubits_per_register'], M)
-        self.assertGreater(resources['swap_test_gates'], 0)
-        self.assertGreater(resources['total_gates_per_round'], resources['swap_test_gates'])
+        # Check structure
+        expected_qubits = N * M + N // 2  # N copies + ancillas for first round
+        assert qc.num_qubits >= expected_qubits - N // 4  # Allow for fewer ancillas in later rounds
+        
+        # Check classical registers
+        assert len(qc.cregs) >= 1  # At least fidelity register (ancilla register for sequential)
+        
+        # Check for key gate types
+        gate_names = [instr.operation.name for instr in qc.data]
+        
+        # Should have Hadamard gates (prep + possibly fidelity measurement)
+        assert 'h' in gate_names
+        # Should have some noise gates
+        assert any(g in gate_names for g in ['x', 'y', 'z'])
+        # Should have SWAP test gates  
+        assert 'ccx' in gate_names
+        # Should have measurements
+        assert 'measure' in gate_names
     
-    def test_estimate_circuit_resources_with_twirling(self):
-        """Test resource estimation with Clifford twirling."""
+    def test_build_full_purification_ghz_dephasing(self):
+        """Test complete purification circuit for GHZ + dephasing."""
         M = 2
-        resources_no_twirl = estimate_circuit_resources(M, 'dephase_z', apply_twirling=False)
-        resources_twirl = estimate_circuit_resources(M, 'dephase_z', apply_twirling=True)
+        N = 4  # Test with sequential purification
+        noise = NoiseSpec(noise_type=NoiseType.dephase_z, mode=NoiseMode.iid_p, p=0.3)
         
-        # Twirling should increase gate count
-        self.assertGreater(
-            resources_twirl['total_gates_per_round'],
-            resources_no_twirl['total_gates_per_round']
-        )
+        qc = build_full_purification_experiment(M, noise, "ghz", N)
+        
+        # Check structure - similar to above but for sequential purification
+        expected_qubits = N * M + N // 2  
+        assert qc.num_qubits >= expected_qubits - N // 4
+        
+        # Check for GHZ prep gates
+        gate_names = [instr.operation.name for instr in qc.data]
+        assert 'h' in gate_names  # GHZ prep
+        assert 'cx' in gate_names  # GHZ prep
+        
+        # Should have twirling gates (s, sdg, etc.)
+        twirl_gates = ['s', 'sdg']
+        assert any(g in gate_names for g in twirl_gates)
     
-    def test_estimate_circuit_resources_different_noise_types(self):
-        """Test resource estimation for different noise types."""
+    def test_invalid_target_type_assembly(self):
+        """Test error handling for invalid target type in assembly."""
         M = 2
+        noise = NoiseSpec(noise_type=NoiseType.depolarizing, mode=NoiseMode.iid_p, p=0.1)
         
-        for noise_type in ['depolarizing', 'dephase_z', 'dephase_x']:
-            resources = estimate_circuit_resources(M, noise_type, apply_twirling=False)
-            
-            # Basic sanity checks
-            self.assertEqual(resources['total_qubits'], 1 + 2*M)
-            self.assertGreater(resources['total_gates_per_round'], 0)
+        with pytest.raises(ValueError, match="Unknown target_type"):
+            build_full_purification_experiment(M, noise, "invalid")
+    
+    def test_unsupported_noise_type_assembly(self):
+        """Test error handling for unsupported noise types."""
+        M = 2
+        # Create a custom noise type that's not supported
+        noise = NoiseSpec(noise_type="unsupported", mode=NoiseMode.iid_p, p=0.1)
+        
+        with pytest.raises((ValueError, AttributeError)):
+            build_full_purification_experiment(M, noise, "hadamard")
 
 
-class TestComponentIntegration(unittest.TestCase):
-    """Integration tests combining multiple components."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        if not COMPONENTS_AVAILABLE:
-            self.skipTest("IBMQ components not available")
-    
-    def test_full_workflow_integration(self):
-        """Test complete workflow integration."""
-        M = 1
-        
-        # 1. Create target state
-        target_circuit, target_sv = create_target_state_circuit(M, 'hadamard')
-        self.assertEqual(target_circuit.num_qubits, M)
-        
-        # 2. Create noisy copies
-        copy_A = create_noisy_copy_circuit(target_circuit, 'depolarizing', 0.1, True, 1)
-        copy_B = create_noisy_copy_circuit(target_circuit, 'depolarizing', 0.1, True, 2)
-        
-        # 3. Create SWAP purification circuit
-        swap_circuit = create_swap_purification_circuit(copy_A, copy_B, measure_ancilla=True)
-        self.assertEqual(swap_circuit.num_qubits, 1 + 2*M)
-        self.assertEqual(swap_circuit.num_clbits, 1)
-        
-        # 4. Estimate resources
-        resources = estimate_circuit_resources(M, 'depolarizing', apply_twirling=True)
-        self.assertGreater(resources['total_qubits'], 0)
-        
-        # 5. Mock execution and analysis
-        with patch('IBMQ_components.execute_circuits_with_backend') as mock_execute:
-            mock_execute.return_value = [{'0': 600, '1': 400}]
-            
-            success, prob, analysis = analyze_swap_test_results(
-                mock_execute.return_value[0], num_repeats=1
-            )
-            
-            self.assertTrue(success)
-            self.assertAlmostEqual(prob, 0.6, places=3)
-    
-    def test_comprehensive_test_function(self):
-        """Test the built-in comprehensive test function."""
-        if not QISKIT_TEST_AVAILABLE:
-            self.skipTest("Full Qiskit not available for comprehensive test")
-        
-        test_results = run_comprehensive_test(M=1, noise_type='depolarizing', p=0.1)
-        
-        self.assertIn('overall_success', test_results)
-        self.assertIn('tests', test_results)
-        
-        # Check that key tests are present
-        expected_tests = [
-            'state_prep', 'noise_application', 'swap_circuit', 
-            'purification_circuit', 'resource_estimation'
-        ]
-        
-        for test_name in expected_tests:
-            self.assertIn(test_name, test_results['tests'])
+# Test fixtures and utilities
+@pytest.fixture
+def sample_noise_specs():
+    """Provide sample noise specifications for testing."""
+    return {
+        'depolarizing': NoiseSpec(noise_type=NoiseType.depolarizing, mode=NoiseMode.iid_p, p=0.1),
+        'dephasing_z': NoiseSpec(noise_type=NoiseType.dephase_z, mode=NoiseMode.iid_p, p=0.2),
+        'dephasing_x': NoiseSpec(noise_type=NoiseType.dephase_x, mode=NoiseMode.iid_p, p=0.15),
+    }
 
 
-def run_all_tests():
-    """Run all tests and provide summary."""
-    if not COMPONENTS_AVAILABLE:
-        print("❌ Cannot run tests: IBMQ components not available")
-        print("   Make sure IBMQ_components.py is in src/simulation/")
-        return False
-    
-    # Create test suite
-    suite = unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
-    
-    # Run tests with detailed output
-    runner = unittest.TextTestRunner(verbosity=2, buffer=True)
-    result = runner.run(suite)
-    
-    # Print summary
-    print(f"\n{'='*70}")
-    print(f"TEST SUMMARY")
-    print(f"{'='*70}")
-    print(f"Tests run: {result.testsRun}")
-    print(f"Failures: {len(result.failures)}")
-    print(f"Errors: {len(result.errors)}")
-    print(f"Skipped: {len(result.skipped) if hasattr(result, 'skipped') else 0}")
-    
-    if result.wasSuccessful():
-        print(f"✅ All tests passed!")
-        print(f"🚀 IBMQ components are ready for experiments!")
-    else:
-        print(f"❌ Some tests failed!")
-        
-        if result.failures:
-            print(f"\nFailures:")
-            for test, traceback in result.failures:
-                print(f"  - {test}: {traceback.split('AssertionError:')[-1].strip()}")
-        
-        if result.errors:
-            print(f"\nErrors:")
-            for test, traceback in result.errors:
-                print(f"  - {test}: {traceback.split('Error:')[-1].strip()}")
-    
-    print(f"{'='*70}")
-    return result.wasSuccessful()
+@pytest.fixture
+def sample_run_specs(sample_noise_specs):
+    """Provide sample run specifications for testing."""
+    return {
+        name: IBMQRunSpec(M=2, noise=noise, target_type="hadamard")
+        for name, noise in sample_noise_specs.items()
+    }
 
 
 if __name__ == "__main__":
-    # Run tests when script is executed directly
-    success = run_all_tests()
-    sys.exit(0 if success else 1)
+    # Run tests
+    pytest.main([__file__, "-v"])
