@@ -31,7 +31,7 @@ plt.rcParams.update({
     'ytick.labelsize': 20,
     'legend.fontsize': 20,
     'figure.titlesize': 30,
-    'font.family': 'DejaVu Sans',
+    'font.family': 'Times New Roman',
     'mathtext.fontset': 'dejavusans',
     'axes.linewidth': 1.2,
     'grid.linewidth': 0.8,
@@ -518,8 +518,8 @@ class AnalyticTheoryPlotter:
         ## print("\n9) F_out vs D at fixed F...")
         ## out['fout_vs_D'] = self.plot_fout_vs_D_fixedF(F0=0.7, save_format=save_format)
         
-        # print("\n10. F_out vs F (GHZ system with gamma)...") 
-        # out['fout_vs_f_GHZ_system'] = self.plot_fout_vs_f_gamma_system(save_format=save_format)
+        print("\n10. F_out vs F (GHZ system with gamma)...") 
+        out['fout_vs_f_GHZ_system'] = self.plot_fout_vs_f_gamma_system(save_format=save_format)
 
         print("\n" + "="*70)
         print("COMPLETE")
