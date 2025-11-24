@@ -435,7 +435,7 @@ def setup_ibm_backend(backend_name: str):
 
 
 def transpile_circuit_for_backend(circuit: QuantumCircuit, backend, optimization_level: int = 2):
-    """Transpile circuit with aggressive constraints to prevent qubit expansion."""
+    """Transpile circuit allowing full backend topology for connectivity."""
     
     num_circuit_qubits = circuit.num_qubits
     backend_qubits = backend.configuration().n_qubits
@@ -445,44 +445,20 @@ def transpile_circuit_for_backend(circuit: QuantumCircuit, backend, optimization
     if num_circuit_qubits > backend_qubits:
         raise ValueError(f"Circuit needs {num_circuit_qubits} qubits but backend only has {backend_qubits}")
     
-    # For small circuits, use very aggressive constraints to prevent expansion
-    if num_circuit_qubits <= 20:
-        # Create a minimal coupling map for just the qubits we need
-        from qiskit.transpiler import CouplingMap
-        
-        # Create a simple linear coupling map for our qubits: 0-1-2-3-...-n
-        edges = [(i, i+1) for i in range(num_circuit_qubits - 1)]
-        if len(edges) == 0:  # Single qubit case
-            edges = []
-        
-        coupling_map = CouplingMap(couplinglist=edges)
-        
-        logger.info(f"Using constrained coupling map with {len(edges)} edges for {num_circuit_qubits} qubits")
-        
-        # Create pass manager with constrained coupling map
-        pass_manager = generate_preset_pass_manager(
-            optimization_level=1,  # Lower optimization to prevent expansion
-            backend=backend,
-            coupling_map=coupling_map,
-            initial_layout=list(range(num_circuit_qubits))
-        )
-    else:
-        # For larger circuits, use normal transpilation
-        pass_manager = generate_preset_pass_manager(
-            optimization_level=optimization_level,
-            backend=backend,
-            initial_layout=list(range(num_circuit_qubits))
-        )
+    # Let transpiler use full backend topology for optimal routing
+    # This allows it to route around connectivity constraints
+    pass_manager = generate_preset_pass_manager(
+        optimization_level=optimization_level,
+        backend=backend
+        # No layout constraints - let transpiler find best mapping!
+    )
     
     transpiled = pass_manager.run(circuit)
     
-    logger.info(f"Transpiled: {num_circuit_qubits} → {transpiled.num_qubits} qubits")
+    logger.info(f"Transpiled: {num_circuit_qubits} logical → {transpiled.num_qubits} physical qubits")
+    logger.info(f"Circuit depth: {circuit.depth()} → {transpiled.depth()}")
     
-    # For small circuits, if we still have expansion, something is wrong
-    if num_circuit_qubits <= 20 and transpiled.num_qubits > num_circuit_qubits * 1.5:
-        logger.error(f"Excessive qubit expansion detected! Consider using simulator instead.")
-        logger.error(f"Original: {num_circuit_qubits}, Transpiled: {transpiled.num_qubits}")
-    
+    # This is fine - using extra qubits for routing is normal and expected
     return transpiled
 
 

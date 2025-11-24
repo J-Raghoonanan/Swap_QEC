@@ -33,8 +33,8 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 TARGET_M_VALUES = [1, 2]  # Number of qubits
-TARGET_P_VALUES = [0.01, 0.1, 0.2, 0.3]  # Error probabilities  
-TARGET_N_VALUES = [2, 4, 8]  # Copy counts (1, 2, 3 rounds of purification)
+TARGET_P_VALUES = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]  # Error probabilities  
+TARGET_N_VALUES = [2, 4, 8, 16]  # Copy counts (1, 2, 3 rounds of purification)
 
 # Quick test subset for debugging
 QUICK_M_VALUES = [1]
@@ -66,8 +66,8 @@ def validate_parameter_feasibility(M: int, N: int, p: float, backend_name: str) 
         return False, f"Requires {required_qubits} qubits, exceeds conservative limit"
     
     # Check error probability range
-    if not (0.0 <= p <= 0.5):  # Beyond p=0.5, noise dominates
-        return False, f"Error probability p={p} outside reasonable range [0, 0.5]"
+    # if not (0.0 <= p <= 0.5):  # Beyond p=0.5, noise dominates
+    #     return False, f"Error probability p={p} outside reasonable range [0, 0.5]"
     
     # Check N is power of 2
     if N <= 1 or (N & (N - 1)) != 0:
@@ -181,7 +181,7 @@ def load_existing_results(output_file: Path) -> set[str]:
 def run_swap_purification_grid_sweep(
     backend_name: str = "ibm_torino",
     shots: int = 8192,
-    output_dir: Path = Path("data/SWAP_experiments"),
+    output_dir: Path = Path("data/IBMQ"),
     quick_mode: bool = False,
     resume: bool = True
 ) -> None:
@@ -347,7 +347,7 @@ Examples:
                        help="IBM Quantum backend name")
     parser.add_argument("--shots", type=int, default=8192,
                        help="Number of measurement shots per experiment")
-    parser.add_argument("--output-dir", type=Path, default=Path("data/SWAP_experiments"),
+    parser.add_argument("--output-dir", type=Path, default=Path("data/IBMQ"),
                        help="Output directory for results")
     parser.add_argument("--quick", action="store_true",
                        help="Quick test mode with reduced parameter space")
