@@ -796,9 +796,461 @@ class SimulationPlotter:
         return str(filepath)
     
     
+    def plot_fidelity_combined_M(self, save_format: str = 'pdf') -> Optional[str]:
+        """
+        Combined fidelity plots: 2x5 grid with depolarizing (top) and dephasing (bottom).
+        Each column represents M=1 through M=5.
+        This version plots FIDELITY instead of error rate.
+        """
+        # Check if we have data for both noise types
+        if self.depol_finals.empty and self.dephase_finals.empty:
+            print("No data for fidelity plots")
+            return None
+
+        # Create 2x5 subplot grid
+        fig, axes = plt.subplots(2, 5, figsize=(25, 12))
+        fig.suptitle('PEC Fidelity vs System Size', fontsize=40, y=0.97)
+
+        # Noise type configurations
+        noise_configs = [
+            {
+                'type': 'depolarizing',
+                'df': self.depol_finals,
+                'twirling_filter': False,
+                'row_idx': 0,
+                'row_label': 'Depolarizing Noise'
+            },
+            {
+                'type': 'dephasing', 
+                'df': self.dephase_finals,
+                'twirling_filter': True,
+                'row_idx': 1,
+                'row_label': 'Dephasing Noise'
+            }
+        ]
+
+        # M values to plot
+        M_values = [1, 2, 3, 4, 5]
+        
+        for noise_config in noise_configs:
+            df = noise_config['df']
+            twirling_filter = noise_config['twirling_filter']
+            row_idx = noise_config['row_idx']
+            noise_type = noise_config['type']
+            
+            if df.empty:
+                # If no data for this noise type, show empty row with message
+                for col_idx in range(5):
+                    ax = axes[row_idx, col_idx]
+                    ax.text(0.5, 0.5, f'No {noise_type}\ndata', 
+                        horizontalalignment='center', verticalalignment='center',
+                        transform=ax.transAxes, fontsize=14, alpha=0.7)
+                    if col_idx == 0:
+                        ax.set_ylabel('Final Fidelity', fontsize=20)
+                    if row_idx == 1:  # Bottom row
+                        ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=16)
+                continue
+
+            # Filter by twirling condition
+            df_filtered = df[df['twirling_enabled'] == twirling_filter].copy()
+            
+            if df_filtered.empty:
+                # If no data after filtering, show empty row
+                for col_idx in range(5):
+                    ax = axes[row_idx, col_idx]
+                    ax.text(0.5, 0.5, f'No data\n(twirling={twirling_filter})', 
+                        horizontalalignment='center', verticalalignment='center',
+                        transform=ax.transAxes, fontsize=14, alpha=0.7)
+                    if col_idx == 0:
+                        ax.set_ylabel('Final Fidelity', fontsize=20)
+                    if row_idx == 1:  # Bottom row
+                        ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=16)
+                continue
+
+            # Plot each M value
+            for col_idx, M in enumerate(M_values):
+                ax = axes[row_idx, col_idx]
+                
+                # Filter for this M value
+                df_M = df_filtered[df_filtered['M'] == M].copy()
+                
+                if df_M.empty:
+                    # If no data for this M, show message
+                    ax.text(0.5, 0.5, f'No data\nfor M={M}', 
+                        horizontalalignment='center', verticalalignment='center',
+                        transform=ax.transAxes, fontsize=12, alpha=0.7)
+                else:
+                    # Get unique N values for this M
+                    N_values = sorted(df_M['N'].unique())
+                    colors = plt.cm.viridis(np.linspace(0, 1, len(N_values)))
+
+                    # Plot curves for different N values
+                    for i, N in enumerate(N_values):
+                        df_N = df_M[df_M['N'] == N].sort_values('p_channel')
+                        
+                        if len(df_N) > 0:
+                            # Convert error to fidelity: fidelity = 1 - eps_L_final
+                            fidelity = 1 - df_N['eps_L_final']
+                            ax.plot(df_N['p_channel'], fidelity,
+                                   linestyle='-', marker=_mk(i),
+                                   color=colors[i], linewidth=2, markersize=6,
+                                   label=rf'$\ell$ = {int(np.log2(N))}', alpha=0.8)
+
+                    # No correction reference line (fidelity = 1 - p for simple noise)
+                    # p_range = np.linspace(0.09, 0.9, 100)
+                    # fidelity_no_correction = 1 - p_range
+                    # ax.plot(p_range, fidelity_no_correction, '--',
+                    #        color='gray', linewidth=1.5, alpha=0.7, label='No Correction')
+
+                    # Set axis limits
+                    ax.set_xlim(0.09, 1.0)
+                    ax.set_ylim(1e-3, 1.0)
+                    ax.set_xscale('linear')
+                    ax.set_yscale('linear')
+                    
+                    # Add legend only to first subplot of first row
+                    if row_idx == 0 and col_idx == 0 and len(N_values) > 0:
+                        ax.legend(fontsize=11, loc='lower left')
+
+                # Subplot titles (M values) only on top row
+                if row_idx == 0:
+                    ax.set_title(f'M = {M}', fontsize=25)
+                
+                # Y-axis label only on first column
+                if col_idx == 0:
+                    ax.set_ylabel('Final Fidelity', fontsize=20)
+                
+                # X-axis label only on bottom row
+                if row_idx == 1:
+                    ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=20)
+
+        # Add row labels
+        fig.text(0.02, 0.69, 'Depolarizing Noise', rotation=90, fontsize=25, 
+                verticalalignment='center', weight='bold')
+        fig.text(0.02, 0.27, 'Dephasing Noise', rotation=90, fontsize=25, 
+                verticalalignment='center', weight='bold')
+
+        plt.tight_layout()
+        plt.subplots_adjust(left=0.08)  # Make room for row labels
+
+        filename = f"fidelity_combined_M.{save_format}"
+        filepath = self.figures_dir / filename
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+
+        print(f"Saved {filename}")
+        return str(filepath)
     
     
+    def plot_fidelity_vs_p_combined(self, save_format: str = 'pdf') -> Optional[str]:
+        """
+        Combined fidelity vs p plot for both depolarizing and dephasing noise.
+        Based on plot_threshold_vs_M() but plots fidelity instead of error.
+        Depolarizing: solid lines, Dephasing: dashed lines.
+        """
+        # Check if we have data for both noise types
+        if self.depol_finals.empty and self.dephase_finals.empty:
+            print("No data for fidelity vs p plot")
+            return None
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+
+        # Define noise type configurations
+        noise_configs = [
+            {
+                'type': 'depolarizing',
+                'df': self.depol_finals,
+                'twirling_filter': False,
+                'linestyle': '-',  # solid
+                'label_prefix': 'Depol.'
+            },
+            {
+                'type': 'dephasing',
+                'df': self.dephase_finals,
+                'twirling_filter': True,
+                'linestyle': '--',  # dashed
+                'label_prefix': 'Deph.'
+            }
+        ]
+
+        # Better color palette avoiding yellow
+        GOOD_COLORS = ['#1f77b4', '#d62728', '#2ca02c', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+
+        for noise_config in noise_configs:
+            df = noise_config['df']
+            twirling_filter = noise_config['twirling_filter']
+            linestyle = noise_config['linestyle']
+            label_prefix = noise_config['label_prefix']
+            
+            if df.empty:
+                continue
+
+            # Filter by twirling condition
+            df_filtered = df[df['twirling_enabled'] == twirling_filter].copy()
+            
+            if df_filtered.empty:
+                continue
+
+            # Use max N
+            max_N = df_filtered['N'].max()
+            df_N = df_filtered[df_filtered['N'] == max_N].copy()
+            
+            if df_N.empty:
+                continue
+
+            # Get unique M values
+            M_values = sorted(df_N['M'].unique())
+            
+            # Plot each M value for this noise type
+            for M_idx, M in enumerate(M_values):
+                df_M = df_N[df_N['M'] == M].sort_values('p_channel')
+                
+                if len(df_M) > 0:
+                    # Convert error to fidelity: fidelity = 1 - eps_L_final
+                    fidelity = 1 - df_M['eps_L_final']
+                    
+                    # Use better colors
+                    color = GOOD_COLORS[M_idx % len(GOOD_COLORS)]
+                    label = f'M={M} ({label_prefix})'
+                    
+                    ax.plot(df_M['p_channel'], fidelity,
+                           linestyle=linestyle, marker=_mk(M_idx),
+                           color=color, linewidth=3, markersize=8,
+                           label=label, alpha=0.85)
+
+        # No correction reference line (fidelity = 1 - p)
+        # p_range = np.linspace(0.09, 0.9, 100)
+        # fidelity_no_correction = 1 - p_range
+        # ax.plot(p_range, fidelity_no_correction, ':',
+        #        color='gray', linewidth=2, alpha=0.7, label='No Correction')
+
+        # Formatting
+        ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=25)
+        ax.set_ylabel('Final Fidelity', fontsize=25)
+        ax.set_title('Fidelity vs System Size', fontsize=30)
+        
+        ax.legend(fontsize=12, loc='lower left')
+        ax.set_xlim(0.09, 1.0)
+        ax.set_ylim(0, 1.05)
+        
+        plt.tight_layout()
+        
+        filename = f"fidelity_vs_p_combined.{save_format}"
+        filepath = self.figures_dir / filename
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        print(f"Saved {filename}")
+        return str(filepath)
     
+    
+    def plot_fidelity_vs_M_combined(self, save_format: str = 'pdf') -> Optional[str]:
+        """
+        Combined fidelity vs M plot for both depolarizing and dephasing noise.
+        Only plots p=0.1, 0.3, 0.5, 0.7 and ensures x-axis shows only integers.
+        Depolarizing: solid lines, Dephasing: dashed lines.
+        """
+        # Check if we have data for both noise types
+        if self.depol_finals.empty and self.dephase_finals.empty:
+            print("No data for fidelity vs M plot")
+            return None
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+
+        # Define noise type configurations
+        noise_configs = [
+            {
+                'type': 'depolarizing',
+                'df': self.depol_finals,
+                'twirling_filter': False,
+                'linestyle': '-',  # solid
+                'label_prefix': 'Depol.'
+            },
+            {
+                'type': 'dephasing',
+                'df': self.dephase_finals,
+                'twirling_filter': True,
+                'linestyle': '--',  # dashed
+                'label_prefix': 'Deph.'
+            }
+        ]
+
+        # Only plot these p values
+        target_p_values = [0.1, 0.3, 0.5, 0.7]
+        colors = plt.cm.viridis(np.linspace(0, 1, len(target_p_values)))
+
+        for noise_config in noise_configs:
+            df = noise_config['df']
+            twirling_filter = noise_config['twirling_filter']
+            linestyle = noise_config['linestyle']
+            label_prefix = noise_config['label_prefix']
+            
+            if df.empty:
+                continue
+
+            # Filter by twirling condition
+            df_filtered = df[df['twirling_enabled'] == twirling_filter].copy()
+            
+            if df_filtered.empty:
+                continue
+
+            # Use max N
+            max_N = df_filtered['N'].max()
+            df_N = df_filtered[df_filtered['N'] == max_N].copy()
+            
+            if df_N.empty:
+                continue
+
+            # Plot only target p values
+            for p_idx, target_p in enumerate(target_p_values):
+                # Find closest p value in data
+                available_ps = df_N['p_channel'].unique()
+                closest_p = min(available_ps, key=lambda x: abs(x - target_p))
+                
+                # Only use if within reasonable tolerance (0.05)
+                if abs(closest_p - target_p) <= 0.05:
+                    df_p = df_N[df_N['p_channel'] == closest_p].sort_values('M')
+                    
+                    if len(df_p) > 0:
+                        label = f'$p={target_p:.1f}$ ({label_prefix})'
+                        
+                        ax.plot(df_p['M'], df_p['fidelity_final'],
+                               linestyle=linestyle, marker=_mk(p_idx),
+                               color=colors[p_idx], linewidth=3, markersize=8,
+                               label=label, alpha=0.85)
+
+        # Formatting
+        ax.set_xlabel('System Size (M qubits)', fontsize=25)
+        ax.set_ylabel('Final Fidelity', fontsize=25)
+        ax.set_title('Simulation: Fidelity vs System Size (Both Noise Types)', fontsize=30)
+        
+        # Force x-axis to show only integer values
+        M_values = []
+        for noise_config in noise_configs:
+            if not noise_config['df'].empty:
+                df_filtered = noise_config['df'][noise_config['df']['twirling_enabled'] == noise_config['twirling_filter']]
+                if not df_filtered.empty:
+                    max_N = df_filtered['N'].max()
+                    df_N = df_filtered[df_filtered['N'] == max_N]
+                    M_values.extend(df_N['M'].unique())
+        
+        if M_values:
+            M_values = sorted(set(M_values))
+            ax.set_xticks(M_values)
+            ax.set_xlim(min(M_values) - 0.1, max(M_values) + 0.1)
+        
+        ax.legend(fontsize=12, loc='best')
+        ax.set_ylim(0, 1.05)
+        
+        plt.tight_layout()
+        
+        filename = f"fidelity_vs_M_combined.{save_format}"
+        filepath = self.figures_dir / filename
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        print(f"Saved {filename}")
+        return str(filepath)
+    
+    def plot_fidelity_threshold_vs_M_combined(self, save_format: str = 'pdf') -> Optional[str]:
+        """
+        NEW: Final fidelity vs p for different M values, combining both noise types.
+        Depolarizing: solid lines, Dephasing: dashed lines.
+        """
+        # Check if we have data for both noise types
+        if self.depol_finals.empty and self.dephase_finals.empty:
+            print("No data for combined fidelity threshold plot")
+            return None
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+
+        # Define noise type configurations
+        noise_configs = [
+            {
+                'type': 'depolarizing',
+                'df': self.depol_finals,
+                'twirling_filter': False,
+                'linestyle': '-',  # solid
+                'label_prefix': 'Depol.'
+            },
+            {
+                'type': 'dephasing',
+                'df': self.dephase_finals,
+                'twirling_filter': True,
+                'linestyle': '--',  # dashed
+                'label_prefix': 'Deph.'
+            }
+        ]
+
+        # Better color palette avoiding yellow
+        GOOD_COLORS = ['#1f77b4', '#d62728', '#2ca02c', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+
+        for noise_config in noise_configs:
+            df = noise_config['df']
+            twirling_filter = noise_config['twirling_filter']
+            linestyle = noise_config['linestyle']
+            label_prefix = noise_config['label_prefix']
+            
+            if df.empty:
+                continue
+
+            # Filter by twirling condition
+            df_filtered = df[df['twirling_enabled'] == twirling_filter].copy()
+            
+            if df_filtered.empty:
+                continue
+
+            # Use max N
+            max_N = df_filtered['N'].max()
+            df_N = df_filtered[df_filtered['N'] == max_N].copy()
+            
+            if df_N.empty:
+                continue
+
+            # Get unique M values
+            M_values = sorted(df_N['M'].unique())
+            
+            # Plot each M value for this noise type
+            for M_idx, M in enumerate(M_values):
+                df_M = df_N[df_N['M'] == M].sort_values('p_channel')
+                
+                if len(df_M) > 0:
+                    # Convert error to fidelity: fidelity = 1 - eps_L_final
+                    fidelity = 1 - df_M['eps_L_final']
+                    
+                    # Use better colors
+                    color = GOOD_COLORS[M_idx % len(GOOD_COLORS)]
+                    label = f'M={M} ({label_prefix})'
+                    
+                    ax.plot(df_M['p_channel'], fidelity,
+                        linestyle=linestyle, marker=_mk(M_idx),
+                        color=color, linewidth=3, markersize=8,
+                        label=label, alpha=0.85)
+
+        # No correction reference line (fidelity = 1 - p)
+        p_range = np.linspace(0.09, 1.0, 100)
+        fidelity_no_correction = 1 - p_range
+        ax.plot(p_range, fidelity_no_correction, ':',
+            color='gray', linewidth=2, alpha=0.7, label='No Correction')
+
+        # Formatting
+        ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=25)
+        ax.set_ylabel(r'Final Fidelity', fontsize=25)
+        ax.set_title('Fidelity vs System Size (Both Noise Types)', fontsize=30)
+        
+        ax.legend(fontsize=12, loc='lower left', handlelength=3)
+        ax.set_xlim(0.09, 1.0)
+        ax.set_ylim(0, 1.05)
+        
+        plt.tight_layout()
+        
+        filename = f"fidelity_threshold_vs_M_combined.{save_format}"
+        filepath = self.figures_dir / filename
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        print(f"Saved {filename}")
+        return str(filepath)
     
     
     
@@ -842,10 +1294,20 @@ class SimulationPlotter:
         plots['fidelity_grid_depol'] = self.plot_fidelity_grid_vs_depth('depolarizing', save_format)
         plots['fidelity_grid_dephase'] = self.plot_fidelity_grid_vs_depth('dephasing', save_format)
         
-        # print("\n7. Multi-M threshold plots...")
+        print("\n7. Multi-M threshold plots...")
         ## plots['threshold_multi_M_depol'] = self.plot_threshold_multi_M('depolarizing', save_format)
         ## plots['threshold_multi_M_dephase'] = self.plot_threshold_multi_M('dephasing', save_format)
         plots['threshold_combined_M'] = self.plot_threshold_combined_M(save_format)
+        
+        print("\n8. Multi-M fidelity threshold plots...")
+        plots['fidelity_combined_M'] = self.plot_fidelity_combined_M(save_format)
+        
+        print("\n9. Combined fidelity vs M plot...")
+        plots['fidelity_vs_M_combined'] = self.plot_fidelity_vs_M_combined(save_format)
+
+        print("\n10. Multi-M fidelity threshold plots...")
+        plots['fidelity_combined_M'] = self.plot_fidelity_threshold_vs_M_combined(save_format)
+
 
         
         # Summary
