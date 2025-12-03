@@ -156,22 +156,22 @@ class IBMExperimentalPlotter:
                     noise_label = 'Depol.' if noise_type == 'depolarizing' else 'Deph.'
                     label = f'M={M} ({noise_label})'
                     
-                    ax.semilogy(df_M['p'], error_rate,
+                    ax.plot(df_M['p'], 1-error_rate,
                                linestyle=linestyle, marker=_mk(M_idx),
                                color=color, linewidth=3, markersize=8,
                                label=label, alpha=0.85)
         
         # Add no-correction reference line
-        p_range = np.logspace(-2, 0, 100)
-        ax.semilogy(p_range, p_range, ':',
-                   color='gray', linewidth=2, alpha=0.7, label='No Correction')
+        # p_range = np.logspace(-2, 0, 100)
+        # ax.semilogy(p_range, p_range, ':',
+        #            color='gray', linewidth=2, alpha=0.7, label='No Correction')
         
         # Formatting
         ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=25)
-        ax.set_ylabel(r'Final Error Rate, $\varepsilon$', fontsize=25)
-        ax.set_title(f'System Size Scaling\n(N={max_N})', fontsize=28)
+        ax.set_ylabel('Final Fidelity', fontsize=25)
+        # ax.set_title('System Size Scaling', fontsize=28)
         
-        ax.legend(fontsize=14, loc='lower right')
+        ax.legend(fontsize=14, loc='upper right', handlelength=3)
         ax.set_xlim(0.005, 1.0)
         ax.set_ylim(1e-3, 1.0)
         
@@ -238,7 +238,7 @@ class IBMExperimentalPlotter:
         ax.set_ylabel('Final Fidelity', fontsize=25)
         
         title_str = 'Depolarizing' if noise_type == 'depolarizing' else 'Dephasing'
-        ax.set_title(f'Fidelity vs System Size\n({title_str} Noise, N={max_N})', fontsize=28)
+        ax.set_title(f'Fidelity across System Size\n({title_str} Noise, N={max_N})', fontsize=28)
         
         ax.legend(fontsize=16, loc='best')
         ax.set_ylim(0, 1.05)
@@ -448,6 +448,8 @@ def main():
     
     # Default parameters
     csv_path = "data/IBMQ/IBM_results_all_ibm_torino.csv"
+    # csv_path = "data/IBMQ/data_OLD.csv"
+    # csv_path = "data/IBMQ/Aer_results_all_20251202_171217.csv"
     figures_dir = "figures/experimental_ibm"
     save_format = "pdf"
     

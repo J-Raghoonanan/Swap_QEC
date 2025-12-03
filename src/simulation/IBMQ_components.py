@@ -47,6 +47,7 @@ class PurificationConfig:
     transpilation_level: int = 2
     max_retry_attempts: int = 5  # Retry if too many SWAP failures
     min_success_rate: float = 0.1  # Minimum SWAP success rate to accept
+    num_noise_realizations: int = 1  # Monte Carlo samples over Pauli noise patterns
 
     def validate(self) -> None:
         """Validate configuration parameters."""
@@ -63,6 +64,10 @@ class PurificationConfig:
             )
         if self.shots <= 0:
             raise ValueError(f"shots must be positive, got {self.shots}")
+        if self.num_noise_realizations <= 0:
+            raise ValueError(
+                f"num_noise_realizations must be positive, got {self.num_noise_realizations}"
+            )
 
         # Estimate maximum qubits needed for this configuration:
         # N copies of M qubits each, plus (N-1) ancillas for SWAP tests (one per test)
@@ -73,7 +78,7 @@ class PurificationConfig:
             )
 
     def synthesize_run_id(self) -> str:
-        """Create a unique identifier for this run."""
+        """Create a unique identifier for this run (physical parameters only)."""
         return f"batch_M{self.M}_N{self.N}_p{self.p:.4f}_{self.noise_type}"
 
 
@@ -190,20 +195,24 @@ def apply_clifford_twirled_dephasing(
     rng = np.random.default_rng(seed)
 
     # Simple Clifford generating set
-    clifford_gates = ["i", "x", "y", "z", "h", "s"]
+    clifford_gates = ["i", "h", "s", "sh", "shs", "hs"] 
 
     for qubit in qubits:
         # Step 1: Apply random Clifford
         clifford = rng.choice(clifford_gates)
-        if clifford == "x":
-            qc.x(qubit)
-        elif clifford == "y":
-            qc.y(qubit)
-        elif clifford == "z":
-            qc.z(qubit)
-        elif clifford == "h":
+        if clifford == "h":
             qc.h(qubit)
         elif clifford == "s":
+            qc.s(qubit)
+        elif clifford == "sh":
+            qc.s(qubit)
+            qc.h(qubit)
+        elif clifford == "shs":
+            qc.s(qubit)
+            qc.h(qubit)
+            qc.s(qubit)
+        elif clifford == "hs":
+            qc.h(qubit)
             qc.s(qubit)
         # "i" does nothing
 
@@ -212,16 +221,20 @@ def apply_clifford_twirled_dephasing(
             qc.z(qubit)
 
         # Step 3: Apply Clifford inverse
-        if clifford == "x":
-            qc.x(qubit)     # X† = X
-        elif clifford == "y":
-            qc.y(qubit)     # Y† = Y
-        elif clifford == "z":
-            qc.z(qubit)     # Z† = Z
-        elif clifford == "h":
-            qc.h(qubit)     # H† = H
+        if clifford == "h":
+            qc.h(qubit)      # H† = H
         elif clifford == "s":
-            qc.sdg(qubit)   # S†
+            qc.sdg(qubit)    # S† = S†
+        elif clifford == "sh":
+            qc.h(qubit)      # (SH)† = H†S† = HS†
+            qc.sdg(qubit)
+        elif clifford == "shs":
+            qc.sdg(qubit)    # (SHS)† = S†H†S†
+            qc.h(qubit)
+            qc.sdg(qubit)
+        elif clifford == "hs":
+            qc.sdg(qubit)    # (HS)† = S†H†
+            qc.h(qubit)
 
 
 def apply_noise(
@@ -258,7 +271,10 @@ def apply_noise(
 # Batch Circuit Construction
 # =============================================================================
 
-def create_batch_purification_circuit(config: PurificationConfig) -> QuantumCircuit:
+def create_batch_purification_circuit(
+    config: PurificationConfig,
+    base_noise_seed: Optional[int] = None,
+) -> QuantumCircuit:
     """
     Create complete batch purification circuit.
 
@@ -271,6 +287,11 @@ def create_batch_purification_circuit(config: PurificationConfig) -> QuantumCirc
 
     Args:
         config: Purification configuration
+        base_noise_seed: Base seed for Pauli noise sampling. Each *realization*
+                         should use a different base_noise_seed so we Monte Carlo
+                         over distinct noise patterns. Within a given realization,
+                         we use the *same* seed for all N registers so the N
+                         copies are identical, as required by purification theory.
 
     Returns:
         Complete circuit for batch purification
@@ -282,6 +303,10 @@ def create_batch_purification_circuit(config: PurificationConfig) -> QuantumCirc
     total_data_qubits = N * M
     total_ancillas = N - 1
     total_qubits = total_data_qubits + total_ancillas
+
+    # Default base seed if not provided
+    if base_noise_seed is None:
+        base_noise_seed = 12345
 
     # Create circuit
     qc = QuantumCircuit(total_qubits, name=f"batch_purification_M{M}_N{N}")
@@ -307,9 +332,14 @@ def create_batch_purification_circuit(config: PurificationConfig) -> QuantumCirc
         for q in data_registers[i]:
             qc.h(q)
 
-        # Apply specified noise to register i
-        # Each register gets its own RNG seed for reproducibility
-        apply_noise(qc, data_registers[i], config.noise_type, config.p, seed=42 + i)
+        # Apply identical noise pattern to ALL registers in this realization
+        apply_noise(
+            qc,
+            data_registers[i],
+            config.noise_type,
+            config.p,
+            seed=base_noise_seed,
+        )
 
     # Step 2: Tree of pairwise SWAP purifications
     qc.barrier()
@@ -482,18 +512,24 @@ def analyze_results(
 
 def execute_with_retry(
     circuit: QuantumCircuit, config: PurificationConfig, service, backend
-) -> Tuple[float, float, Dict]:
+) -> Tuple[float, float, Dict[str, int]]:
     """
     Execute circuit with retry on low success rate.
+
+    This function does NOT perform Monte Carlo over noise patterns; it
+    assumes the circuit (including noise gates) is fixed. Monte Carlo
+    is handled at a higher level by re-building the circuit with
+    different noise seeds.
 
     Args:
         circuit: Circuit to execute
         config: Configuration
         service: IBM service
-        backend: IBM backend
+        backend: IBM quantum backend
 
     Returns:
-        (fidelity, success_probability, final_counts) tuple
+        (fidelity, success_probability, all_counts) tuple where counts
+        aggregate all shots from all retries of this circuit.
     """
     logger.info("Executing batch purification circuit")
 
@@ -576,11 +612,11 @@ def execute_with_retry(
             f"total shots: {sum(counts.values())}"
         )
 
-        # Accumulate counts across attempts
+        # Accumulate counts across attempts for this fixed circuit
         for outcome, count in counts.items():
             all_counts[outcome] = all_counts.get(outcome, 0) + count
 
-        # Analyze current results
+        # Analyze current results for this circuit
         fidelity, success_prob = analyze_results(all_counts, config)
         total_shots_so_far = sum(all_counts.values())
         successful_shots = total_shots_so_far * success_prob
@@ -599,9 +635,9 @@ def execute_with_retry(
     final_fidelity, final_success_prob = analyze_results(all_counts, config)
 
     logger.info(f"Final results after {total_attempts} attempts:")
-    logger.info(f"  Fidelity: {final_fidelity:.4f}")
-    logger.info(f"  Success probability: {final_success_prob:.4f}")
-    logger.info(f"  Total shots: {sum(all_counts.values())}")
+    logger.info(f"  Fidelity (this circuit): {final_fidelity:.4f}")
+    logger.info(f"  Success probability (this circuit): {final_success_prob:.4f}")
+    logger.info(f"  Total shots (this circuit): {sum(all_counts.values())}")
 
     return final_fidelity, final_success_prob, all_counts
 
@@ -670,15 +706,16 @@ def run_complete_purification_experiment(
     config: PurificationConfig, service=None, backend=None
 ) -> Dict:
     """
-    Run the complete batch purification experiment.
+    Run the complete batch purification experiment with Monte Carlo
+    over Pauli noise realizations.
 
-    Args:
-        config: Experiment configuration
-        service: IBM quantum service (optional)
-        backend: IBM quantum backend (optional)
+    For each noise realization r = 1..num_noise_realizations:
+        - Build a fresh noisy circuit with a different base_noise_seed
+        - Run it with execute_with_retry (for SWAP-success post-selection)
+        - Aggregate all measurement counts across realizations
 
-    Returns:
-        Dictionary with experimental results
+    Final fidelity and success probability are computed once from the
+    aggregated counts, approximating the channel-averaged behavior.
     """
     config.validate()
 
@@ -687,25 +724,60 @@ def run_complete_purification_experiment(
     )
     logger.info(
         f"Configuration: M={config.M}, N={config.N}, p={config.p}, "
-        f"noise={config.noise_type}"
+        f"noise={config.noise_type}, "
+        f"num_noise_realizations={config.num_noise_realizations}"
     )
 
-    # Step 1: Create batch purification circuit
-    purification_circuit = create_batch_purification_circuit(config)
-
-    # Step 2: Add measurements
-    measured_circuit = add_measurements(purification_circuit, config)
-
-    # Step 3: Setup backend if needed
+    # Step 0: Setup backend if needed
     if service is None or backend is None:
         service, backend = setup_ibm_backend(config.backend_name)
 
-    # Step 4: Execute with retry
-    fidelity, success_prob, final_counts = execute_with_retry(
-        measured_circuit, config, service, backend
-    )
+    # Global aggregation of counts across all noise realizations
+    global_counts: Dict[str, int] = {}
 
-    # Step 5: Package results
+    measured_circuit: Optional[QuantumCircuit] = None
+
+    for r in range(config.num_noise_realizations):
+        base_noise_seed = 100000 * r  # Large stride to avoid overlaps
+        logger.info(
+            f"--- Noise realization {r+1}/{config.num_noise_realizations} "
+            f"(base_noise_seed={base_noise_seed}) ---"
+        )
+
+        # Step 1: Create batch purification circuit for this realization
+        purification_circuit = create_batch_purification_circuit(
+            config,
+            base_noise_seed=base_noise_seed,
+        )
+
+        # Step 2: Add measurements
+        measured_circuit = add_measurements(purification_circuit, config)
+
+        # Step 3: Execute with retry (for this fixed noise pattern)
+        fidelity_r, success_prob_r, counts_r = execute_with_retry(
+            measured_circuit, config, service, backend
+        )
+
+        logger.info(
+            f"Realization {r+1}: fidelity={fidelity_r:.4f}, "
+            f"success_prob={success_prob_r:.4f}, "
+            f"shots={sum(counts_r.values())}"
+        )
+
+        # Step 4: Aggregate counts across realizations
+        for outcome, count in counts_r.items():
+            global_counts[outcome] = global_counts.get(outcome, 0) + count
+
+    # Step 5: Analyze aggregated counts (channel-averaged estimate)
+    final_fidelity, final_success_prob = analyze_results(global_counts, config)
+
+    logger.info("=== Aggregated results over all noise realizations ===")
+    logger.info(f"  Total shots: {sum(global_counts.values())}")
+    logger.info(f"  Final fidelity: {final_fidelity:.4f}")
+    logger.info(f"  Final success probability: {final_success_prob:.4f}")
+
+    # Package results
+    # measured_circuit is guaranteed not None because num_noise_realizations>0
     results = {
         "run_id": config.synthesize_run_id(),
         "M": config.M,
@@ -713,17 +785,19 @@ def run_complete_purification_experiment(
         "p": config.p,
         "noise_type": config.noise_type,
         "max_purification_level": int(np.log2(config.N)),
-        "final_fidelity": fidelity,
-        "swap_success_probability": success_prob,
-        "total_shots": sum(final_counts.values()),
+        "final_fidelity": final_fidelity,
+        "swap_success_probability": final_success_prob,
+        "total_shots": sum(global_counts.values()),
         "backend_name": config.backend_name,
-        "circuit_depth": measured_circuit.depth(),
-        "circuit_qubits": measured_circuit.num_qubits,
+        "circuit_depth": measured_circuit.depth() if measured_circuit is not None else -1,
+        "circuit_qubits": measured_circuit.num_qubits if measured_circuit is not None else -1,
+        "num_noise_realizations": config.num_noise_realizations,
+        "error_message": "",  # Explicitly empty on success for CSV consistency
     }
 
     logger.info(
-        f"Experiment complete: fidelity={fidelity:.4f}, "
-        f"success_prob={success_prob:.4f}"
+        f"Experiment complete (channel-averaged): fidelity={final_fidelity:.4f}, "
+        f"success_prob={final_success_prob:.4f}"
     )
     return results
 
@@ -738,6 +812,9 @@ __all__ = [
     # Core components
     "create_hadamard_target_circuit",
     "apply_depolarizing_noise",
+    "apply_dephasing_noise",
+    "apply_clifford_twirled_dephasing",
+    "apply_noise",
     "create_batch_purification_circuit",
     "add_measurements",
     # Analysis and execution
