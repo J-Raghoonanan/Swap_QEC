@@ -506,7 +506,7 @@ class SimulationPlotter:
 
         # Create 3x3 subplot grid
         fig, axes = plt.subplots(3, 3, figsize=(18, 15))
-        fig.suptitle(f'Fidelity Evolution Grid ({noise_type.title()})', 
+        fig.suptitle(f'Fidelity Evolution ({noise_type.title()})', 
                     fontsize=30, y=0.97)
 
         # Flatten axes for easier iteration
@@ -1408,7 +1408,7 @@ class SimulationPlotter:
 
         # Create 2x2 subplot grid
         fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-        fig.suptitle('PEC Fidelity vs System Size', fontsize=32, y=0.95)
+        fig.suptitle('PEC Fidelity across System Size', fontsize=32, y=0.95)
 
         # Noise type configurations
         noise_configs = [
