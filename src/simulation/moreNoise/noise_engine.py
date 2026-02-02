@@ -109,13 +109,18 @@ def _kraus_x_dephase(p: float) -> Kraus:
 def _sample_clifford_gate(mode: str, index: int, seed: Optional[int] = None) -> str:
     """Sample a single-qubit Clifford gate name.
     
-    mode='random': uniformly random from {I, H, S, Sdg, SH, SdgH}
+    mode='random': uniformly random from {I, H, SH}
     mode='cyclic': deterministically cycle through set
+    
+    These three gates map Z to {Z, X, Y} respectively:
+    - I: Z → Z  
+    - H: Z → X
+    - SH: Z → Y
     
     Returns gate name as string.
     """
-    # options = ['i', 'h', 'sh']
-    options = ['i', 'h', 's', 'sdg', 'sh', 'sdgh']
+    options = ['i', 'h', 'hs']  # Simplified set for X,Y,Z mapping
+    # options = ['i', 'h', 's', 'sdg', 'sh', 'sdgh']
     
     if mode == "random":
         rng = np.random.default_rng(seed)
@@ -134,7 +139,7 @@ def _apply_clifford_gate(qc: QuantumCircuit, qubit: int, gate_name: str) -> None
         qc.s(qubit)
     elif gate_name == 'sdg':
         qc.sdg(qubit)
-    elif gate_name == 'sh':
+    elif gate_name == 'hs':
         qc.s(qubit)
         qc.h(qubit)
     elif gate_name == 'sdgh':
@@ -155,7 +160,7 @@ def _apply_inverse_clifford_gate(qc: QuantumCircuit, qubit: int, gate_name: str)
         qc.sdg(qubit)  # S† = Sdg
     elif gate_name == 'sdg':
         qc.s(qubit)  # Sdg† = S
-    elif gate_name == 'sh':
+    elif gate_name == 'hs':
         qc.h(qubit)  # Reverse order
         qc.sdg(qubit)
     elif gate_name == 'sdgh':
@@ -271,15 +276,32 @@ def build_copy_iid_p(
     
     clifford_gates = []  # Store gate names for inverse application
     
+    # if should_twirl:
+    #     logger.debug(f"Applying Clifford twirling (mode={twirling.mode}) before noise")
+    #     # Step 2: Apply random Cliffords to rotate into new frame
+    #     for q in range(M):
+    #         qubit_seed = (twirl_seed + q) if twirl_seed is not None else None
+    #         gate_name = _sample_clifford_gate(twirling.mode, index=q, seed=qubit_seed)
+    #         _apply_clifford_gate(qc, q, gate_name)
+    #         clifford_gates.append(gate_name)
+    #     logger.debug(f"  Applied Cliffords: {clifford_gates}")
+        
     if should_twirl:
-        logger.debug(f"Applying Clifford twirling (mode={twirling.mode}) before noise")
-        # Step 2: Apply random Cliffords to rotate into new frame
-        for q in range(M):
-            qubit_seed = (twirl_seed + q) if twirl_seed is not None else None
-            gate_name = _sample_clifford_gate(twirling.mode, index=q, seed=qubit_seed)
-            _apply_clifford_gate(qc, q, gate_name)
-            clifford_gates.append(gate_name)
-        logger.debug(f"  Applied Cliffords: {clifford_gates}")
+        if twirling.mode == "cyclic":
+            # One gate per copy (global), determined by twirl_seed (or 0)
+            idx = int(twirl_seed or 0)
+            gate_name = _sample_clifford_gate("cyclic", index=idx, seed=None)
+            clifford_gates = [gate_name] * M
+            for q in range(M):
+                _apply_clifford_gate(qc, q, gate_name)
+        else:
+            # random mode: per-qubit
+            clifford_gates = []
+            for q in range(M):
+                qubit_seed = (twirl_seed + q) if twirl_seed is not None else None
+                gate_name = _sample_clifford_gate("random", index=q, seed=qubit_seed)
+                _apply_clifford_gate(qc, q, gate_name)
+                clifford_gates.append(gate_name)
 
     # Step 3: Apply noise channel in (possibly rotated) frame
     logger.debug(f"Building iid_p copy: M={M}, noise={noise.noise_type.value}, p={p:.4f}")

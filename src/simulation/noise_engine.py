@@ -114,8 +114,8 @@ def _sample_clifford_gate(mode: str, index: int, seed: Optional[int] = None) -> 
     
     Returns gate name as string.
     """
-    # options = ['i', 'h', 'sh']
-    options = ['i', 'h', 's', 'sdg', 'sh', 'sdgh']
+    options = ['i', 'h', 'sh']
+    # options = ['i', 'h', 's', 'sdg', 'sh', 'sdgh']
     
     if mode == "random":
         rng = np.random.default_rng(seed)
@@ -135,8 +135,8 @@ def _apply_clifford_gate(qc: QuantumCircuit, qubit: int, gate_name: str) -> None
     elif gate_name == 'sdg':
         qc.sdg(qubit)
     elif gate_name == 'sh':
-        qc.s(qubit)
         qc.h(qubit)
+        qc.s(qubit)
     elif gate_name == 'sdgh':
         qc.sdg(qubit)
         qc.h(qubit)
@@ -156,8 +156,8 @@ def _apply_inverse_clifford_gate(qc: QuantumCircuit, qubit: int, gate_name: str)
     elif gate_name == 'sdg':
         qc.s(qubit)  # Sdg† = S
     elif gate_name == 'sh':
-        qc.h(qubit)  # Reverse order
         qc.sdg(qubit)
+        qc.h(qubit)  # Reverse order
     elif gate_name == 'sdgh':
         qc.h(qubit)
         qc.s(qubit)

@@ -3,7 +3,7 @@ Main entry point to run a grid sweep of circuit-level purification simulations.
 
 This script uses the *density-matrix* Aer simulator and the SWAP-test based
 purification implemented in this package. It writes CSVs under
-`data/simulations_moreNoise/` that are directly consumable by your figure-generation
+`data/simulations_v2/` that are directly consumable by your figure-generation
 scripts.
 
 UPDATED FEATURES:
@@ -29,30 +29,34 @@ CHOICES (documented):
 
 You can run this file directly:
 
-    python -m src.simulation.moreNoise.main_grid_run \
-        --out data/simulations_moreNoise \
-        --max-m 4 \
-        --noise all
+    # python -m src.simulation.moreNoise.main_grid_run \
+    #     --out data/simulations_moreNoise \
+    #     --max-m 4 \
+    #     --noise all
         
-    python -m src.simulation.moreNoise.main_grid_run \
-        --out data/simulations_moreNoise \
-        --max-m 5 \
-        --noise z
+    # python -m src.simulation.moreNoise.main_grid_run \
+    #     --out data/simulations_moreNoise \
+    #     --max-m 5 \
+    #     --noise z
         
-    python -m src.simulation.moreNoise.main_grid_run \
-        --out data/simulations_moreNoise \
-        --max-m 5 \
-        --noise depol
+    # python -m src.simulation.moreNoise.main_grid_run \
+    #     --out data/simulations_moreNoise \
+    #     --max-m 5 \
+    #     --noise depol
         
-    python -m src.simulation.moreNoise.main_grid_run 
-        --out data/simulations_moreNoise \
-        --noise z   
-        --m-values 1 5
+     python -m src.simulation.moreNoise.main_grid_run \
+  --out data/simulations_moreNoise \
+  --noise depol \
+  --m-values 1 5 \
+  --iterative \
+  --purification-level 1
         
-    python -m src.simulation.moreNoise.main_grid_run 
-        --out data/simulations_moreNoise \
-        --noise depol   
-        --m-values 1 5
+     python -m src.simulation.moreNoise.main_grid_run \
+  --out data/simulations_moreNoise \
+  --noise z \
+  --m-values 1 5 \
+  --iterative \
+  --purification-level 1
 
 It will append to `steps_circuit.csv` and `finals_circuit.csv`.
 """
@@ -90,7 +94,7 @@ M_LIST: List[int] = [1, 2, 3, 4, 5]  # keep ≤ 6 for density-matrix practicalit
 N_LIST: List[int] = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 # DELTA_LIST: List[float] = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99] # No longer using delta; sticking to Kraus p directly
 P_LIST: List[float] = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-NOISES: List[NoiseType] = [NoiseType.depolarizing, NoiseType.dephase_z, NoiseType.dephase_x]
+NOISES: List[NoiseType] = [NoiseType.depolarizing, NoiseType.dephase_z]
 TARGET_KIND: StateKind = StateKind.hadamard  # change to StateKind.haar for random pure states
 BACKEND_METHOD: str = "density_matrix"
 
@@ -147,7 +151,7 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument(
         "--iterative",
         action="store_true",
-        help="Enable iterative noise mode: apply fresh noise before each SWAP round",
+        help="Enable iterative noise mode: apply fresh noise before each iteration round",
     )
     p.add_argument(
         "--purification-level",
