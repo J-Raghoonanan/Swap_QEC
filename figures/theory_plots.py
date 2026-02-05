@@ -136,7 +136,7 @@ class AnalyticTheoryPlotter:
         ax.set_ylabel(r'Output Fidelity, $F_{\mathrm{out}}$', fontsize=40)
         # ax.set_title(r'Fidelity Evolution (Isotropic Family)', fontsize=40)
         ax.set_xlim(0, 1); ax.set_ylim(0, 1)
-        ax.legend(loc='lower right', fontsize=16)
+        ax.legend(loc='lower right', fontsize=18, frameon=False)
         plt.tight_layout()
 
         filename = f"fout_vs_f_isotropic.{save_format}"
@@ -376,7 +376,7 @@ class AnalyticTheoryPlotter:
         # ax.set_title(r'Fidelity Evolution (GHZ Family)', fontsize=30)
         ax.set_xlim(0.5, 1)
         ax.set_ylim(0, 1)
-        ax.legend(loc='lower right', fontsize=14)
+        ax.legend(loc='lower right', fontsize=18, frameon=False)
 
         plt.tight_layout()
 
@@ -439,7 +439,7 @@ class AnalyticTheoryPlotter:
                 )
 
             ax.set_title(fr"$\ell={ell},\; p={p}$", fontsize=40)
-            ax.set_xlabel("Iteration", fontsize=40)
+            ax.set_xlabel("Cycle", fontsize=40)
             ax.set_ylabel(r"Bloch radius, $r=|\vec r|$", fontsize=40)
             ax.set_xlim(0, n_iter)
             ax.set_ylim(0, 1.05)
@@ -592,7 +592,7 @@ class AnalyticTheoryPlotter:
                 marker=_mk(i), color=colors[i % len(colors)], linestyle=':',
                 label=rf'$\ell={ell}$',
                 markevery=max(1, len(iterations) // 8),
-                markersize=8, linewidth=2
+                markersize=12, linewidth=2
             )
             else:
                 ax.plot(
@@ -600,19 +600,21 @@ class AnalyticTheoryPlotter:
                     marker=_mk(i), color=colors[i % len(colors)],
                     label=rf'$\ell={ell}$',
                     markevery=max(1, len(iterations) // 8),
-                    markersize=8, linewidth=2
+                    markersize=12, linewidth=2
                 )
         
-        ax.set_xlabel(r'PQEC Iterations, $t$', fontsize=35)
-        ax.set_ylabel('Fidelity, F', fontsize=40)
+        ax.set_xlabel(r'PQEC Cycles, $t$', fontsize=50)
+        ax.set_ylabel('Fidelity, F', fontsize=50)
         # ax.set_title(f'Fidelity vs Iterations\n(p={p_fixed})', fontsize=40)
         ax.set_xlim(0, n_iter)
+        ax.set_xticks(np.arange(0, n_iter + 1, 2))
         ax.set_ylim(0.5, 1.05)
-        ax.legend(fontsize=12, loc='lower left')
-        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.legend(fontsize=22, loc='lower left', frameon=False)
+        ax.tick_params(axis="y", which="major", labelsize=36)
+        ax.tick_params(axis="x", which="major", labelsize=32)
         
         # Add subplot label (a)
-        ax.text(0.97, 0.98, 'a', transform=ax.transAxes, fontsize=26, 
+        ax.text(0.97, 0.99, 'a', transform=ax.transAxes, fontsize=36, 
                 fontweight='bold', fontfamily='sans-serif', va='top', ha='right')
         
         # Top right: Fidelity vs iteration for ell=1, different p values
@@ -630,19 +632,21 @@ class AnalyticTheoryPlotter:
                 marker=_mk(i), color=colors[i % len(colors)],
                 label=rf'$p={p}$',
                 markevery=max(1, len(iterations) // 8),
-                markersize=8, linewidth=2
+                markersize=12, linewidth=2
             )
         
-        ax.set_xlabel(r'PQEC Iterations, $t$', fontsize=35)
-        ax.set_ylabel(r'Fidelity, $F$', fontsize=40)
-        ax.set_title(f'Fidelity vs Iterations\n(ℓ={ell_fixed})', fontsize=20)
+        ax.set_xlabel(r'PQEC Cycles, $t$', fontsize=50)
+        ax.set_ylabel(r'Fidelity, $F$', fontsize=50)
+        # ax.set_title(f'Fidelity vs Iterations\n(ℓ={ell_fixed})', fontsize=20)
         ax.set_xlim(0, n_iter)
+        ax.set_xticks(np.arange(0, n_iter + 1, 2))
         ax.set_ylim(0.5, 1.05)
-        ax.legend(fontsize=12, loc='lower left')
-        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.legend(fontsize=22, loc='lower left', frameon=False)
+        ax.tick_params(axis="y", which="major", labelsize=36)
+        ax.tick_params(axis="x", which="major", labelsize=32)
         
         # Add subplot label (b)
-        ax.text(0.97, 0.98, 'b', transform=ax.transAxes, fontsize=26, 
+        ax.text(0.97, 0.98, 'b', transform=ax.transAxes, fontsize=36, 
                 fontweight='bold', fontfamily='sans-serif', va='top', ha='right')
         
         # Bottom left: r_fix vs p for different ell values
@@ -655,25 +659,25 @@ class AnalyticTheoryPlotter:
             if ell == 0:
                 ax.plot(p_range, r_fix, 
                    color=colors[i % len(colors)], linewidth=3,
-                   marker=_mk(i), markevery=30, markersize=8,
+                   marker=_mk(i), markevery=30, markersize=12,
                    label=rf'$\ell={ell}$', linestyle=':')
             else:   
                 ax.plot(p_range, r_fix, 
                     color=colors[i % len(colors)], linewidth=3, 
-                    marker=_mk(i), markevery=30, markersize=8,
+                    marker=_mk(i), markevery=30, markersize=12,
                     label=rf'$\ell={ell}$')
         
         # ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=40)
-        ax.set_xlabel('Physical Error Rate, p', fontsize=35)
-        ax.set_ylabel(r'$F_{0}$', fontsize=40)
+        ax.set_xlabel('Physical Error Rate, p', fontsize=50)
+        ax.set_ylabel(r'$F_{0}$', fontsize=50)
         # ax.set_title('Fixed Point vs Error Rate', fontsize=40)
         ax.set_xlim(0, 0.6)
         ax.set_ylim(-0.05, 1.05)
-        ax.legend(fontsize=12, loc='lower left')
-        ax.tick_params(axis="both", which="major", labelsize=20)
+        ax.legend(fontsize=22, loc='lower left', frameon=False)
+        ax.tick_params(axis="both", which="major", labelsize=36)
         
         # Add subplot label (c)
-        ax.text(0.97, 0.98, 'c', transform=ax.transAxes, fontsize=26, 
+        ax.text(0.97, 0.98, 'c', transform=ax.transAxes, fontsize=36, 
                 fontweight='bold', fontfamily='sans-serif', va='top', ha='right')
         
         # Bottom right: gamma vs p for different ell values
@@ -692,25 +696,25 @@ class AnalyticTheoryPlotter:
             if ell == 0:
                 ax.plot(p_range_gamma, gamma_values,
                    color=colors[i % len(colors)], linewidth=3,
-                   marker=_mk(i), markevery=5, markersize=8,
+                   marker=_mk(i), markevery=5, markersize=12,
                    label=rf'$\ell={ell}$', linestyle=':')
             else:
                 ax.plot(p_range_gamma, gamma_values,
                     color=colors[i % len(colors)], linewidth=3,
-                    marker=_mk(i), markevery=5, markersize=8,
+                    marker=_mk(i), markevery=5, markersize=12,
                     label=rf'$\ell={ell}$')
         
         # ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=40)
-        ax.set_xlabel('Physical Error Rate, p', fontsize=35)
-        ax.set_ylabel(r'Logical Error, $\gamma_L$', fontsize=35)
-        ax.set_title('First Iteration Drop vs Error Rate', fontsize=20)
+        ax.set_xlabel('Physical Error Rate, p', fontsize=50)
+        ax.set_ylabel(r'Logical Error, $\gamma_L$', fontsize=50)
+        # ax.set_title('First Iteration Drop vs Error Rate', fontsize=20)
         ax.set_xlim(0.01, 1.0)
         ax.set_ylim(-0.05, 0.6)
-        ax.legend(fontsize=10, loc='upper left', ncol=2)
-        ax.tick_params(axis="both", which="major", labelsize=20)
+        ax.legend(fontsize=22, loc='upper left', ncol=2, frameon=False)
+        ax.tick_params(axis="both", which="major", labelsize=36)
         
         # Add subplot label (d)
-        ax.text(0.97, 0.98, 'd', transform=ax.transAxes, fontsize=26, 
+        ax.text(0.97, 0.98, 'd', transform=ax.transAxes, fontsize=36, 
                 fontweight='bold', fontfamily='sans-serif', va='top', ha='right')
         
         plt.tight_layout()

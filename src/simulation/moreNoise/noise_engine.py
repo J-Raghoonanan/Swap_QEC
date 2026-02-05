@@ -499,10 +499,10 @@ def _get_clifford_unitary(gate_name: str) -> np.ndarray:
         return np.array([[1, 0], [0, 1j]], dtype=complex)
     elif gate_name == 'sdg':
         return np.array([[1, 0], [0, -1j]], dtype=complex)
-    elif gate_name == 'sh':
+    elif gate_name == 'hs':
         S = np.array([[1, 0], [0, 1j]], dtype=complex)
         H = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
-        return S @ H
+        return H @ S
     elif gate_name == 'sdgh':
         Sdg = np.array([[1, 0], [0, -1j]], dtype=complex)
         H = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)

@@ -45,18 +45,19 @@ You can run this file directly:
     #     --noise depol
         
      python -m src.simulation.moreNoise.main_grid_run \
-  --out data/simulations_moreNoise \
-  --noise depol \
-  --m-values 1 5 \
-  --iterative \
-  --purification-level 1
+            --out data/simulations_moreNoise \
+            --noise depol \
+            --m-values 1 5 \
+            --iterative \
+             --purification-level 1
         
      python -m src.simulation.moreNoise.main_grid_run \
-  --out data/simulations_moreNoise \
-  --noise z \
-  --m-values 1 5 \
-  --iterative \
-  --purification-level 1
+            --out data/simulations_moreNoise \
+             --noise z \
+            --m-values 1 5 \
+            --iterative \
+            --purification-level 2 \
+            --no-twirl
 
 It will append to `steps_circuit.csv` and `finals_circuit.csv`.
 """

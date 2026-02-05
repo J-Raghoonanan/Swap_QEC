@@ -758,8 +758,8 @@ def run_and_save(spec: RunSpec) -> Tuple[Path, Path]:
     # steps_path = out_dir / "steps_circuit_depolarizing.csv"
     # finals_path = out_dir / "finals_circuit_depolarizing.csv"
     suffix = spec.noise.noise_type.value
-    steps_path = out_dir / f"steps_circuit_{suffix}.csv"
-    finals_path = out_dir / f"finals_circuit_{suffix}.csv"
+    steps_path = out_dir / f"steps_circuit_{suffix}_untwirled.csv"
+    finals_path = out_dir / f"finals_circuit_{suffix}_untwirled.csv"
 
     if steps_path.exists():
         prev = pd.read_csv(steps_path)

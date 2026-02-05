@@ -55,8 +55,8 @@ class SimulationPlotter:
         # Load data
         self.depol_finals = self._load_csv('finals_circuit_depolarizing.csv')
         self.depol_steps = self._load_csv('steps_circuit_depolarizing.csv')
-        self.dephase_finals = self._load_csv('finals_circuit_dephasing_v5.csv') #v3 is the one in the paper rn
-        self.dephase_steps = self._load_csv('steps_circuit_dephasing_v5.csv')
+        self.dephase_finals = self._load_csv('finals_circuit_dephasing_v4.csv') #v4 for no twirling #v6 with proper twirling
+        self.dephase_steps = self._load_csv('steps_circuit_dephasing_v4.csv')
         
         print(f"Loaded simulation data:")
         print(f"  Depolarizing finals: {len(self.depol_finals)} runs")
