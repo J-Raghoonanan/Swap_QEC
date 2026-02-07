@@ -352,7 +352,7 @@ class IterativePurificationPlotter:
             return None
     
         # Filter M=1 AND twirling condition
-        df_filtered = df[(df['M'] == 1) & (df['twirling_enabled'] == twirling_filter)].copy()
+        df_filtered = df[(df['M'] == 5) & (df['twirling_enabled'] == twirling_filter)].copy()
     
         if df_filtered.empty:
             print(f"No M=1 data for {noise_type} with twirling={twirling_filter}")
@@ -429,7 +429,7 @@ class IterativePurificationPlotter:
             
             # Formatting for this subplot
             ax.set_title(f'p = {p_val:.2f}', fontsize=30)
-            ax.set_ylim(0.0, 1.05)
+            ax.set_ylim(0.005, 1.05)
             
             if not df_p.empty:
                 max_iter = df_p['iteration'].max()
@@ -442,8 +442,10 @@ class IterativePurificationPlotter:
             if i % 2 == 0:  # Left column
                 ax.set_ylabel(r'Fidelity, $F$', fontsize=40)
             
+            ax.set_yscale('log')
+            
             # Add legend to first subplot
-            if i == 0 and len(l_values) > 0:
+            if i == 1 and len(l_values) > 0:
                 ax.legend(fontsize=18, loc='best', frameon=False)
                 
             # Add subplot label 
@@ -461,7 +463,7 @@ class IterativePurificationPlotter:
         
         plt.tight_layout(rect=[0, 0.03, 1, 0.93])
         
-        filename = f"fidelity_vs_iterations_{noise_type}_multi_p_M1.{save_format}"
+        filename = f"fidelity_vs_iterations_{noise_type}_multi_p_M5.{save_format}"
         filepath = self.figures_dir / filename
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
@@ -1659,7 +1661,7 @@ class IterativePurificationPlotter:
 
         # Keep your per-M y-lims to expose the crossover clearly
         inset_ylim_by_M = {
-            5: (0.965, 0.972),
+            5: (0.95, 0.98),
         }
 
         # Vertical layout: 2 rows x 1 col
@@ -1785,7 +1787,7 @@ class IterativePurificationPlotter:
             axins.tick_params(axis="y", which="major", labelsize=10, length=4, width=1.0)
 
             # If you want only a few y ticks (optional, but can help readability)
-            # yt = [0.955, 0.965, 0.970, 0.975]
+            # yt = [0.960, 0.965, 0.970, 0.975]
             # axins.yaxis.set_major_locator(mticker.FixedLocator(yt))
             # axins.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: f"{v:.3f}"))
             # axins.yaxis.set_minor_formatter(mticker.NullFormatter())
