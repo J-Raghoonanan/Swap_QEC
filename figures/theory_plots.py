@@ -1041,7 +1041,7 @@ class AnalyticTheoryPlotter:
                 markersize=12, markevery=2,
                 label=rf'$p={p}$')
         
-        ax.set_xlabel(r'Purification Level, $\ell$', fontsize=40)
+        ax.set_xlabel(r'Purification Rounds, $\ell$', fontsize=40)
         ax.set_ylabel(r'Logical Error, $\gamma_L$', fontsize=40)
         ax.set_xlim(0, 20)
         ax.set_ylim(1e-7, 1.0)

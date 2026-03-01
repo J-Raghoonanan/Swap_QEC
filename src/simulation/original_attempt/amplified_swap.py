@@ -24,7 +24,7 @@ from typing import Dict, Tuple
 import numpy as np
 from qiskit.quantum_info import DensityMatrix, partial_trace, Operator
 
-from src.simulation.configs import AASpec
+from .configs import AASpec
 
 logger = logging.getLogger(__name__)
 

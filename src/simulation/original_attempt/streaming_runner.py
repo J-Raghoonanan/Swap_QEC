@@ -436,8 +436,8 @@ def run_and_save(spec: RunSpec) -> Tuple[Path, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Use dynamic filenames based on run_id like the old version
-    steps_path = out_dir / "steps_circuit_dephasing_v4.csv"
-    finals_path = out_dir / "finals_circuit_dephasing_v4.csv"
+    steps_path = out_dir / "steps_circuit_dephasing_v4_backup.csv"
+    finals_path = out_dir / "finals_circuit_dephasing_v4_backup.csv"
 
     # Append or create
     if steps_path.exists():

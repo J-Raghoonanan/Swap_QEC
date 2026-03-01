@@ -86,11 +86,65 @@ class SubsetTwirlingPlotter:
         self.dephase_steps = self._load_data('dephase_z', 'steps')
         self.dephase_finals = self._load_data('dephase_z', 'finals')
         
+        self.subsetTwirl_dephase_steps_debug = self._load_csv_from(self.data_dir, f"steps_circuit_dephase_z__subset{self.subset_fraction:.2f}_DEBUG.csv")
+        self.subsetTwirl_dephase_finals_debug = self._load_csv_from(self.data_dir, f"finals_circuit_dephase_z__subset{self.subset_fraction:.2f}_DEBUG.csv")
+        
         print(f"Loaded subset twirling data (fraction={subset_fraction}):")
         print(f"  Depolarizing steps: {len(self.depol_steps)} rows")
         print(f"  Depolarizing finals: {len(self.depol_finals)} rows")
         print(f"  Dephasing steps: {len(self.dephase_steps)} rows")
         print(f"  Dephasing finals: {len(self.dephase_finals)} rows")
+        
+    def _load_csv_from(self, base_dir: Path, filename: str) -> pd.DataFrame:
+        """Load CSV file from an explicit directory if it exists."""
+        filepath = base_dir / filename
+        if filepath.exists():
+            df = pd.read_csv(filepath)
+            return self._postprocess_df(df, filename_hint=filename)
+        else:
+            print(f"Warning: {filename} not found in {base_dir}")
+            return pd.DataFrame()
+    def _postprocess_df(self, df: pd.DataFrame, filename_hint: str = "") -> pd.DataFrame:
+        """
+        Standardize columns across datasets:
+        - Ensure N exists (from run_id if missing)
+        - Ensure p_channel exists (fallback to p if needed)
+        - Normalize twirling flag column to boolean twirling_enabled if present
+        """
+        # For steps files, extract N from run_id if not present
+        if ('steps' in filename_hint) and ('N' not in df.columns) and ('run_id' in df.columns):
+            def extract_N(run_id):
+                # Format examples:
+                #   M1_N512_dephase_z_iid_p_p0.50000_twirl
+                #   M5_N1024_depolarizing_iid_p_p0.30000
+                parts = str(run_id).split('_')
+                for part in parts:
+                    if part.startswith('N'):
+                        try:
+                            return int(part[1:])
+                        except Exception:
+                            return None
+                return None
+            df['N'] = df['run_id'].apply(extract_N)
+
+        # Ensure p_channel exists (GlobalTwirl finals/steps should already have it, but be robust)
+        if 'p_channel' not in df.columns:
+            if 'p' in df.columns:
+                df['p_channel'] = df['p'].astype(float)
+            else:
+                df['p_channel'] = np.nan
+
+        # Normalize twirling column name and convert to boolean
+        if 'twirling_applied' in df.columns:
+            df['twirling_enabled'] = df['twirling_applied'].map(
+                lambda x: str(x).upper() == 'TRUE' if pd.notna(x) else False
+            )
+        elif 'twirling_enabled' in df.columns and df['twirling_enabled'].dtype == 'object':
+            df['twirling_enabled'] = df['twirling_enabled'].map(
+                lambda x: str(x).upper() == 'TRUE' if pd.notna(x) else x
+            )
+
+        return df
     
     def _load_data(self, noise_type: str, data_type: str) -> pd.DataFrame:
         """
@@ -161,6 +215,7 @@ class SubsetTwirlingPlotter:
             title_str = "Depolarizing"
         else:  # dephasing
             df_steps = self.dephase_steps
+            df_steps_debug = self.subsetTwirl_dephase_steps_debug
             twirling_filter = True
             title_str = "Dephasing (twirled Z)"
 
@@ -198,6 +253,7 @@ class SubsetTwirlingPlotter:
         
         # Filter for M=5 and correct twirling
         df_fid_filtered = df_steps[(df_steps['M'] == 5) & (df_steps[twirling_col] == twirling_filter)].copy()
+        df_fid_filtered_debug = df_steps_debug[(df_steps_debug['M'] == 5) & (df_steps_debug[twirling_col] == twirling_filter)].copy()
         print(f"Fidelity plots: {len(df_fid_filtered)} rows after M=5, twirling filter")
         
         if not df_fid_filtered.empty:
@@ -281,12 +337,19 @@ class SubsetTwirlingPlotter:
         df_tw = df_steps[df_steps[twirling_col] == twirling_filter].copy()
         df_t1 = df_tw[df_tw['iteration'] == 1].copy()
         
+        df_tw_debug = df_steps_debug[df_steps_debug[twirling_col] == twirling_filter].copy()
+        df_t1_debug = df_tw_debug[df_tw_debug['iteration'] == 1].copy()
+        
         if not df_t1.empty:
             # Calculate gamma = 1 - F(t=1)
             grp_cols = ['M', 'purification_level', 'p']
             df_gamma = (df_t1.groupby(grp_cols, as_index=False)['fidelity']
                         .mean().rename(columns={'fidelity': 'F_t1'}))
             df_gamma['gamma'] = 1.0 - df_gamma['F_t1']
+            
+            df_gamma_debug = (df_t1_debug.groupby(grp_cols, as_index=False)['fidelity']
+                        .mean().rename(columns={'fidelity': 'F_t1'}))
+            df_gamma_debug['gamma'] = 1.0 - df_gamma_debug['F_t1']
             
             l_values_gamma = sorted(df_gamma['purification_level'].unique())
             l_to_color_idx = {l_val: idx for idx, l_val in enumerate(l_values_gamma)}
@@ -306,6 +369,7 @@ class SubsetTwirlingPlotter:
                 ax = axes[1, j]  # Bottom row
                 
                 df_M = df_gamma[df_gamma['M'] == M].copy()
+                df_M_debug = df_gamma_debug[df_gamma_debug['M'] == M].copy()
                 
                 # Formatting
                 ax.set_title(f'M={M}', fontsize=55)
@@ -325,18 +389,22 @@ class SubsetTwirlingPlotter:
                 handles, labels = [], []
                 for l_val in l_values_gamma:
                     df_ml = df_M[df_M['purification_level'] == l_val].copy()
+                    df_ml_debug = df_M_debug[df_M_debug['purification_level'] == l_val].copy()
+                    
                     if df_ml.empty:
                         continue
                     
                     # Apply exclusion filter
                     p_round = df_ml['p'].round(2)
                     df_main = df_ml[~p_round.isin(exclude)].copy()
+                    df_main_debug = df_ml_debug[~p_round.isin(exclude)].copy()
                     
                     if df_main.empty:
                         continue
                     
                     # Sort and plot
                     df_main = df_main.sort_values('p')
+                    df_main_debug = df_main_debug.sort_values('p')
                     linestyle = ':' if int(l_val) == 0 else '-'
                     cidx = l_to_color_idx[l_val]
                     
@@ -345,12 +413,19 @@ class SubsetTwirlingPlotter:
                     else:
                         label = rf'$\ell={l_val}$'
                     
-                    if l_val <= 3:
-                        line, = ax.plot(df_main['p'], df_main['gamma'],
+                    if l_val <= 3: # Only plot up to ℓ=3 in main plot
+                        if M==1:
+                            line, = ax.plot(df_main_debug['p'], df_main_debug['gamma'],
                                     linestyle=linestyle, marker=_mk(cidx),
                                     linewidth=2.5, markersize=12, alpha=0.85,
                                     color=colors[cidx % len(colors)],
-                                    label=label)
+                                    label=f"{label} (debug)")
+                        else:
+                            line, = ax.plot(df_main['p'], df_main['gamma'],
+                                        linestyle=linestyle, marker=_mk(cidx),
+                                        linewidth=2.5, markersize=12, alpha=0.85,
+                                        color=colors[cidx % len(colors)],
+                                        label=label)
                         handles.append(line)
                         labels.append(label)
                 

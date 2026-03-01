@@ -198,6 +198,7 @@ def _get_clifford_subset(M: int, fraction: float, mode: str, seed: Optional[int]
         Subset will have 5 combinations (rounded up from 4.5)
     """
     options = ['i', 'h', 'hs']
+    # options = ['i', 'hs', 'h']
     
     # Generate all possible combinations
     all_combinations = list(product(options, repeat=M))
@@ -220,7 +221,8 @@ def _get_clifford_subset(M: int, fraction: float, mode: str, seed: Optional[int]
             f"Consider using fraction >= {min_subset_size/total:.2f}"
         )
     
-    logger.debug(f"Clifford subset: M={M}, total={total}, fraction={fraction:.2f}, subset_size={subset_size}")
+    # logger.debug(f"Clifford subset: M={M}, total={total}, fraction={fraction:.2f}, subset_size={subset_size}")
+    logger.warning(f"Clifford subset: M={M}, total={total}, fraction={fraction:.2f}, subset_size={subset_size}")
     
     if subset_size >= total:
         logger.debug("Using full Clifford set (fraction >= 1.0)")
@@ -237,6 +239,7 @@ def _get_clifford_subset(M: int, fraction: float, mode: str, seed: Optional[int]
     else:
         raise ValueError(f"Unknown subset mode: {mode}")
     
+    logger.warning(f"Subset = {subset}")
     return subset
 
 

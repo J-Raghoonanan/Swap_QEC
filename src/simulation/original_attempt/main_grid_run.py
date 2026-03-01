@@ -29,17 +29,17 @@ CHOICES (documented):
 
 You can run this file directly:
 
-    python -m src.simulation.main_grid_run \
+    python -m src.simulation.original_attempt.main_grid_run \
         --out data/simulations_v2 \
         --max-m 4 \
         --noise all
         
-    python -m src.simulation.main_grid_run \
+    python -m src.simulation.original_attempt.main_grid_run \
         --out data/simulations_v2 \
         --max-m 5 \
         --noise z
         
-    python -m src.simulation.main_grid_run \
+    python -m src.simulation.original_attempt.main_grid_run \
         --out data/simulations_v2 \
         --max-m 5 \
         --noise depol

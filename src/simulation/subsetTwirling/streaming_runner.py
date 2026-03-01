@@ -740,8 +740,8 @@ def run_and_save(spec: RunSpec) -> Tuple[Path, Path]:
     if spec._should_apply_twirling() and spec.twirling.subset_fraction < 1.0:
         twirl_suffix = f"_subset{spec.twirling.subset_fraction:.2f}"
     
-    steps_path = out_dir / f"steps_circuit_{suffix}_{twirl_suffix}.csv"
-    finals_path = out_dir / f"finals_circuit_{suffix}_{twirl_suffix}.csv"
+    steps_path = out_dir / f"steps_circuit_{suffix}_{twirl_suffix}_DEBUG.csv"
+    finals_path = out_dir / f"finals_circuit_{suffix}_{twirl_suffix}_DEBUG.csv"
 
     if steps_path.exists():
         prev = pd.read_csv(steps_path)
