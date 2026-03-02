@@ -1337,6 +1337,9 @@ class SimulationPlotter:
                 ax.set_ylim(6e-1, 1.0)
             else:
                 ax.set_ylim(5e-1, 1.0)
+                
+            if noise_type == 'dephasing_untwirled' and plot_idx ==1:
+                ax.set_ylim(5e-1, 1.0)
             # ax.set_ylim(6e-1, 1.0)
             ax.set_yscale('log')
             ax.set_xticks([2, 4, 6, 8, 10])
@@ -1347,7 +1350,7 @@ class SimulationPlotter:
                 
             # Y-axis label only on first column
             if plot_idx == 0 or plot_idx == 2:
-                ax.set_ylabel(r'$P_{\mathrm{succ}}$', fontsize=40)
+                ax.set_ylabel(r'$P_{\mathrm{suc}}$', fontsize=40)
                 
             # X-axis label only on bottom row
             if plot_idx == 2 or plot_idx == 3:
@@ -1479,7 +1482,7 @@ class SimulationPlotter:
                 
             # Y-axis label only on first column
             if plot_idx == 0 or plot_idx == 2:
-                ax.set_ylabel(r'$\prod_{\ell}  P_{\mathrm{suc}}$', fontsize=40)
+                ax.set_ylabel(r'$\prod_{\ell}$  $P_{\mathrm{suc}}$', fontsize=40)
                 
             # X-axis label only on bottom row
             if plot_idx == 2 or plot_idx == 3:
