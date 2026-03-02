@@ -1510,6 +1510,659 @@ class SimulationPlotter:
         print(f"Saved {filename}")
         return str(filepath)
     
+    def plot_resource_cost_heatmap(self, noise_type: str, M_value: int = 5, save_format: str = 'pdf') -> Optional[str]:
+        """
+        Create heatmap of log10(C_ℓ) vs (p, ℓ) showing expected resource cost.
+        
+        C_ℓ = expected number of raw copies needed to produce one ℓ-round purified output
+        
+        Formula: C_ℓ = 2^ℓ / ∏_{k=1}^{ℓ} P_success(k)
+        
+        where P_success(k) is the success probability at purification level k.
+        
+        Parameters
+        ----------
+        noise_type : str
+            'depolarizing' or 'dephasing_untwirled'
+        M_value : int
+            System size to analyze (default: 5)
+        save_format : str
+            Output format (pdf, png, etc.)
+        """
+        # Select data based on noise type
+        if noise_type == 'depolarizing':
+            df = self.depol_steps
+            title_suffix = "Depolarizing Noise"
+            filename_suffix = "depolarizing"
+        elif noise_type == 'dephasing_untwirled':
+            df = self.dephase_untwirled_steps
+            title_suffix = "Dephasing (Untwirled)"
+            filename_suffix = "dephasing_untwirled"
+        else:
+            print(f"Unknown noise type: {noise_type}")
+            return None
+
+        if df.empty:
+            print(f"No steps data for {noise_type}")
+            return None
+
+        # Filter for specific M and use max N
+        df_M = df[df['M'] == M_value].copy()
+        
+        if df_M.empty:
+            print(f"No data for M={M_value}")
+            return None
+        
+        max_N = df_M['N'].max()
+        df_M = df_M[df_M['N'] == max_N].copy()
+
+        # Get unique p and depth values
+        p_values = np.sort(df_M['p_channel'].unique())
+        depth_values = np.sort(df_M['depth'].unique())
+        
+        print(f"Computing resource costs for {len(p_values)} p values and {len(depth_values)} depths...")
+
+        # Create 2D grid for log10(C_ℓ)
+        C_grid = np.full((len(depth_values), len(p_values)), np.nan)
+        
+        for i, ℓ in enumerate(depth_values):
+            for j, p in enumerate(p_values):
+                # Get P_success values from depth 1 to ℓ
+                df_subset = df_M[(df_M['p_channel'] == p) & 
+                                 (df_M['depth'] >= 1) & 
+                                 (df_M['depth'] <= ℓ)].copy()
+                
+                if len(df_subset) > 0:
+                    # Group by depth and compute mean P_success at each level
+                    p_success_by_depth = df_subset.groupby('depth')['P_success'].mean()
+                    
+                    # Only proceed if we have data for all depths from 1 to ℓ
+                    required_depths = set(range(1, int(ℓ) + 1))
+                    available_depths = set(p_success_by_depth.index)
+                    
+                    if required_depths.issubset(available_depths):
+                        # Extract P_success values in order from depth 1 to ℓ
+                        p_success_values = [p_success_by_depth[d] for d in range(1, int(ℓ) + 1)]
+                        
+                        # Compute product ∏_{k=1}^{ℓ} s_k
+                        product = np.prod(p_success_values)
+                        
+                        if product > 0:
+                            # C_ℓ = 2^ℓ / ∏ s_k
+                            C_ℓ = (2**ℓ) / product
+                            C_grid[i, j] = np.log10(C_ℓ)
+
+        # Create figure
+        fig, ax = plt.subplots(figsize=(10, 8))
+        
+        # Create meshgrid for pcolormesh
+        P, L = np.meshgrid(p_values, depth_values)
+        
+        # Plot heatmap
+        im = ax.pcolormesh(P, L, C_grid, shading='auto', cmap='viridis', vmin=0)
+        
+        # Add colorbar
+        cbar = plt.colorbar(im, ax=ax, pad=0.02)
+        cbar.set_label(r'$\log_{10}(C_\ell)$', fontsize=40, rotation=270, labelpad=50)
+        cbar.ax.tick_params(labelsize=28)
+        
+        # Add contour lines for key values
+        # contour_levels = [1, 2, 3, 4]  # log10(C) = 1,2,3,4 → C = 10,100,1000,10000
+        # CS = ax.contour(P, L, C_grid, levels=contour_levels, colors='white', 
+        #                linewidths=1.5, alpha=0.6)
+        # ax.clabel(CS, inline=True, fontsize=16, fmt='%g')
+        
+        # Labels and title
+        ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=40)
+        ax.set_ylabel(r'Purification Rounds, $\ell$', fontsize=40)
+        # ax.set_title(f'{title_suffix} ($M={M_value}$)', fontsize=40)
+        
+        # Set axis limits
+        ax.set_xlim(p_values.min(), p_values.max())
+        ax.set_ylim(depth_values.min(), depth_values.max())
+        
+        # Tick parameters
+        ax.tick_params(axis='both', which='major', labelsize=28)
+        
+        plt.tight_layout()
+
+        filename = f"resource_cost_heatmap_{filename_suffix}_M{M_value}.{save_format}"
+        filepath = self.figures_dir / filename
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+
+        print(f"Saved {filename}")
+        return str(filepath)
+    
+    
+    def plot_resource_cost_heatmap_combined(self, M_depol: int = 5, M_dephase: int = 1, 
+                                            save_format: str = 'pdf') -> Optional[str]:
+        """
+        Create side-by-side heatmaps of log10(C_ℓ) for both noise models.
+        
+        Left panel: Depolarizing noise
+        Right panel: Dephasing (untwirled) noise
+        """
+        # Check if we have both datasets
+        if self.depol_steps.empty or self.dephase_untwirled_steps.empty:
+            print("Missing data for combined plot")
+            return None
+        
+        fig, axes = plt.subplots(1, 2, figsize=(18, 8))
+        
+        noise_configs = [
+            {
+                'df': self.depol_steps,
+                'M': M_depol,
+                'title': f'Depolarizing Noise ($M={M_depol}$)',
+                'ax': axes[0],
+                'label': 'a',
+                'panel_id': 0  # Add unique ID
+            },
+            {
+                'df': self.dephase_untwirled_steps,
+                'M': M_dephase,
+                'title': f'Dephasing Untwirled ($M={M_dephase}$)',
+                'ax': axes[1],
+                'label': 'b',
+                'panel_id': 1  # Add unique ID
+            }
+        ]
+        
+        vmin_global = np.inf
+        vmax_global = -np.inf
+        plot_data = []
+        
+        # First pass: compute all grids and find global min/max for consistent colorbar
+        for config in noise_configs:
+            df = config['df']
+            M_value = config['M']
+            
+            # Filter data
+            df_M = df[df['M'] == M_value].copy()
+            if df_M.empty:
+                continue
+                
+            max_N = df_M['N'].max()
+            df_M = df_M[df_M['N'] == max_N].copy()
+            
+            # Get unique p and depth values
+            p_values = np.sort(df_M['p_channel'].unique())
+            depth_values = np.sort(df_M['depth'].unique())
+            
+            # Create grid
+            C_grid = np.full((len(depth_values), len(p_values)), np.nan)
+            
+            for i, ℓ in enumerate(depth_values):
+                for j, p in enumerate(p_values):
+                    df_subset = df_M[(df_M['p_channel'] == p) & 
+                                     (df_M['depth'] >= 1) & 
+                                     (df_M['depth'] <= ℓ)].copy()
+                    
+                    if len(df_subset) > 0:
+                        p_success_by_depth = df_subset.groupby('depth')['P_success'].mean()
+                        required_depths = set(range(1, int(ℓ) + 1))
+                        available_depths = set(p_success_by_depth.index)
+                        
+                        if required_depths.issubset(available_depths):
+                            p_success_values = [p_success_by_depth[d] for d in range(1, int(ℓ) + 1)]
+                            product = np.prod(p_success_values)
+                            
+                            if product > 0:
+                                C_ℓ = (2**ℓ) / product
+                                C_grid[i, j] = np.log10(C_ℓ)
+            
+            # Track global min/max
+            valid_values = C_grid[~np.isnan(C_grid)]
+            if len(valid_values) > 0:
+                vmin_global = min(vmin_global, valid_values.min())
+                vmax_global = max(vmax_global, valid_values.max())
+            
+            # Store for second pass
+            plot_data.append({
+                'config': config,
+                'p_values': p_values,
+                'depth_values': depth_values,
+                'C_grid': C_grid
+            })
+        
+        # Second pass: plot with consistent colorscale
+        for idx, data in enumerate(plot_data):  # Use enumerate to get index
+            config = data['config']
+            ax = config['ax']
+            p_values = data['p_values']
+            depth_values = data['depth_values']
+            C_grid = data['C_grid']
+            
+            # Create meshgrid
+            P, L = np.meshgrid(p_values, depth_values)
+            
+            # Plot heatmap with global colorscale
+            im = ax.pcolormesh(P, L, C_grid, shading='auto', cmap='viridis',
+                              vmin=max(0, vmin_global), vmax=vmax_global)
+            
+            # Add contour lines
+            # contour_levels = [1, 2, 3, 4]
+            # CS = ax.contour(P, L, C_grid, levels=contour_levels, colors='white',
+            #                linewidths=1.5, alpha=0.6)
+            # ax.clabel(CS, inline=True, fontsize=16, fmt='%g')
+            
+            # Labels
+            ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=40)
+            if idx == 0:  # Left panel only - FIXED: use idx instead of config comparison
+                ax.set_ylabel(r'Purification Rounds, $\ell$', fontsize=40)
+            ax.set_title(config['title'], fontsize=40)
+            
+            # Subplot label
+            ax.text(0.05, 0.95, config['label'], transform=ax.transAxes, fontsize=28,
+                   fontweight='bold', fontfamily='sans-serif', va='top', ha='left',
+                   color='white', bbox=dict(boxstyle='round', facecolor='black', alpha=0.5))
+            
+            ax.tick_params(axis='both', which='major', labelsize=28)
+            ax.set_xlim(p_values.min(), p_values.max())
+            ax.set_ylim(depth_values.min(), depth_values.max())
+        
+        # Add single colorbar for both panels
+        fig.subplots_adjust(right=0.9)
+        cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
+        cbar = fig.colorbar(im, cax=cbar_ax)
+        cbar.set_label(r'$\log_{10}(C_\ell)$', fontsize=40, rotation=270, labelpad=50)
+        cbar.ax.tick_params(labelsize=28)
+        
+        plt.tight_layout()
+        plt.subplots_adjust(right=0.9)
+        
+        filename = f"resource_cost_heatmap_combined.{save_format}"
+        filepath = self.figures_dir / filename
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        print(f"Saved {filename}")
+        return str(filepath)
+    
+    
+    def plot_resource_cost_heatmap_2x2_grid(self, save_format: str = 'pdf') -> Optional[str]:
+        """
+        Create 2x2 grid of log10(C_ℓ) heatmaps comparing noise types and system sizes.
+        
+        Layout:
+        - Top row: Depolarizing noise (M=1, M=5)
+        - Bottom row: Dephasing untwirled noise (M=1, M=5)
+        - Left column: M=1
+        - Right column: M=5
+        """
+        # Check if we have both datasets
+        if self.depol_steps.empty or self.dephase_untwirled_steps.empty:
+            print("Missing data for 2x2 grid plot")
+            return None
+        
+        fig, axes = plt.subplots(2, 2, figsize=(18, 16))
+        
+        # Configuration for all 4 panels
+        noise_configs = [
+            {
+                'df': self.depol_steps,
+                'M': 1,
+                'title': 'Depolarizing,\n $M=1$',
+                'row': 0,
+                'col': 0,
+                'label': 'a'
+            },
+            {
+                'df': self.depol_steps,
+                'M': 5,
+                'title': 'Depolarizing,\n $M=5$',
+                'row': 0,
+                'col': 1,
+                'label': 'b'
+            },
+            {
+                'df': self.dephase_untwirled_steps,
+                'M': 1,
+                'title': 'Untwirled Dephasing,\n $M=1$',
+                'row': 1,
+                'col': 0,
+                'label': 'c'
+            },
+            {
+                'df': self.dephase_untwirled_steps,
+                'M': 5,
+                'title': 'Untwirled Dephasing,\n $M=5$',
+                'row': 1,
+                'col': 1,
+                'label': 'd'
+            }
+        ]
+        
+        vmin_global = np.inf
+        vmax_global = -np.inf
+        plot_data = []
+        
+        # First pass: compute all grids and find global min/max for consistent colorbar
+        print("Computing resource costs for 2x2 grid...")
+        for config in noise_configs:
+            df = config['df']
+            M_value = config['M']
+            
+            # Filter data
+            df_M = df[df['M'] == M_value].copy()
+            if df_M.empty:
+                print(f"Warning: No data for M={M_value}")
+                continue
+                
+            max_N = df_M['N'].max()
+            df_M = df_M[df_M['N'] == max_N].copy()
+            
+            # Get unique p and depth values
+            p_values = np.sort(df_M['p_channel'].unique())
+            depth_values = np.sort(df_M['depth'].unique())
+            
+            print(f"  {config['title']}: {len(p_values)} p values, {len(depth_values)} depths")
+            
+            # Create grid
+            C_grid = np.full((len(depth_values), len(p_values)), np.nan)
+            
+            for i, ℓ in enumerate(depth_values):
+                for j, p in enumerate(p_values):
+                    df_subset = df_M[(df_M['p_channel'] == p) & 
+                                     (df_M['depth'] >= 1) & 
+                                     (df_M['depth'] <= ℓ)].copy()
+                    
+                    if len(df_subset) > 0:
+                        p_success_by_depth = df_subset.groupby('depth')['P_success'].mean()
+                        required_depths = set(range(1, int(ℓ) + 1))
+                        available_depths = set(p_success_by_depth.index)
+                        
+                        if required_depths.issubset(available_depths):
+                            p_success_values = [p_success_by_depth[d] for d in range(1, int(ℓ) + 1)]
+                            product = np.prod(p_success_values)
+                            
+                            if product > 0:
+                                C_ℓ = (2**ℓ) / product
+                                C_grid[i, j] = np.log10(C_ℓ)
+            
+            # Track global min/max
+            valid_values = C_grid[~np.isnan(C_grid)]
+            if len(valid_values) > 0:
+                vmin_global = min(vmin_global, valid_values.min())
+                vmax_global = max(vmax_global, valid_values.max())
+            
+            # Store for second pass
+            plot_data.append({
+                'config': config,
+                'p_values': p_values,
+                'depth_values': depth_values,
+                'C_grid': C_grid
+            })
+        
+        # Second pass: plot with consistent colorscale
+        for data in plot_data:
+            config = data['config']
+            row = config['row']
+            col = config['col']
+            ax = axes[row, col]
+            
+            p_values = data['p_values']
+            depth_values = data['depth_values']
+            C_grid = data['C_grid']
+            
+            # Create meshgrid
+            P, L = np.meshgrid(p_values, depth_values)
+            
+            # Plot heatmap with global colorscale
+            im = ax.pcolormesh(P, L, C_grid, shading='auto', cmap='viridis',
+                              vmin=max(0, vmin_global), vmax=vmax_global)
+            
+            # Add contour lines
+            # contour_levels = [1, 2, 3, 4]
+            # CS = ax.contour(P, L, C_grid, levels=contour_levels, colors='white',
+            #                linewidths=1.5, alpha=0.6)
+            # ax.clabel(CS, inline=True, fontsize=16, fmt='%g')
+            
+            # Labels
+            # X-axis label only on bottom row
+            if row == 1:
+                ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=55)
+            
+            # Y-axis label only on left column
+            if col == 0:
+                ax.set_ylabel(r'Purification Rounds, $\ell$', fontsize=55)
+            
+            # Title
+            ax.set_title(config['title'], fontsize=50)
+            
+            # Subplot label
+            ax.text(0.05, 0.95, config['label'], transform=ax.transAxes, fontsize=30,
+                   fontweight='bold', fontfamily='sans-serif', va='top', ha='left',
+                   color='white', bbox=dict(boxstyle='round', facecolor='black', alpha=0.5))
+            
+            ax.grid(False)
+            ax.tick_params(axis='both', which='major', labelsize=28)
+            ax.set_xlim(p_values.min(), p_values.max())
+            ax.set_ylim(depth_values.min(), depth_values.max())
+        
+        # Add single colorbar for all panels
+        fig.subplots_adjust(right=0.92)
+        cbar_ax = fig.add_axes([0.94, 0.15, 0.015, 0.7])
+        cbar = fig.colorbar(im, cax=cbar_ax)
+        cbar.set_label(r'$\log_{10}(C_\ell)$', fontsize=55, rotation=270, labelpad=50)
+        cbar.ax.tick_params(labelsize=28)
+        
+        plt.tight_layout()
+        plt.subplots_adjust(right=0.92)
+        
+        filename = f"resource_cost_heatmap_2x2_grid.{save_format}"
+        filepath = self.figures_dir / filename
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        print(f"Saved {filename}")
+        return str(filepath)
+    
+    def plot_swap_count_heatmap_2x2_grid(self, save_format: str = 'pdf') -> Optional[str]:
+        """
+        Create 2x2 grid of log10(G_ℓ) heatmaps showing expected SWAP test count.
+        
+        G_ℓ = expected number of SWAP tests required to produce one ℓ-round purified output
+        
+        Recursion: G_0 = 0, G_{k+1} = (2*G_k + 1) / P_success(k+1)
+        
+        Layout:
+        - Top row: Depolarizing noise (M=1, M=5)
+        - Bottom row: Dephasing untwirled noise (M=1, M=5)
+        - Left column: M=1
+        - Right column: M=5
+        """
+        # Check if we have both datasets
+        if self.depol_steps.empty or self.dephase_untwirled_steps.empty:
+            print("Missing data for 2x2 grid plot")
+            return None
+        
+        fig, axes = plt.subplots(2, 2, figsize=(18, 16))
+        
+        # Configuration for all 4 panels
+        noise_configs = [
+            {
+                'df': self.depol_steps,
+                'M': 1,
+                'title': 'Depolarizing,\n $M=1$',
+                'row': 0,
+                'col': 0,
+                'label': 'a'
+            },
+            {
+                'df': self.depol_steps,
+                'M': 5,
+                'title': 'Depolarizing,\n $M=5$',
+                'row': 0,
+                'col': 1,
+                'label': 'b'
+            },
+            {
+                'df': self.dephase_untwirled_steps,
+                'M': 1,
+                'title': 'Untwirled Dephasing,\n $M=1$',
+                'row': 1,
+                'col': 0,
+                'label': 'c'
+            },
+            {
+                'df': self.dephase_untwirled_steps,
+                'M': 5,
+                'title': 'Untwirled Dephasing,\n $M=5$',
+                'row': 1,
+                'col': 1,
+                'label': 'd'
+            }
+        ]
+        
+        vmin_global = np.inf
+        vmax_global = -np.inf
+        plot_data = []
+        
+        # First pass: compute all grids and find global min/max for consistent colorbar
+        print("Computing SWAP test counts for 2x2 grid...")
+        for config in noise_configs:
+            df = config['df']
+            M_value = config['M']
+            
+            # Filter data
+            df_M = df[df['M'] == M_value].copy()
+            if df_M.empty:
+                print(f"Warning: No data for M={M_value}")
+                continue
+                
+            max_N = df_M['N'].max()
+            df_M = df_M[df_M['N'] == max_N].copy()
+            
+            # Get unique p and depth values
+            p_values = np.sort(df_M['p_channel'].unique())
+            depth_values = np.sort(df_M['depth'].unique())
+            
+            print(f"  {config['title']}: {len(p_values)} p values, {len(depth_values)} depths")
+            
+            # Create grid
+            G_grid = np.full((len(depth_values), len(p_values)), np.nan)
+            
+            for i, ℓ in enumerate(depth_values):
+                for j, p in enumerate(p_values):
+                    # Get P_success values from depth 1 to ℓ
+                    df_subset = df_M[(df_M['p_channel'] == p) & 
+                                     (df_M['depth'] >= 1) & 
+                                     (df_M['depth'] <= ℓ)].copy()
+                    
+                    if len(df_subset) > 0:
+                        p_success_by_depth = df_subset.groupby('depth')['P_success'].mean()
+                        required_depths = set(range(1, int(ℓ) + 1))
+                        available_depths = set(p_success_by_depth.index)
+                        
+                        if required_depths.issubset(available_depths):
+                            # Compute G_k recursively
+                            # G_0 = 0
+                            # G_{k+1} = (2*G_k + 1) / P_success(k+1)
+                            G_k = 0.0  # G_0 = 0
+                            
+                            for k in range(int(ℓ)):
+                                depth_idx = k + 1  # depth 1, 2, 3, ...
+                                P_k = p_success_by_depth[depth_idx]
+                                
+                                if P_k > 0:
+                                    G_k = (2 * G_k + 1) / P_k
+                                else:
+                                    G_k = np.nan
+                                    break
+                            
+                            if not np.isnan(G_k) and G_k > 0:
+                                G_grid[i, j] = np.log10(G_k)
+            
+            # Track global min/max
+            valid_values = G_grid[~np.isnan(G_grid)]
+            if len(valid_values) > 0:
+                vmin_global = min(vmin_global, valid_values.min())
+                vmax_global = max(vmax_global, valid_values.max())
+            
+            # Store for second pass
+            plot_data.append({
+                'config': config,
+                'p_values': p_values,
+                'depth_values': depth_values,
+                'G_grid': G_grid
+            })
+        
+        # Second pass: plot with consistent colorscale
+        for data in plot_data:
+            config = data['config']
+            row = config['row']
+            col = config['col']
+            ax = axes[row, col]
+            
+            p_values = data['p_values']
+            depth_values = data['depth_values']
+            G_grid = data['G_grid']
+            
+            # Create meshgrid
+            P, L = np.meshgrid(p_values, depth_values)
+            
+            # Plot heatmap with global colorscale
+            im = ax.pcolormesh(P, L, G_grid, shading='auto', cmap='viridis',
+                              vmin=max(0, vmin_global), vmax=vmax_global)
+            
+            # Add contour lines
+            # contour_levels = [1, 2, 3, 4]
+            # CS = ax.contour(P, L, G_grid, levels=contour_levels, colors='white',
+            #                linewidths=1.5, alpha=0.6)
+            # ax.clabel(CS, inline=True, fontsize=16, fmt='%g')
+            
+            # Labels
+            # X-axis label only on bottom row
+            if row == 1:
+                ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=55)
+            
+            # Y-axis label only on left column
+            if col == 0:
+                ax.set_ylabel(r'Purification Rounds, $\ell$', fontsize=55)
+            
+            # Title
+            ax.set_title(config['title'], fontsize=50)
+            
+            # Subplot label
+            ax.text(0.05, 0.95, config['label'], transform=ax.transAxes, fontsize=30,
+                   fontweight='bold', fontfamily='sans-serif', va='top', ha='left',
+                   color='white', bbox=dict(boxstyle='round', facecolor='black', alpha=0.5))
+            
+            ax.grid(False)
+            ax.tick_params(axis='both', which='major', labelsize=28)
+            ax.set_xlim(p_values.min(), p_values.max())
+            ax.set_ylim(depth_values.min(), depth_values.max())
+        
+        # Add single colorbar for all panels
+        fig.subplots_adjust(right=0.92)
+        cbar_ax = fig.add_axes([0.94, 0.15, 0.015, 0.7])
+        cbar = fig.colorbar(im, cax=cbar_ax)
+        cbar.set_label(r'$\log_{10}(G_\ell)$', fontsize=55, rotation=270, labelpad=50)
+        cbar.ax.tick_params(labelsize=28)
+        
+        plt.tight_layout()
+        plt.subplots_adjust(right=0.92)
+        
+        filename = f"swap_count_heatmap_2x2_grid.{save_format}"
+        filepath = self.figures_dir / filename
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        print(f"Saved {filename}")
+        return str(filepath)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -1598,6 +2251,13 @@ class SimulationPlotter:
         plots['compound_psuccess_grid_depol'] = self.plot_compound_psuccess_grid_vs_depth_mini('depolarizing', save_format)
         plots['compound_psuccess_grid_dephase_untwirled'] = self.plot_compound_psuccess_grid_vs_depth_mini('dephasing_untwirled', save_format)
         plots['compound_psuccess_grid_dephase_twirled'] = self.plot_compound_psuccess_grid_vs_depth_mini('dephasing_twirled', save_format)
+        
+        print("\n5. Resource cost heatmaps...")
+        # plots['resource_cost_heatmap_depol'] = self.plot_resource_cost_heatmap('depolarizing', M_value=5, save_format=save_format)
+        # plots['resource_cost_heatmap_dephase_untwirled'] = self.plot_resource_cost_heatmap('dephasing_untwirled', M_value=5, save_format=save_format)
+        # plots['resource_cost_heatmap_combined'] = self.plot_resource_cost_heatmap_combined(M_depol=5, M_dephase=5, save_format=save_format)
+        plots['resource_cost_heatmap_2x2_grid'] = self.plot_resource_cost_heatmap_2x2_grid(save_format=save_format)
+        plots['swap_count_heatmap_2x2_grid'] = self.plot_swap_count_heatmap_2x2_grid(save_format=save_format)
         
         # Summary
         successful = [name for name, path in plots.items() if path is not None]
