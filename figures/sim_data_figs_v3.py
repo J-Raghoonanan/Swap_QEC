@@ -2231,7 +2231,7 @@ class SimulationPlotter:
         plots['fidelity_grid_dephase_untwirled'] = self.plot_fidelity_grid_vs_depth_mini('dephasing_untwirled', save_format)
         plots['fidelity_grid_dephase_twirled'] = self.plot_fidelity_grid_vs_depth_mini('dephasing_twirled', save_format)
         
-        print("\n2. Combined fidelity plot (3x2 grid: all noise types vs M=1,5)...")
+        print("\n2. Combined fidelity plot (4x2 grid: all noise types vs M=1,5)...")
         plots['fidelity_combined_M_3rows'] = self.plot_fidelity_combined_M_mini(save_format)
         # plots['fidelity_combined_M_3rows_inset'] = self.plot_fidelity_combined_M_mini_inset(save_format)
         plots['fidelity_combined_M_4rows_globalTwirl'] = self.plot_fidelity_combined_M_mini_4x2(save_format) # NEW
