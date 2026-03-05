@@ -540,7 +540,9 @@ class VirtualDistillationPlotter:
         
         if not df_fid_filtered.empty:
             l_values = sorted(df_fid_filtered['purification_level'].unique())
+            l_to_color_idx = {l_val: idx for idx, l_val in enumerate(l_values)}
             p_subset_fid = [0.1, 0.3]  # For top row
+            l_values = [0, 1, 2, 3, 4, 5] 
             
             for i, p_val in enumerate(p_subset_fid):
                 ax = axes[0, i]  # Top row
@@ -583,15 +585,15 @@ class VirtualDistillationPlotter:
                     if x[0] != 0:
                         x = np.insert(x, 0, 0)
                         y = np.insert(y, 0, 1.0)
-                    
+                    cidx = l_to_color_idx[l_val]
                     # Plot
                     if l_val == 0:
-                        ax.plot(x, y, linestyle='dotted', marker=_mk(j), 
-                            color=colors[j % len(colors)], linewidth=2, markersize=12, 
+                        ax.plot(x, y, linestyle='dotted', marker=_mk(cidx), 
+                            color=colors[cidx % len(colors)], linewidth=2, markersize=12, 
                             alpha=0.8, label=rf'No QEC')
                     else:
-                        ax.plot(x, y, linestyle='-', marker=_mk(j), 
-                            color=colors[j % len(colors)], linewidth=2, markersize=12, 
+                        ax.plot(x, y, linestyle='-', marker=_mk(cidx), 
+                            color=colors[cidx % len(colors)], linewidth=2, markersize=12, 
                             alpha=0.8, label=rf'$\ell$ = {l_val}')
                 
                 # Formatting for fidelity plots
