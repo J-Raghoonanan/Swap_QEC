@@ -648,7 +648,7 @@ class VirtualDistillationPlotter:
             l_values_gamma = [0, 1, 2, 3, 4, 5] 
             
             # Exclusion set for main plots
-            exclude = {0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79}
+            exclude = {0.71, 0.72, 0.73, 0.74, 0.76, 0.77, 0.78, 0.79}
             
             # Inset zoom parameters
             p_min_zoom = max(0.0, p_center - p_halfwidth)

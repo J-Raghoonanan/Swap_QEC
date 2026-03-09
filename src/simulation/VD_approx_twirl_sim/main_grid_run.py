@@ -61,9 +61,10 @@ logger = logging.getLogger(__name__)
 # Defaults for the sweep
 # -----------------------------
 M_LIST: List[int] = [1, 2, 3, 4, 5]
-N_LIST: List[int] = [4, 8, 16, 32, 64, 128, 256, 512, 1024]
-# N_LIST: List[int] = [2]
-P_LIST: List[float] = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+# N_LIST: List[int] = [4, 8, 16, 32, 64, 128, 256, 512, 1024]
+N_LIST: List[int] = [2]
+# P_LIST: List[float] = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+P_LIST: List[float] = [0.75]
 NOISES: List[NoiseType] = [NoiseType.depolarizing, NoiseType.dephase_z]
 TARGET_KIND: StateKind = StateKind.hadamard
 BACKEND_METHOD: str = "density_matrix"
