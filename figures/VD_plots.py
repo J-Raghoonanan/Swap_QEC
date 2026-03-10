@@ -498,10 +498,10 @@ class VirtualDistillationPlotter:
             df_steps = self.dephase_approx_steps
             twirling_filter = True
             title_str = "Approx. Twirled Dephasing"
-        else:  # dephasing
-            df_steps = self.dephase_twirled_steps
-            twirling_filter = True
-            title_str = "Dephasing (twirled Z)"
+        elif noise_type == 'pure_dephasing':  # dephasing
+            df_steps = self.dephase_untwirled_steps
+            twirling_filter = False
+            title_str = "Pure Dephasing"
 
         if df_steps.empty:
             print(f"No steps data for {noise_type}")
@@ -796,6 +796,7 @@ class VirtualDistillationPlotter:
         print("\n3. Combined fidelity and gamma plot (2x2 grid)...")
         plots['combined_fidelity_gamma_depol'] = self.plot_combined_fidelity_and_gamma_2x2_grid('depolarizing', save_format)
         plots['combined_fidelity_gamma_dephase'] = self.plot_combined_fidelity_and_gamma_2x2_grid('approx_twirled_dephasing', save_format)
+        plots['combined_fidelity_gamma_dephase_pure'] = self.plot_combined_fidelity_and_gamma_2x2_grid('pure_dephasing', save_format)
         
         # Summary
         successful = [name for name, path in plots.items() if path is not None]

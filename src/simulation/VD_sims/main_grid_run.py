@@ -84,8 +84,8 @@ logger = logging.getLogger(__name__)
 # -----------------------------
 M_LIST: List[int] = [1, 2, 3, 4, 5]
 # N_LIST: List[int] = [2] # For 1 PQEC cycle
-N_LIST: List[int] = [4, 8, 16, 32, 64, 128, 256, 512, 1024]
-P_LIST: List[float] = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.9]
+N_LIST: List[int] = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+P_LIST: List[float] = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 # P_LIST: List[float] = [0.75]
 NOISES: List[NoiseType] = [NoiseType.depolarizing, NoiseType.dephase_z]
 TARGET_KIND: StateKind = StateKind.hadamard  # change to StateKind.haar for random pure states
