@@ -709,6 +709,162 @@ class AnalyticTheoryPlotter:
         plt.close()
         print(f"Saved {filename}")
         return str(filepath)
+    
+    
+    def plot_comprehensive_grid_2x2(self, save_format: str = "pdf") -> str:
+        """
+        4-panel figure on a 2×6 GridSpec, all panels using the VD map.
+
+        Layout:
+            Row 0:  (a) F vs t  [p=0.1, ℓ=0..3]    (b) F vs t  [ℓ=1, p=0.1..0.3]
+            Row 1:  (c) F₀ vs p [ℓ=0..3]            (d) γ_L vs p [ℓ=0..3,10,20]
+
+        Physics used throughout (VD map, D=2):
+          - Noise:         r → (1-p) r
+          - Purification:  r → P(r) = 2r/(1+r²)   [VD, replaces 4r/(3+r²)]
+          - Fidelity:      F = (1+r)/2
+          - F₀ (ℓ=1):     r_fix = √((1-2p)/(1-p)²),  threshold p=1/2
+          - F₀ (ℓ=2):     r_fix = √((2√(1+p²)−(1+2p))/(1-p)²),  threshold p=3/4
+          - γ_L:          F(t=0) - F(t=1)  starting from r₀=1
+        """
+        import matplotlib.gridspec as gridspec
+
+        # Shared font sizes — kept consistent across all panels.
+        # Label fontsize is 40 (not 50) so right-column ylabels don't bleed left.
+        FS_LABEL = 40
+        FS_TICK  = 30
+        FS_LEGEND = 20
+
+        fig = plt.figure(figsize=(20, 12))
+        
+        # Create 2×6 grid for precise positioning control
+        gs = gridspec.GridSpec(2, 6, figure=fig, hspace=0.3, wspace=0.9)
+        
+        # Position plots for equal sizes and visual balance
+        ax1 = fig.add_subplot(gs[0, 1:3])   # Row 1, columns 1-2 (Plot a)
+        ax2 = fig.add_subplot(gs[0, 3:5])   # Row 1, columns 3-4 (Plot b)  
+        ax3 = fig.add_subplot(gs[1, 1:3])   # Row 2, columns 1-2 (Plot c)
+        ax4 = fig.add_subplot(gs[1, 3:5])   # Row 2, columns 3-4 (Plot d)
+
+        colors = ["red", "green", "blue", "orange", "purple",
+                  "brown", "pink", "gray", "olive", "cyan"]
+
+        # ── (a) Fidelity vs cycles, p=0.1, ℓ=0..3 ────────────────────────────
+        ax   = ax1
+        p_fixed = 0.1
+        n_iter  = 20
+        r0      = 1.0
+
+        for i, ell in enumerate([0, 1, 2, 3]):
+            traj_r = self.iterate_r(r0=r0, p=p_fixed, ell=ell, n_iter=n_iter)
+            traj_F = (1 + traj_r) / 2
+            it     = np.arange(len(traj_F))
+            label  = 'No QEC' if ell == 0 else rf'$\ell={ell}$'
+            style  = ':' if ell == 0 else '-'
+            ax.plot(it, traj_F,
+                    marker=_mk(i), color=colors[i], linestyle=style,
+                    label=label, markevery=max(1, len(it)//8),
+                    markersize=12, linewidth=2)
+
+        ax.set_xlabel(r'PQEC Cycles, $t$', fontsize=FS_LABEL)
+        ax.set_ylabel('Fidelity, F', fontsize=FS_LABEL)
+        ax.set_xlim(0, n_iter)
+        ax.set_xticks([0, 5, 10, 15, 20])
+        ax.set_ylim(0.5, 1.05)
+        ax.legend(fontsize=FS_LEGEND, loc='lower left', frameon=False)
+        ax.tick_params(axis="both", which="major", labelsize=FS_TICK)
+        ax.text(0.97, 0.99, 'a', transform=ax.transAxes, fontsize=36,
+                fontweight='bold', fontfamily='sans-serif', va='top', ha='right')
+
+        # ── (b) Fidelity vs cycles, ℓ=1, p=0.1..0.3 ──────────────────────────
+        ax = ax2
+
+        for i, p in enumerate([0.1, 0.2, 0.3]):
+            traj_r = self.iterate_r(r0=r0, p=p, ell=1, n_iter=n_iter)
+            traj_F = (1 + traj_r) / 2
+            it     = np.arange(len(traj_F))
+            ax.plot(it, traj_F,
+                    marker=_mk(i), color=colors[i],
+                    label=rf'$p={p}$',
+                    markevery=max(1, len(it)//8),
+                    markersize=12, linewidth=2)
+
+        ax.set_xlabel(r'PQEC Cycles, $t$', fontsize=FS_LABEL)
+        ax.set_ylabel(r'Fidelity, $F$', fontsize=FS_LABEL)
+        ax.set_xlim(0, n_iter)
+        ax.set_xticks([0, 5, 10, 15, 20])
+        ax.set_ylim(0.5, 1.05)
+        ax.legend(fontsize=FS_LEGEND, loc='lower left', frameon=False)
+        ax.tick_params(axis="both", which="major", labelsize=FS_TICK)
+        ax.text(0.97, 0.98, 'b', transform=ax.transAxes, fontsize=36,
+                fontweight='bold', fontfamily='sans-serif', va='top', ha='right')
+
+        # ── (c) Steady-state F₀ vs p, ℓ=0..3 ─────────────────────────────────
+        # Extended to p=1.0 so thresholds (ℓ=1→p=0.5, ℓ=2→p=0.75, ℓ=3→p→∞)
+        # are all visible.  p=1 is excluded (singular) so we stop at 0.995.
+        ax = ax3
+        p_range = np.linspace(0.0, 0.995, 400)
+
+        for i, ell in enumerate([0, 1, 2, 3]):
+            if ell == 0:
+                F0_vals = np.full_like(p_range, 0.5)
+                ax.plot(p_range, F0_vals,
+                        color=colors[i], linewidth=3,
+                        marker=_mk(i), markevery=50, markersize=10,
+                        label='No QEC', linestyle='dotted')
+            else:
+                r_fix = self.rfix_general(p_range, ell)
+                F_fix = (1 + r_fix) / 2
+                ax.plot(p_range, F_fix,
+                        color=colors[i], linewidth=3,
+                        marker=_mk(i), markevery=50, markersize=10,
+                        label=rf'$\ell={ell}$')
+
+        ax.set_xlabel('Physical Error Rate, p', fontsize=FS_LABEL)
+        ax.set_ylabel(r'$F_{0}$', fontsize=FS_LABEL)
+        ax.set_xlim(0, 1.0)
+        ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0])
+        ax.set_xticklabels(['0', '0.25', '0.5', '0.75', '1'])
+        ax.set_ylim(0.4, 1.05)
+        ax.legend(fontsize=FS_LEGEND, loc='best', frameon=False)
+        ax.tick_params(axis="both", which="major", labelsize=FS_TICK)
+        ax.text(0.97, 0.98, 'c', transform=ax.transAxes, fontsize=36,
+                fontweight='bold', fontfamily='sans-serif', va='top', ha='right')
+
+        # ── (d) Logical error γ_L vs p, various ℓ ─────────────────────────────
+        ax = ax4
+        p_range_gamma = np.linspace(0.01, 1.0, 50)
+        r0_gamma = 1.0
+
+        for i, ell in enumerate([0, 1, 2, 3, 10, 20]):
+            gamma_vals = np.array([
+                self.calculate_gamma_first_drop(r0_gamma, pv, ell)
+                for pv in p_range_gamma
+            ])
+            label = 'No QEC' if ell == 0 else rf'$\ell={ell}$'
+            style = ':' if ell == 0 else '-'
+            ax.plot(p_range_gamma, gamma_vals,
+                    color=colors[i], linewidth=3,
+                    marker=_mk(i), markevery=5, markersize=12,
+                    label=label, linestyle=style)
+
+        ax.set_xlabel('Physical Error Rate, p', fontsize=FS_LABEL)
+        ax.set_ylabel(r'Logical Error, $\gamma_L$', fontsize=FS_LABEL)
+        ax.set_xlim(0.0, 1.0)
+        ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0])
+        ax.set_xticklabels(['0', '0.25', '0.5', '0.75', '1'])
+        ax.set_ylim(-0.05, 0.6)
+        ax.legend(fontsize=FS_LEGEND, loc='upper left', ncol=1, frameon=False)
+        ax.tick_params(axis="both", which="major", labelsize=FS_TICK)
+        ax.text(0.97, 0.98, 'd', transform=ax.transAxes, fontsize=36,
+                fontweight='bold', fontfamily='sans-serif', va='top', ha='right')
+
+        filename = f"comprehensive_2x2_grid.{save_format}"
+        filepath = self.figures_dir / filename
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Saved {filename}")
+        return str(filepath)
 
     # ------------------------------------------------------------------
     # Additional single panels
@@ -787,6 +943,9 @@ class AnalyticTheoryPlotter:
 
         print("\n2) Comprehensive 5-panel grid (VD-consistent)...")
         out['comprehensive_5panel'] = self.plot_comprehensive_grid_centered_gridspec(
+            save_format=save_format
+        )
+        out['comprehensive_4panel'] = self.plot_comprehensive_grid_2x2(
             save_format=save_format
         )
 
