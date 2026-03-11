@@ -666,7 +666,7 @@ class VirtualDistillationPlotter:
                 ax.set_title(f'M={M}', fontsize=55)
                 ax.set_xlabel('Physical Error Rate, p', fontsize=50)
                 if j == 0:  # Left plot only
-                    ax.set_ylabel(r'Logical Error, $\gamma_L$', fontsize=50)
+                    ax.set_ylabel(r'Logical Error Rate, $\gamma_L$', fontsize=50)
                 
                 ax.set_xlim(0.0, 1.0)
                 ax.set_ylim(0.0, 1.05)
