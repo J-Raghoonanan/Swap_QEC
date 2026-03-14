@@ -1,15 +1,15 @@
 """
-Main entry point to run a grid sweep of Virtual Distillation (VD) purification simulations.
+Main entry point to run a grid sweep of purification simulations.
 
-This script uses the density-matrix Aer simulator and Virtual Distillation (VD)
-implemented in this package. It writes CSVs under `data/VD_sim/` that are
+This script uses the density-matrix Aer simulator and 
+implemented in this package. It writes CSVs under `data/rho2_sim/` that are
 directly consumable by figure-generation scripts.
 
 KEY DIFFERENCES FROM SWAP PURIFICATION:
 - Uses ρ → ρ²/Tr(ρ²) instead of SWAP test
 - P_success = 1.0 always (deterministic, no postselection)
 - C_ℓ = 2^ℓ exactly (no overhead from failed attempts)
-- G_ℓ = 2^ℓ - 1 (total VD operations through level ℓ)
+- G_ℓ = 2^ℓ - 1 (total rho2 operations through level ℓ)
 - ~50% fewer copies needed vs SWAP
 - ~25% fewer operations vs SWAP
 
@@ -18,7 +18,7 @@ FEATURES:
 - Automatic Clifford twirling for dephasing noise types
 - Enhanced logging with Bloch vector tracking for M=1
 - Support for both iid_p and exact_k noise modes
-- Iterative mode: apply noise once per iteration, then ℓ VD levels
+- Iterative mode: apply noise once per iteration, then ℓ rho2 purification levels
 
 CHOICES (documented):
 - We cap M at 6 by default because density matrix operations scale as 2^(2M).
@@ -30,26 +30,26 @@ CHOICES (documented):
 
 Usage examples:
 
-    python -m src.simulation.VD_sims.main_grid_run \
-        --out data/VD_sim \
+    python -m src.simulation.rho2_sims.main_grid_run \
+        --out data/rho2_sim \
         --noise depol \
         --m-values 1 5 \
         --iterative
 
-    python -m src.simulation.VD_sims.main_grid_run \
-        --out data/VD_sim \
+    python -m src.simulation.rho2_sims.main_grid_run \
+        --out data/rho2_sim \
         --noise z \
         --m-values 1 5 \
         --iterative \
         --no-twirl
         
-    python -m src.simulation.VD_sims.main_grid_run \
-        --out data/VD_sim \
+    python -m src.simulation.rho2_sims.main_grid_run \
+        --out data/rho2_sim \
         --max-m 5 \
         --noise all \
         --quick
 
-It will append to `steps_vd_*.csv` and `finals_vd_*.csv`.
+It will append to `steps_rho2_*.csv` and `finals_rho2_*.csv`.
 """
 from __future__ import annotations
 
@@ -94,7 +94,7 @@ BACKEND_METHOD: str = "density_matrix"
 L_LIST: List[int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  # Purification levels
 # L_LIST: List[int] = [0, 1, 2, 3] # For running M=1,5 for more PQEC cycles
 
-# AA configuration (not needed for VD but kept for API compatibility)
+# AA configuration (not needed but kept for API compatibility)
 AA = AASpec(target_success=0.99, max_iters=32, use_postselection_only=False)
 
 # Twirling configuration (auto-enabled for dephasing)
@@ -106,8 +106,8 @@ TWIRLING = TwirlingSpec(enabled=True, mode="cyclic", seed=None)
 # -----------------------------
 
 def _parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Grid sweep for Virtual Distillation purification")
-    p.add_argument("--out", type=Path, default=Path("data/VD_sim"), help="Output directory for CSVs")
+    p = argparse.ArgumentParser(description="Grid sweep for rho2 purification")
+    p.add_argument("--out", type=Path, default=Path("data/rho2_sim"), help="Output directory for CSVs")
     p.add_argument("--max-m", type=int, default=6, help="Maximum M to include (≤ 6 recommended)")
     p.add_argument("--m-values", type=int, nargs='+', help="Specific M values to run (e.g., --m-values 1 3 5)")
     p.add_argument("--seed", type=int, default=1, help="Seed for target-state generation")
@@ -153,7 +153,7 @@ def _parse_args() -> argparse.Namespace:
         "--purification-level",
         type=int,
         default=1,
-        help="Number of VD purification rounds per iteration (ℓ parameter)",
+        help="Number of rho2 purification rounds per iteration (ℓ parameter)",
     )
     return p.parse_args()
 
@@ -216,8 +216,8 @@ def main() -> None:
 
     logger.info(
         "="*70 + "\n"
-        "Running Virtual Distillation grid sweep with:\n"
-        f"  Method       = Virtual Distillation (VD)\n"
+        "Running rho2 grid sweep with:\n"
+        f"  Method       = rho2\n"
         f"  P_success    = 1.0 always (deterministic)\n"
         f"  Ms           = {Ms}\n"
         f"  Ns           = {Ns}\n"
@@ -255,7 +255,7 @@ def main() -> None:
                         spec = RunSpec(
                             target=target,
                             noise=NoiseSpec(noise_type=noise, mode=mode, p=p),
-                            aa=AA,  # Not used by VD but kept for compatibility
+                            aa=AA,  # Not used but kept for compatibility
                             twirling=twirling,
                             N=N,
                             backend_method=BACKEND_METHOD,
@@ -268,7 +268,7 @@ def main() -> None:
                         tag = spec.synthesize_run_id()
                         
                         logger.info(f"\n{'='*70}")
-                        logger.info(f"Run {current_run}/{total_runs}: {tag} (ℓ={ell}) [VD]")
+                        logger.info(f"Run {current_run}/{total_runs}: {tag} (ℓ={ell}) [rho2]")
                         logger.info(f"{'='*70}")
                         
                         t0 = time.time()
@@ -281,11 +281,11 @@ def main() -> None:
 
     total = time.time() - started
     logger.info(f"\n{'='*70}")
-    logger.info(f"Virtual Distillation grid sweep complete!")
+    logger.info(f"rho2 grid sweep complete!")
     logger.info(f"  Total time: {total/60:.1f} min")
     logger.info(f"  Runs: {current_run}/{total_runs}")
     logger.info(f"  Data saved to: {out_dir}")
-    logger.info(f"  Method: Virtual Distillation (deterministic, P_success=1.0)")
+    logger.info(f"  Method: rho2 (deterministic, P_success=1.0)")
     logger.info(f"{'='*70}")
 
 

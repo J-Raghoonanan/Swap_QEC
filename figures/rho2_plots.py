@@ -1,6 +1,6 @@
 """
-Figure generation for Virtual Distillation simulation data.
-Loads CSV data from VD simulations and creates publication-quality figures.
+Figure generation for Rho2 simulation data.
+Loads CSV data from rho2 simulations and creates publication-quality figures.
 
 Implements 3 specific plotting functions with exact formatting from reference scripts:
 1. plot_fidelity_vs_purification_rounds_iteration1 (2x2 grid, iteration==1)
@@ -51,34 +51,34 @@ def _mk(i: int) -> str:
     return MARKERS[i % len(MARKERS)]
 
 
-class VirtualDistillationPlotter:
-    """Generate figures from Virtual Distillation CSV data."""
+class Rho2Plotter:
+    """Generate figures from rho2 CSV data."""
     
-    def __init__(self, data_dir: str = "data/VD_sim", 
-                 figures_dir: str = "figures/VD_results"):
+    def __init__(self, data_dir: str = "data/rho2_sim", 
+                 figures_dir: str = "figures/rho2_results"):
         self.data_dir = Path(data_dir)
         self.figures_dir = Path(figures_dir)
         self.figures_dir.mkdir(parents=True, exist_ok=True)
         
         # Load 4 datasets as specified
-        self.depol_steps = self._load_csv('steps_vd_depolarizing.csv')
-        self.depol_finals = self._load_csv('finals_vd_depolarizing.csv')
+        self.depol_steps = self._load_csv('steps_rho2_depolarizing.csv')
+        self.depol_finals = self._load_csv('finals_rho2_depolarizing.csv')
         
-        self.dephase_untwirled_steps = self._load_csv('steps_vd_dephase_z_no_twirl.csv')
-        self.dephase_untwirled_finals = self._load_csv('finals_vd_dephase_z_no_twirl.csv')
+        self.dephase_untwirled_steps = self._load_csv('steps_rho2_dephase_z_no_twirl.csv')
+        self.dephase_untwirled_finals = self._load_csv('finals_rho2_dephase_z_no_twirl.csv')
         
-        self.dephase_twirled_steps = self._load_csv('steps_vd_dephase_z_twirled.csv')
-        self.dephase_twirled_finals = self._load_csv('finals_vd_dephase_z_twirled.csv')
+        self.dephase_twirled_steps = self._load_csv('steps_rho2_dephase_z_twirled.csv')
+        self.dephase_twirled_finals = self._load_csv('finals_rho2_dephase_z_twirled.csv')
         
-        self.dephase_theta_phi_steps = self._load_csv('steps_vd_dephase_z_theta_phi_no_twirl.csv')
-        self.dephase_theta_phi_finals = self._load_csv('finals_vd_dephase_z_theta_phi_no_twirl.csv')
+        self.dephase_theta_phi_steps = self._load_csv('steps_rho2_dephase_z_theta_phi_no_twirl.csv')
+        self.dephase_theta_phi_finals = self._load_csv('finals_rho2_dephase_z_theta_phi_no_twirl.csv')
         
-        self.dephase_approx_steps = self._load_csv('steps_vd_dephase_z_subset0.20.csv')
-        self.dephase_approx_finals = self._load_csv('finals_vd_dephase_z_subset0.20.csv')
-        # self.dephase_approx_steps = self._load_csv('steps_vd_dephase_z_twirl.csv')
-        # self.dephase_approx_finals = self._load_csv('finals_vd_dephase_z_twirl.csv')
+        self.dephase_approx_steps = self._load_csv('steps_rho2_dephase_z_subset0.20.csv')
+        self.dephase_approx_finals = self._load_csv('finals_rho2_dephase_z_subset0.20.csv')
+        # self.dephase_approx_steps = self._load_csv('steps_rho2_dephase_z_twirl.csv')
+        # self.dephase_approx_finals = self._load_csv('finals_rho2_dephase_z_twirl.csv')
         
-        print(f"Loaded VD data:")
+        print(f"Loaded rho2 data:")
         print(f"  Depolarizing steps: {len(self.depol_steps)} rows")
         print(f"  Dephasing untwirled steps: {len(self.dephase_untwirled_steps)} rows")
         print(f"  Dephasing theta-phi steps: {len(self.dephase_theta_phi_steps)} rows")
@@ -358,7 +358,7 @@ class VirtualDistillationPlotter:
                         ax.set_xlabel(r'Physical Error Rate, $p$', fontsize=35)
                 continue
 
-            # For VD: Filter for iteration==1 from steps data, then get final fidelity
+            # For rho2: Filter for iteration==1 from steps data, then get final fidelity
             if not use_finals:
                 df = df[df['iteration'] == 1].copy()
                 
@@ -464,7 +464,7 @@ class VirtualDistillationPlotter:
         plt.tight_layout()
         plt.subplots_adjust(left=0.18)  # Make room for row labels
 
-        filename = f"fidelity_combined_M_4rows_VD.{save_format}"
+        filename = f"fidelity_combined_M_4rows_rho2.{save_format}"
         filepath = self.figures_dir / filename
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
@@ -774,9 +774,9 @@ class VirtualDistillationPlotter:
         return str(filepath)
     
     def generate_all_plots(self, save_format: str = 'pdf') -> Dict[str, Optional[str]]:
-        """Generate all VD figures."""
+        """Generate all rho2 figures."""
         print("\n" + "="*70)
-        print("GENERATING VD FIGURES")
+        print("GENERATING RHO2 FIGURES")
         print("="*70)
         
         plots = {}
@@ -814,8 +814,8 @@ def main():
     """Main function."""
     import sys
     
-    data_dir = "data/VD_sim"
-    figures_dir = "figures/VD_results"
+    data_dir = "data/rho2_sim"
+    figures_dir = "figures/rho2_results"
     save_format = "pdf"
     
     if '--data-dir' in sys.argv:
@@ -833,7 +833,7 @@ def main():
         if idx + 1 < len(sys.argv):
             save_format = sys.argv[idx + 1]
     
-    plotter = VirtualDistillationPlotter(data_dir, figures_dir)
+    plotter = Rho2Plotter(data_dir, figures_dir)
     plots = plotter.generate_all_plots(save_format)
     
     return plots

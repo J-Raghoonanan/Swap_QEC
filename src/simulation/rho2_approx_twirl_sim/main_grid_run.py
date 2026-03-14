@@ -1,11 +1,11 @@
 """
-Main entry point for Virtual Distillation (VD) grid sweep simulations.
+Main entry point for rho2 grid sweep simulations.
 
-This script uses density-matrix simulations and implements VD purification
+This script uses density-matrix simulations and implements rho2 purification
 (ρ → ρ²/Tr(ρ²)) with optional approximate Clifford twirling for resource
 efficiency when dealing with dephasing noise.
 
-VD FEATURES:
+rho2 FEATURES:
 - Deterministic purification: ρ → ρ²/Tr(ρ²)
 - No amplitude amplification needed (deterministic operation)
 - Approximate Clifford twirling for dephasing noise mitigation
@@ -19,15 +19,15 @@ CHOICES (documented):
 
 You can run this file directly:
 
-    python -m src.simulation.VD_approx_twirl_sim.main_grid_run \
-        --out data/VD_sim \
+    python -m src.simulation.rho2_approx_twirl_sim.main_grid_run \
+        --out data/rho2_sim \
         --noise z \
         --m-values 1 5 \
         --iterative \
         --subset-fraction 0.2 \
         --subset-seed 42
 
-It will append to `steps_vd_*.csv` and `finals_vd_*.csv`.
+It will append to `steps_rho2_*.csv` and `finals_rho2_*.csv`.
 """
 from __future__ import annotations
 
@@ -70,7 +70,7 @@ TARGET_KIND: StateKind = StateKind.hadamard
 BACKEND_METHOD: str = "density_matrix"
 L_LIST: List[int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  # ℓ parameter
 
-# AA configuration (not used for VD, but kept for API compatibility)
+# AA configuration (not used for rho2, but kept for API compatibility)
 AA = AASpec(target_success=0.99, max_iters=32, use_postselection_only=False)
 
 
@@ -79,8 +79,8 @@ AA = AASpec(target_success=0.99, max_iters=32, use_postselection_only=False)
 # -----------------------------
 
 def _parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Grid sweep for VD simulation with subset twirling")
-    p.add_argument("--out", type=Path, default=Path("data/VD_sim"), help="Output directory for CSVs")
+    p = argparse.ArgumentParser(description="Grid sweep for rho2 simulation with subset twirling")
+    p.add_argument("--out", type=Path, default=Path("data/rho2_sim"), help="Output directory for CSVs")
     p.add_argument("--max-m", type=int, default=5, help="Maximum M to include (≤ 6 recommended)")
     p.add_argument("--m-values", type=int, nargs='+', help="Specific M values (e.g., --m-values 1 5)")
     p.add_argument("--seed", type=int, default=1, help="Seed for target-state generation")
@@ -138,13 +138,13 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument(
         "--iterative",
         action="store_true",
-        help="Enable iterative noise mode: apply fresh noise before each VD round",
+        help="Enable iterative noise mode: apply fresh noise before each rho2 round",
     )
     p.add_argument(
         "--purification-level",
         type=int,
         default=1,
-        help="Number of VD purification rounds per iteration (ℓ parameter)",
+        help="Number of rho2 purification rounds per iteration (ℓ parameter)",
     )
     p.add_argument(
         "--theta",
@@ -222,7 +222,7 @@ def main() -> None:
 
     logger.info(
         "=" * 70 + "\n"
-        "Running VD grid sweep with APPROXIMATE TWIRLING:\n"
+        "Running rho2 grid sweep with APPROXIMATE TWIRLING:\n"
         f"  Ms                = {Ms}\n"
         f"  Ns                = {Ns}\n"
         f"  ps                = {ps}\n"
@@ -286,7 +286,7 @@ def main() -> None:
 
     total = time.time() - started
     logger.info(f"\n{'=' * 70}")
-    logger.info(f"VD grid sweep complete!")
+    logger.info(f"rho2 grid sweep complete!")
     logger.info(f"  Total time : {total / 60:.1f} min")
     logger.info(f"  Runs       : {current_run}/{total_runs}")
     logger.info(f"  Data saved : {out_dir}")

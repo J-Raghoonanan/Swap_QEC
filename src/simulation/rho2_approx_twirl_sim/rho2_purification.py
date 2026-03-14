@@ -1,7 +1,7 @@
 """
-Virtual Distillation (VD) purification: ρ → ρ²/Tr(ρ²).
+Rho2 purification: ρ → ρ²/Tr(ρ²).
 
-Implements the deterministic VD operation for density-matrix simulations.
+Implements the deterministic rho2 operation for density-matrix simulations.
 Given a noisy M-qubit state ρ, the purified output is:
 
     ρ_out = ρ² / Tr(ρ²)
@@ -18,7 +18,7 @@ Key differences from SWAP purification:
 NOTE ON THE SYMMETRIC PROJECTION APPROACH  (why we do NOT use it here):
   The expression Tr_B[Π_sym (ρ⊗ρ) Π_sym] does NOT give ρ²/Tr(ρ²).
   It gives (ρ+ρ²)/2, which after normalization is (ρ+ρ²)/(1+Tr(ρ²)) — the
-  SWAP test result, not VD.  The direct matrix-square computation below is
+  SWAP test result, not rho2.  The direct matrix-square computation below is
   both simpler and correct.
 
 Clifford twirling is handled upstream in noise_engine.py and must NOT be
@@ -36,11 +36,11 @@ logger = logging.getLogger(__name__)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Core VD operation
+# Core rho2 operation
 # ─────────────────────────────────────────────────────────────────────────────
 
-def virtual_distill(rho: DensityMatrix) -> Tuple[DensityMatrix, Dict]:
-    """Apply one round of Virtual Distillation: ρ → ρ²/Tr(ρ²).
+def rho2_purification(rho: DensityMatrix) -> Tuple[DensityMatrix, Dict]:
+    """Apply one round of Rho2 Purification: ρ → ρ²/Tr(ρ²).
 
     Parameters
     ----------
@@ -57,16 +57,16 @@ def virtual_distill(rho: DensityMatrix) -> Tuple[DensityMatrix, Dict]:
         probability of the corresponding projective protocol.
     """
     M = int(round(np.log2(rho.dim)))
-    logger.debug(f"VD: M={M} qubit state (dim={rho.dim})")
+    logger.debug(f"Rho2: M={M} qubit state (dim={rho.dim})")
 
     rho_sq = rho.data @ rho.data
     P_success = float(np.real(np.trace(rho_sq)))
 
-    logger.debug(f"VD: Tr(ρ²) = P_success = {P_success:.6f}")
+    logger.debug(f"Rho2: Tr(ρ²) = P_success = {P_success:.6f}")
 
     if P_success < 1e-12:
         logger.warning(
-            f"VD: Tr(ρ²) ≈ 0 (P={P_success:.2e}); returning maximally mixed state"
+            f"Rho2: Tr(ρ²) ≈ 0 (P={P_success:.2e}); returning maximally mixed state"
         )
         return (
             DensityMatrix(np.eye(2**M, dtype=complex) / 2**M),
@@ -78,9 +78,9 @@ def virtual_distill(rho: DensityMatrix) -> Tuple[DensityMatrix, Dict]:
     # Numerical sanity check
     out_trace = float(np.real(np.trace(rho_out.data)))
     if abs(out_trace - 1.0) > 1e-9:
-        logger.warning(f"VD: output trace = {out_trace:.10f} (should be 1.0)")
+        logger.warning(f"rho2: output trace = {out_trace:.10f} (should be 1.0)")
 
-    logger.debug(f"VD complete: P_success={P_success:.6f}")
+    logger.debug(f"Rho2 complete: P_success={P_success:.6f}")
     return rho_out, {"P_success": P_success}
 
 
@@ -91,24 +91,24 @@ def virtual_distill(rho: DensityMatrix) -> Tuple[DensityMatrix, Dict]:
 def purify_two_from_density(
     rho_A: DensityMatrix,
     rho_B: DensityMatrix,
-    aa: Any,                      # AASpec — accepted for API parity, unused for VD
+    aa: Any,                      # AASpec — accepted for API parity, unused for rho2
 ) -> Tuple[DensityMatrix, Dict]:
-    """VD merge of two density matrices: (ρ_A, ρ_B) → ρ_A²/Tr(ρ_A²).
+    """rho2 merge of two density matrices: (ρ_A, ρ_B) → ρ_A²/Tr(ρ_A²).
 
-    In the VD iterative protocol both inputs are always IDENTICAL clones of
+    In the rho2 iterative protocol both inputs are always IDENTICAL clones of
     the same noisy state, so only rho_A is used.  The ``aa`` (amplitude
     amplification) argument is accepted for API compatibility with the SWAP
-    runner but is silently ignored — VD is deterministic.
+    runner but is silently ignored — rho2 is deterministic.
 
     Parameters
     ----------
     rho_A : DensityMatrix
-        Left copy (used for the VD computation).
+        Left copy (used for the rho2 computation).
     rho_B : DensityMatrix
         Right copy (must be identical to rho_A; used for a consistency check
         only and otherwise ignored).
     aa : AASpec
-        Amplitude-amplification spec — ignored by VD.
+        Amplitude-amplification spec — ignored by rho2.
 
     Returns
     -------
@@ -126,10 +126,10 @@ def purify_two_from_density(
             float(np.max(np.abs(rho_A.data - rho_B.data))),
         )
 
-    return virtual_distill(rho_A)
+    return rho2_purification(rho_A)
 
 
 __all__ = [
-    "virtual_distill",
+    "rho2_purification",
     "purify_two_from_density",
 ]

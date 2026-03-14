@@ -1,8 +1,8 @@
 """
-Virtual Distillation for quantum error mitigation.
+Rho2 for quantum error mitigation.
 
-This module implements virtual distillation (VD) as described in Huggins et al. 
-(Phys. Rev. X 11, 041036, 2021). Unlike SWAP-based purification, VD is 
+This module implements rho2 purification (ρ → ρ²/Tr(ρ²)) as a resource-efficient alternative to SWAP-based purification.
+(Phys. Rev. X 11, 041036, 2021). Unlike SWAP-based purification, rho2 is 
 **deterministic** and requires no postselection.
 
 KEY DIFFERENCES FROM SWAP PURIFICATION:
@@ -14,7 +14,7 @@ KEY DIFFERENCES FROM SWAP PURIFICATION:
 
 RESOURCE COSTS:
 - C_ℓ = 2^ℓ exactly (no postselection overhead)
-- G_ℓ = 2^ℓ - 1 (total VD operations through level ℓ)
+- G_ℓ = 2^ℓ - 1 (total rho2 operations through level ℓ)
 - ~50% fewer copies needed vs SWAP purification
 - ~25% fewer operations needed vs SWAP purification
 
@@ -34,16 +34,16 @@ from .configs import AASpec
 logger = logging.getLogger(__name__)
 
 
-def apply_virtual_distillation(
+def apply_rho2_purification(
     rho: DensityMatrix,
     aa: AASpec,  # Keep for API compatibility, but unused
 ) -> Tuple[DensityMatrix, Dict]:
     """
-    Apply virtual distillation to purify a single noisy state.
+    Apply rho2 purification to purify a single noisy state.
     
-    Virtual distillation computes the expectation value with respect to 
+    Rho2 purification computes the expectation value with respect to 
     ρ²/Tr(ρ²) WITHOUT preparing multiple copies. This is the M=2 case
-    of the general virtual distillation protocol.
+    of the general rho2 purification protocol.
     
     State update: ρ → ρ²/Tr(ρ²)
     
@@ -54,7 +54,7 @@ def apply_virtual_distillation(
     rho : DensityMatrix
         Input noisy density matrix on M qubits.
     aa : AASpec
-        Amplitude amplification config (unused for VD, kept for API compatibility).
+        Amplitude amplification config (unused for rho2, kept for API compatibility).
         
     Returns
     -------
@@ -62,10 +62,10 @@ def apply_virtual_distillation(
         The purified density matrix ρ²/Tr(ρ²).
     metrics : dict
         {"P_success": 1.0, "grover_iters": 0}
-        P_success is always 1.0 for VD (deterministic operation).
+        P_success is always 1.0 forrho2 (deterministic operation).
     """
     M = int(np.log2(rho.dim))
-    logger.debug(f"Applying virtual distillation to M={M} qubit state (dim={rho.dim})")
+    logger.debug(f"Applying rho2 purification to M={M} qubit state (dim={rho.dim})")
     
     # Step 1: Compute ρ²
     rho_squared = rho.data @ rho.data
@@ -82,15 +82,15 @@ def apply_virtual_distillation(
     rho_out_data = rho_squared / trace_rho_squared
     rho_out = DensityMatrix(rho_out_data)
     
-    logger.debug(f"Virtual distillation complete: Tr(ρ²)={trace_rho_squared:.6f}")
+    logger.debug(f"Rho2 purification complete: Tr(ρ²)={trace_rho_squared:.6f}")
     
-    # Metrics: VD is deterministic, so P_success = 1.0 always
+    # Metrics: Rho2 is deterministic, so P_success = 1.0 always
     metrics = {
         "P_success": 1.0,  # Always deterministic
         "grover_iters": 0,  # No amplitude amplification needed
     }
     
-    logger.info(f"VD purification complete: P_success={metrics['P_success']:.4f} (deterministic)")
+    logger.info(f"Rho2 purification complete: P_success={metrics['P_success']:.4f} (deterministic)")
     return rho_out, metrics
 
 
@@ -100,10 +100,10 @@ def purify_two_from_density(
     aa: AASpec,
 ) -> Tuple[DensityMatrix, Dict]:
     """
-    Virtual distillation wrapper that accepts two density matrices for API compatibility.
+    Rho2 purification wrapper that accepts two density matrices for API compatibility.
     
-    CRITICAL: For VD, we only use rho_A and ignore rho_B. The two-copy requirement
-    from SWAP purification doesn't apply here - VD operates on a single copy.
+    CRITICAL: For rho2, we only use rho_A and ignore rho_B. The two-copy requirement
+    from SWAP purification doesn't apply here - rho2 operates on a single copy.
     
     In practice, when called from the streaming runner, rho_A and rho_B should be
     identical copies anyway (from the binary tree structure).
@@ -113,7 +113,7 @@ def purify_two_from_density(
     rho_A : DensityMatrix
         First input density matrix (this is the one we use).
     rho_B : DensityMatrix
-        Second input density matrix (ignored in VD, kept for API compatibility).
+        Second input density matrix (ignored in rho2, kept for API compatibility).
     aa : AASpec
         Amplitude amplification config (unused, kept for API compatibility).
         
@@ -128,7 +128,7 @@ def purify_two_from_density(
     -----
     This function exists to maintain API compatibility with the SWAP purification
     code. The streaming runner calls purify_two_from_density() with two inputs,
-    but VD only needs one. We use rho_A and ignore rho_B.
+    but rho2 only needs one. We use rho_A and ignore rho_B.
     """
     if rho_A.dim != rho_B.dim:
         logger.warning(f"rho_A and rho_B have different dimensions ({rho_A.dim} vs {rho_B.dim})")
@@ -136,12 +136,12 @@ def purify_two_from_density(
     # Check if they're actually identical (they should be for the theory to work)
     if not np.allclose(rho_A.data, rho_B.data, rtol=1e-6, atol=1e-8):
         logger.warning(
-            "rho_A and rho_B are not identical! VD expects identical inputs from streaming. "
+            "rho_A and rho_B are not identical! rho2 expects identical inputs from streaming. "
             "Using rho_A only."
         )
     
-    # Apply VD to rho_A only
-    return apply_virtual_distillation(rho_A, aa)
+    # Apply rho2 to rho_A only
+    return apply_rho2_purification(rho_A, aa)
 
 
 # -----------------------------
@@ -155,16 +155,16 @@ def compute_purity(rho: DensityMatrix) -> float:
 
 def compute_trace_rho_squared(rho: DensityMatrix) -> float:
     """
-    Compute Tr(ρ²) which appears in VD normalization and sample complexity.
+    Compute Tr(ρ²) which appears in rho2 normalization and sample complexity.
     
-    For VD, the sample complexity scales as Var ∝ 1/(R·Tr(ρ²)²) where R is
+    For rho2, the sample complexity scales as Var ∝ 1/(R·Tr(ρ²)²) where R is
     the number of measurement shots.
     """
     return float(np.real(np.trace(rho.data @ rho.data)))
 
 
 __all__ = [
-    "apply_virtual_distillation",
+    "apply_rho2_purification",
     "purify_two_from_density",  # API-compatible wrapper
     "compute_purity",
     "compute_trace_rho_squared",

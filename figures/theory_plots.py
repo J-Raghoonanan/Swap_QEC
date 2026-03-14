@@ -1,8 +1,8 @@
 """
 Analytic theory plots for PQEC (purification-based quantum error correction).
 
-IMPORTANT — VD CONSISTENCY:
-  The purification update rule used throughout this file is the VD map:
+IMPORTANT — RHO2 CONSISTENCY:
+  The purification update rule used throughout this file is the rho2 map:
 
       ρ → ρ²/Tr(ρ²)
 
@@ -15,7 +15,7 @@ IMPORTANT — VD CONSISTENCY:
   match.  See manuscript Eq. (gen_error_reduction) and the \Jon{} boxes.
 
 Generates figures:
-  (1) F_out vs F (isotropic family, VD map)
+  (1) F_out vs F (isotropic family, rho2 map)
   (2) Error evolution with general bounds
   (5) GHZ per-round error ratio vs coherence gamma
   (7) Dephasing anisotropy vs isotropy
@@ -68,7 +68,7 @@ def T_isotropic(F: float, D: int) -> float:
     return F**2 + (1 - F)**2 / (D - 1)
 
 def Fout_isotropic(F: np.ndarray, D: int) -> np.ndarray:
-    """VD fidelity map for Werner/isotropic family (manuscript \Jon{} box):
+    """rho2 fidelity map for Werner/isotropic family:
         F' = F² / (F² + (1-F)²/(D-1))
     """
     numerator   = F * F
@@ -98,8 +98,8 @@ def n_star_from_gamma0(gamma0: float) -> float:
     """Rounds n_* to lift small gamma0 to O(1): n_* ~ log(1/gamma0)/log(4/3)."""
     return np.log(1.0 / gamma0) / np.log(4.0 / 3.0)
 
-def bloch_update_radius_vd(r: float) -> float:
-    """VD radial update for a single qubit (D=2): r → 2r/(1+r²).
+def bloch_update_radius_rho2(r: float) -> float:
+    """rho2 radial update for a single qubit (D=2): r → 2r/(1+r²).
 
     Derived from F' = F²/(F²+(1-F)²) with F=(1+r)/2:
         F' = (1+r)²/(2(1+r²))
@@ -223,13 +223,13 @@ class AnalyticTheoryPlotter:
                                                  save_format: str = "pdf") -> str:
         r_no = [beta_z]
         for _ in range(n_steps):
-            r_no.append(bloch_update_radius_vd(r_no[-1]))
+            r_no.append(bloch_update_radius_rho2(r_no[-1]))
         r_no = np.array(r_no)
 
         alpha = alpha_from_betaz(beta_z)
         r_iso = [alpha]
         for _ in range(n_steps):
-            r_iso.append(bloch_update_radius_vd(r_iso[-1]))
+            r_iso.append(bloch_update_radius_rho2(r_iso[-1]))
         r_iso = np.array(r_iso)
 
         F_no  = 0.5 * (1.0 + r_no)
@@ -313,7 +313,7 @@ class AnalyticTheoryPlotter:
 
         ax.set_xlabel(r'Dimension, $D$', fontsize=25)
         ax.set_ylabel(r'Output Fidelity, $F_{\mathrm{out}}$', fontsize=25)
-        ax.set_title(r'VD Map: $F_{\mathrm{out}}$ vs $D$ at Fixed $F$', fontsize=30)
+        ax.set_title(r'rho2 Map: $F_{\mathrm{out}}$ vs $D$ at Fixed $F$', fontsize=30)
         ax.set_ylim(0, 1)
         ax.legend(loc='best', fontsize=14)
         plt.tight_layout()
@@ -325,13 +325,13 @@ class AnalyticTheoryPlotter:
         return str(filepath)
 
     # ------------------------------------------------------------------
-    # Single-qubit VD radial dynamics  (used by ALL five panels)
+    # Single-qubit rho2 radial dynamics  (used by ALL five panels)
     # ------------------------------------------------------------------
 
     def P(self, x: np.ndarray) -> np.ndarray:
-        """One VD radial update (D=2): r → 2r/(1+r²).
+        """One rho2 radial update (D=2): r → 2r/(1+r²).
 
-        This is the Bloch-sphere form of the VD map F' = F²/(F²+(1-F)²).
+        This is the Bloch-sphere form of the rho2 map F' = F²/(F²+(1-F)²).
         Old SWAP map was P(r)=4r/(3+r²) — do NOT use that here.
         """
         return 2.0 * x / (1.0 + x**2)
@@ -346,7 +346,7 @@ class AnalyticTheoryPlotter:
         traj = [r]
         for _ in range(n_iter):
             x = (1.0 - p) * r          # noise: Werner mixing contracts Bloch sphere
-            for _ in range(ell):        # ell VD rounds
+            for _ in range(ell):        # ell rho2 rounds
                 x = self.P(x)
             r = x
             traj.append(r)
@@ -391,11 +391,11 @@ class AnalyticTheoryPlotter:
         return str(filepath)
 
     # ------------------------------------------------------------------
-    # Fixed-point Bloch radii  (updated for VD)
+    # Fixed-point Bloch radii  (updated for rho2)
     # ------------------------------------------------------------------
 
     def rfix_ell1(self, p: np.ndarray) -> np.ndarray:
-        """VD fixed-point radius for ell=1.
+        """rho2 fixed-point radius for ell=1.
 
         Solves P((1-p)r) = r with P(x) = 2x/(1+x²):
             r² = (1-2p) / (1-p)²
@@ -408,7 +408,7 @@ class AnalyticTheoryPlotter:
         return np.sqrt(np.where(num > 0.0, num / den, 0.0))
 
     def rfix_ell2(self, p: np.ndarray) -> np.ndarray:
-        """VD fixed-point radius for ell=2.
+        """rho2 fixed-point radius for ell=2.
 
         Solves P²((1-p)r) = r with P(x) = 2x/(1+x²):
             r² = (2√(1+p²) - (1+2p)) / (1-p)²
@@ -426,7 +426,7 @@ class AnalyticTheoryPlotter:
         return np.sqrt(np.where(u > 0.0, u / (1.0 - p) ** 2, 0.0))
 
     def rfix_general(self, p: np.ndarray, ell: int) -> np.ndarray:
-        """VD fixed-point radius for arbitrary ell (D=2).
+        """rho2 fixed-point radius for arbitrary ell (D=2).
 
         Uses closed-form for ell=0,1,2; binary-search for ell≥3.
         """
@@ -493,11 +493,11 @@ class AnalyticTheoryPlotter:
         return str(out)
 
     # ------------------------------------------------------------------
-    # F₀ analytical  (updated for VD)
+    # F₀ analytical  (updated for rho2)
     # ------------------------------------------------------------------
 
     def F0_analytical(self, p: np.ndarray, D: int = 2) -> np.ndarray:
-        """Steady-state fidelity F₀ for ell=1 VD under global depolarizing.
+        """Steady-state fidelity F₀ for ell=1 rho2 under global depolarizing.
 
         From manuscript (\Jon{} box):
             F₀ = (1/2)(1 + √(1 − 4(D−1)p² / (D²(1−p)²)))
@@ -529,16 +529,16 @@ class AnalyticTheoryPlotter:
 
     def plot_comprehensive_grid_centered_gridspec(self, save_format: str = "pdf") -> str:
         """
-        5-panel figure on a 3×6 GridSpec, all panels using the VD map.
+        5-panel figure on a 3×6 GridSpec, all panels using the rho2 map.
 
         Layout:
             Row 0:  (a) F vs t  [p=0.1, ℓ=0..3]    (b) F vs t  [ℓ=1, p=0.1..0.3]
             Row 1:  (c) F₀ vs p [ℓ=0..3]            (d) γ_L vs p [ℓ=0..3,10,20]
             Row 2:            (e) γ_L vs ℓ [p=0.1..0.7]  (centered)
 
-        Physics used throughout (VD map, D=2):
+        Physics used throughout (rho2 map, D=2):
           - Noise:         r → (1-p) r
-          - Purification:  r → P(r) = 2r/(1+r²)   [VD, replaces 4r/(3+r²)]
+          - Purification:  r → P(r) = 2r/(1+r²)   [rho2, replaces 4r/(3+r²)]
           - Fidelity:      F = (1+r)/2
           - F₀ (ℓ=1):     r_fix = √((1-2p)/(1-p)²),  threshold p=1/2
           - F₀ (ℓ=2):     r_fix = √((2√(1+p²)−(1+2p))/(1-p)²),  threshold p=3/4
@@ -713,15 +713,15 @@ class AnalyticTheoryPlotter:
     
     def plot_comprehensive_grid_2x2(self, save_format: str = "pdf") -> str:
         """
-        4-panel figure on a 2×6 GridSpec, all panels using the VD map.
+        4-panel figure on a 2×6 GridSpec, all panels using the rho2 map.
 
         Layout:
             Row 0:  (a) F vs t  [p=0.1, ℓ=0..3]    (b) F vs t  [ℓ=1, p=0.1..0.3]
             Row 1:  (c) F₀ vs p [ℓ=0..3]            (d) γ_L vs p [ℓ=0..3,10,20]
 
-        Physics used throughout (VD map, D=2):
+        Physics used throughout (rho2 map, D=2):
           - Noise:         r → (1-p) r
-          - Purification:  r → P(r) = 2r/(1+r²)   [VD, replaces 4r/(3+r²)]
+          - Purification:  r → P(r) = 2r/(1+r²)   [rho2, replaces 4r/(3+r²)]
           - Fidelity:      F = (1+r)/2
           - F₀ (ℓ=1):     r_fix = √((1-2p)/(1-p)²),  threshold p=1/2
           - F₀ (ℓ=2):     r_fix = √((2√(1+p²)−(1+2p))/(1-p)²),  threshold p=3/4
@@ -933,15 +933,15 @@ class AnalyticTheoryPlotter:
 
     def generate_all_requested(self, save_format: str = "pdf") -> Dict[str, Optional[str]]:
         print("\n" + "="*70)
-        print("GENERATING ANALYTIC THEORY FIGURES  (VD map)")
+        print("GENERATING ANALYTIC THEORY FIGURES  (rho2 map)")
         print("="*70)
 
         out: Dict[str, Optional[str]] = {}
 
-        print("\n1) F_out vs F (isotropic/Werner family, VD map)...")
+        print("\n1) F_out vs F (isotropic/Werner family, rho2 map)...")
         out['fout_vs_f'] = self.plot_fout_vs_f_isotropic(save_format=save_format)
 
-        print("\n2) Comprehensive 5-panel grid (VD-consistent)...")
+        print("\n2) Comprehensive 5-panel grid (rho2-consistent)...")
         out['comprehensive_5panel'] = self.plot_comprehensive_grid_centered_gridspec(
             save_format=save_format
         )

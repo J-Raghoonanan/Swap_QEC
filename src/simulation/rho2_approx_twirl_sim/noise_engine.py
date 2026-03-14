@@ -1,8 +1,8 @@
 """
-Noise engine for the Virtual Distillation (VD) purification simulator.
+Noise engine for the rho2 purification simulator.
 
 This module applies noise channels directly to density matrices.  It does NOT
-build Qiskit circuits — the VD iterative runner works entirely at the density-
+build Qiskit circuits — the rho2 iterative runner works entirely at the density-
 matrix level and never needs circuit-level noise injection.
 
 Supported noise types  (NoiseType enum):

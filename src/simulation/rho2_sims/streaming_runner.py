@@ -1,5 +1,5 @@
 """
-Streaming purification runner using Virtual Distillation (VD).
+Streaming purification runner using rho2.
 
 Implements ITERATIVE mode only (regular streaming is not used):
 
@@ -9,23 +9,23 @@ Implements ITERATIVE mode only (regular streaming is not used):
         (a) Apply noise ONCE to the current state using the *exact local
             deterministic twirl* over {I, H, HS}^⊗M (see below).
         (b) Create 2^ℓ IDENTICAL copies of that noisy density matrix.
-        (c) Run ℓ clean VD levels (binary tree, no intermediate noise).
+        (c) Run ℓ clean rho2 purification levels (binary tree, no intermediate noise).
         (d) The purified output becomes the new current state.
 
-TWIRLING (ported exactly from pre-VD streaming_runner.py):
+TWIRLING (ported exactly from pre-rho2 streaming_runner.py):
   For dephase_z with twirling enabled, we compute the *exact* average:
       rho_out = (1/3^M) Σ_C  C† · Z_p(C ρ C†) · C
   summed over all 3^M combinations C in {I, H, HS}^⊗M.
   This is a deterministic, closed-form twirl — NOT a sampled approximation.
   For depolarizing or twirling disabled, the raw channel is applied once.
 
-VD differences from SWAP:
+rho2 differences from SWAP:
   - State update: ρ → ρ²/Tr(ρ²)   (no SWAP unitary, no ancilla)
   - P_success = 1.0 always (deterministic)
   - C_ℓ = 2^ℓ exactly (no postselection overhead)
-  - G_ℓ = 2^ℓ − 1 (total VD operations per iteration)
+  - G_ℓ = 2^ℓ − 1 (total rho2 operations per iteration)
 
-num_iterations = floor(log2(N))  (consistent with pre-VD convention where N
+num_iterations = floor(log2(N))  (consistent with pre-rho2 convention where N
 is the number of incoming copies; in iterative mode this sets the number of
 noise+purification cycles).
 """
@@ -52,7 +52,7 @@ except Exception:
 from .configs import NoiseMode, NoiseType, RunSpec
 from .state_factory import build_target
 from .noise_engine import apply_noise_to_density_matrix
-from .virtual_distillation import purify_two_from_density   # VD replace of amplified_swap
+from .rho2_purification import purify_two_from_density   # rho2 replace of amplified_swap
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -62,7 +62,7 @@ logging.basicConfig(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Metric helpers  (unchanged from pre-VD version)
+# Metric helpers  (unchanged from pre-rho2 version)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _fidelity_to_pure(rho: DensityMatrix, psi: Statevector) -> float:
@@ -95,7 +95,7 @@ def _bloch_vector_magnitude(rho: DensityMatrix) -> Optional[float]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Exact local deterministic Clifford twirl  (ported unchanged from pre-VD code)
+# Exact local deterministic Clifford twirl  (ported unchanged from pre-rho2 code)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _U_single_qubit(gate: str) -> np.ndarray:
@@ -185,22 +185,22 @@ def _apply_local_deterministic_twirled_noise(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Iterative VD purification
+# Iterative rho2 purification
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run_iterative_purification(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Iterative VD purification.
+    Iterative rho2 purification.
 
     Protocol per iteration:
       1) Apply noise ONCE to current_state → rho_noisy
          (exact local deterministic twirl for dephase_z if twirling enabled)
       2) Create 2^ℓ IDENTICAL copies of rho_noisy
-      3) Perform ℓ clean VD levels (binary tree, no intermediate noise)
-         VD merge: (rho_L, rho_R) → rho_L² / Tr(rho_L²)   [P_success = 1.0]
+      3) Perform ℓ clean rho2 levels (binary tree, no intermediate noise)
+         rho2 merge: (rho_L, rho_R) → rho_L² / Tr(rho_L²)   [P_success = 1.0]
       4) Output becomes current_state for next iteration
 
-    num_iterations = floor(log2(N))   [consistent with pre-VD convention]
+    num_iterations = floor(log2(N))   [consistent with pre-rho2 convention]
     """
     spec.validate()
     out_dir: Path = spec.out_dir
@@ -217,17 +217,17 @@ def run_iterative_purification(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFram
         raise ValueError("purification_level must be >= 0")
     num_copies_needed = 2 ** purification_level
 
-    # Convention from pre-VD: N encodes number of copies → iterations = log2(N)
+    # Convention from pre-rho2: N encodes number of copies → iterations = log2(N)
     num_iterations = int(np.log2(spec.N)) if spec.N > 1 else 1
 
     twirling_active = spec._should_apply_twirling()
 
     logger.info("=" * 70)
-    logger.info("ITERATIVE VIRTUAL DISTILLATION MODE")
+    logger.info("ITERATIVE RHO2 MODE")
     logger.info(f"  M={spec.target.M}, iterations={num_iterations}, ℓ={purification_level}, copies/iter={num_copies_needed}")
     logger.info(f"  noise={spec.noise.noise_type.value}, p={spec.noise.p}")
-    logger.info(f"  VD is deterministic (P_success = 1.0 always)")
-    logger.info(f"  Protocol: noise ONCE per iteration; then ℓ clean VD rounds on identical inputs")
+    logger.info(f"  rho2 is deterministic (P_success = 1.0 always)")
+    logger.info(f"  Protocol: noise ONCE per iteration; then ℓ clean rho2 rounds on identical inputs")
 
     if twirling_active and spec.noise.noise_type == NoiseType.dephase_z:
         logger.info("  Exact local deterministic twirl ENABLED for dephase_z: average over {I,H,HS}^⊗M")
@@ -287,7 +287,7 @@ def run_iterative_purification(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFram
             DensityMatrix(rho_noisy.data.copy()) for _ in range(num_copies_needed)
         ]
 
-        # ── Step 3: ℓ clean VD levels via binary tree ────────────────────────
+        # ── Step 3: ℓ clean rho2 levels via binary tree ────────────────────────
         if purification_level == 0:
             iteration_result  = noisy_copies[0]
             total_success_prob = 1.0
@@ -309,10 +309,10 @@ def run_iterative_purification(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFram
                     left = slots.pop(level)
                     merge_count += 1
 
-                    # VD merge: ρ → ρ²/Tr(ρ²), P_success = 1.0
+                    # rho2 merge: ρ → ρ²/Tr(ρ²), P_success = 1.0
                     purified_state, meta = purify_two_from_density(left, carry_dm, spec.aa)
                     p_succ = float(meta.get("P_success", 1.0))
-                    total_success_prob *= p_succ   # stays 1.0 for VD
+                    total_success_prob *= p_succ   # stays 1.0 for rho2
 
                     carry_dm = purified_state
                     level   += 1
@@ -347,7 +347,7 @@ def run_iterative_purification(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFram
             "mode":                 spec.noise.mode.value,
             "p":                    spec.noise.p,
             "p_channel":            spec.noise.kraus_p(),
-            "P_success":            total_success_prob,   # always 1.0 for VD
+            "P_success":            total_success_prob,   # always 1.0 for rho2
             "grover_iters":         0,
             "twirling_applied":     bool(twirling_active and spec.noise.noise_type == NoiseType.dephase_z),
             "purification_level":   purification_level,
@@ -364,7 +364,7 @@ def run_iterative_purification(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFram
         }
         logger.info(
             f"  Iteration {iter_idx + 1} complete: F={fid:.6f}, ε_L={eps:.6f}, "
-            f"P_succ_total={total_success_prob:.4f} (VD=deterministic)"
+            f"P_succ_total={total_success_prob:.4f} (rho2=deterministic)"
         )
         steps_rows.append(row)
 
@@ -374,7 +374,7 @@ def run_iterative_purification(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFram
     pur_final = _purity(current_state)
     reduction = eps_final / eps_init if eps_init > 0 else np.nan
 
-    logger.info(f"VD iterative complete: F={F_final:.6f}, ε_L={eps_final:.6f}, reduction={reduction:.6f}")
+    logger.info(f"rho2 iterative complete: F={F_final:.6f}, ε_L={eps_final:.6f}, reduction={reduction:.6f}")
     if M == 1:
         logger.info(f"  Final Bloch vector magnitude: |r⃗|={_bloch_vector_magnitude(current_state):.6f}")
 
@@ -410,10 +410,10 @@ def run_iterative_purification(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFram
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run_streaming(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Always runs iterative mode (regular streaming not used for VD)."""
+    """Always runs iterative mode (regular streaming not used for rho2)."""
     if not spec.iterative_noise:
         logger.warning(
-            "iterative_noise=False but VD streaming_runner only supports iterative mode. "
+            "iterative_noise=False but rho2 streaming_runner only supports iterative mode. "
             "Proceeding with iterative purification."
         )
     return run_iterative_purification(spec)
@@ -426,11 +426,11 @@ def run_and_save(spec: RunSpec) -> Tuple[Path, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     suffix = spec.noise.noise_type.value
-    steps_path  = out_dir / f"steps_vd_{suffix}.csv"
-    finals_path = out_dir / f"finals_vd_{suffix}.csv"
-    
-    # steps_path  = out_dir / f"steps_vd_{suffix}_theta_phi_no_twirl.csv"
-    # finals_path = out_dir / f"finals_vd_{suffix}_theta_phi_no_twirl.csv"
+    steps_path  = out_dir / f"steps_rho2_{suffix}.csv"
+    finals_path = out_dir / f"finals_rho2_{suffix}.csv"
+
+    # steps_path  = out_dir / f"steps_rho2_{suffix}_theta_phi_no_twirl.csv"
+    # finals_path = out_dir / f"finals_rho2_{suffix}_theta_phi_no_twirl.csv"
 
     if steps_path.exists():
         try:

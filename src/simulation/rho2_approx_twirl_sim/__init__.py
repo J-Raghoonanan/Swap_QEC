@@ -1,7 +1,7 @@
 """
-Virtual Distillation (VD) simulation package with approximate Clifford twirling.
+Rho2 simulation package with approximate Clifford twirling.
 
-This package implements VD purification (ρ → ρ^2) with resource-efficient
+This package implements rho2 purification (ρ → ρ^2) with resource-efficient
 approximate twirling for dephasing noise mitigation.
 """
 
@@ -16,8 +16,8 @@ from .configs import (
     RunSpec
 )
 
-from .virtual_distillation import (
-    virtual_distill,
+from .rho2_purification import (
+    rho2_purification,
     purify_two_from_density,
 )
 
@@ -36,8 +36,8 @@ __all__ = [
     "AASpec",
     "TwirlingSpec",
     "RunSpec",
-    # VD operations
-    "virtual_distill",
+    # rho2 operations
+    "rho2_purification",
     "purify_two_from_density",
     # Runners
     "run_iterative_purification",
