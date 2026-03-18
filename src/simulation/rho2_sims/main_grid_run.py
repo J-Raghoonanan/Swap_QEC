@@ -33,15 +33,32 @@ Usage examples:
     python -m src.simulation.rho2_sims.main_grid_run \
         --out data/rho2_sim \
         --noise depol \
-        --m-values 1 5 \
+        --m-values 1 2 3 4 5 \
         --iterative
+    
+    python -m src.simulation.rho2_sims.main_grid_run \
+        --out data/rho2_sim \
+        --noise z \
+        --m-values 1 2 3 45 \
+        --iterative \
 
     python -m src.simulation.rho2_sims.main_grid_run \
         --out data/rho2_sim \
         --noise z \
-        --m-values 1 5 \
+        --m-values 1 2 3 4 5 \
         --iterative \
         --no-twirl
+        
+    python -m src.simulation.rho2_sims.main_grid_run \
+        --out data/rho2_sim \
+        --noise z \
+        --m-values 1 2 3 45 \
+        --iterative \
+        --no-twirl \
+        --target single_qubit_product
+        
+        
+        
         
     python -m src.simulation.rho2_sims.main_grid_run \
         --out data/rho2_sim \
