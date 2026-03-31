@@ -44,11 +44,6 @@ from qiskit import transpile
 from qiskit.quantum_info import DensityMatrix, Statevector
 from qiskit.quantum_info.operators import Pauli
 
-try:
-    from qiskit_aer import AerSimulator
-except Exception:
-    from qiskit.providers.aer import AerSimulator  # type: ignore
-
 from .configs import NoiseMode, NoiseType, RunSpec
 from .state_factory import build_target
 from .noise_engine import apply_noise_to_density_matrix
@@ -270,6 +265,8 @@ def run_iterative_purification(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFram
 
         # ── Step 1: Apply noise once ──────────────────────────────────────────
         F_before = _fidelity_to_pure(current_state, psi)
+        eps_L_before  = _trace_distance_to_pure(current_state, psi)
+        purity_before = _purity(current_state)
 
         rho_noisy = _apply_local_deterministic_twirled_noise(
             current_state,
@@ -357,9 +354,9 @@ def run_iterative_purification(spec: RunSpec) -> Tuple[pd.DataFrame, pd.DataFram
             "bloch_r":              _bloch_vector_magnitude(current_state) if M == 1 else None,
             "fidelity_before_noise": F_before,
             "fidelity_after_noise":  F_after_noise,
-            "eps_L_before_noise":   _trace_distance_to_pure(current_state, psi),
+            "eps_L_before_noise":   eps_L_before,
             "eps_L_after_noise":    _trace_distance_to_pure(rho_noisy, psi),
-            "purity_before_noise":  _purity(current_state),
+            "purity_before_noise":  purity_before,
             "purity_after_noise":   _purity(rho_noisy),
         }
         logger.info(
@@ -427,7 +424,7 @@ def run_and_save(spec: RunSpec) -> Tuple[Path, Path]:
 
     suffix = spec.noise.noise_type.value
     
-    if spec.noise.noise_type.value == NoiseType.dephase_z and spec.target.kind.value == "product":
+    if spec.noise.noise_type.value == NoiseType.dephase_z and spec.target.kind.value == "single_qubit_product":
         suffix += f"_theta_phi"
     if spec.noise.noise_type.value == NoiseType.dephase_z and spec._should_apply_twirling():
         suffix += f"_twirled"
