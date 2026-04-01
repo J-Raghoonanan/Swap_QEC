@@ -2,14 +2,11 @@
 set -euo pipefail
 
 # ── Paths ──────────────────────────────────────────────────────────────────
-# CodeOcean captures everything written to /results
 DATA_DIR="/data/rho2_sim"
 FIG_DIR="/figures/rho2_results"
 
 mkdir -p "$DATA_DIR"
 mkdir -p "$FIG_DIR"
-
-cd /code
 
 # ── Dataset 1: Depolarizing noise ──────────────────────────────────────────
 echo "=== [1/5] Depolarizing noise ==="
@@ -62,4 +59,4 @@ python figures/rho2_plots.py \
     --data-dir "$DATA_DIR" \
     --figures-dir  "$FIG_DIR"
 
-echo "=== Done. Results written to /data and /figures ==="
+echo "=== Done. Results written to $DATA_DIR and $FIG_DIR ==="
