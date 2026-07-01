@@ -588,7 +588,7 @@ class Rho2Plotter:
                     if l_val == 0:
                         ax.plot(x, y, linestyle='dotted', marker=_mk(cidx), 
                             color=colors[cidx % len(colors)], linewidth=2, markersize=12, 
-                            alpha=0.8, label=rf'No QEC')
+                            alpha=0.8, label=rf'No QEM')
                     else:
                         ax.plot(x, y, linestyle='-', marker=_mk(cidx), 
                             color=colors[cidx % len(colors)], linewidth=2, markersize=12, 
@@ -603,7 +603,7 @@ class Rho2Plotter:
                 max_iter = max(10, df_p['iteration'].max()) if len(df_p) > 0 else 10
                 ax.set_xlim(0.0, max_iter + 0.5)
                 ax.set_xticks(range(0, int(max_iter) + 1, 2))
-                ax.set_xlabel(r'PQEC Cycles, $t$', fontsize=50)
+                ax.set_xlabel(r'PQEM Cycles, $t$', fontsize=50)
                 
                 # Y-axis label only on left
                 if i == 0:
@@ -694,7 +694,7 @@ class Rho2Plotter:
                     cidx = l_to_color_idx[l_val]
                     
                     if l_val == 0:
-                        label = rf'No QEC'
+                        label = rf'No QEM'
                     else:
                         label = rf'$\ell={l_val}$'
                     line, = ax.plot(df_main['p'], df_main['gamma'],
