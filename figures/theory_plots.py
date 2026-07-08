@@ -1,5 +1,5 @@
 """
-Analytic theory plots for PQEM (purification-based quantum error correction).
+Analytic theory plots for PQES (purification-based quantum error suppression).
 
 IMPORTANT — RHO2 CONSISTENCY:
   The purification update rule used throughout this file is the rho2 map:
@@ -12,7 +12,7 @@ IMPORTANT — RHO2 CONSISTENCY:
 
   This replaces the old SWAP map P(r) = 4r/(3+r²) used in an earlier version.
   All fixed-point formulas, thresholds, and F₀ expressions are updated to
-  match.  See manuscript Eq. (gen_error_reduction) and the \Jon{} boxes.
+  match. 
 
 Generates figures:
   (1) F_out vs F (isotropic family, rho2 map)
@@ -577,14 +577,14 @@ class AnalyticTheoryPlotter:
             traj_r = self.iterate_r(r0=r0, p=p_fixed, ell=ell, n_iter=n_iter)
             traj_F = (1 + traj_r) / 2
             it     = np.arange(len(traj_F))
-            label  = 'No QEM' if ell == 0 else rf'$\ell={ell}$'
+            label  = 'No QES' if ell == 0 else rf'$\ell={ell}$'
             style  = ':' if ell == 0 else '-'
             ax.plot(it, traj_F,
                     marker=_mk(i), color=colors[i], linestyle=style,
                     label=label, markevery=max(1, len(it)//8),
                     markersize=12, linewidth=2)
 
-        ax.set_xlabel(r'PQEM Cycles, $t$', fontsize=FS_LABEL)
+        ax.set_xlabel(r'PQES Cycles, $t$', fontsize=FS_LABEL)
         ax.set_ylabel('Fidelity, F', fontsize=FS_LABEL)
         ax.set_xlim(0, n_iter)
         ax.set_xticks([0, 5, 10, 15, 20])
@@ -607,7 +607,7 @@ class AnalyticTheoryPlotter:
                     markevery=max(1, len(it)//8),
                     markersize=12, linewidth=2)
 
-        ax.set_xlabel(r'PQEM Cycles, $t$', fontsize=FS_LABEL)
+        ax.set_xlabel(r'PQES Cycles, $t$', fontsize=FS_LABEL)
         ax.set_ylabel(r'Fidelity, $F$', fontsize=FS_LABEL)
         ax.set_xlim(0, n_iter)
         ax.set_xticks([0, 5, 10, 15, 20])
@@ -629,7 +629,7 @@ class AnalyticTheoryPlotter:
                 ax.plot(p_range, F0_vals,
                         color=colors[i], linewidth=3,
                         marker=_mk(i), markevery=50, markersize=10,
-                        label='No QEM', linestyle='dotted')
+                        label='No QES', linestyle='dotted')
             else:
                 r_fix = self.rfix_general(p_range, ell)
                 F_fix = (1 + r_fix) / 2
@@ -659,7 +659,7 @@ class AnalyticTheoryPlotter:
                 self.calculate_gamma_first_drop(r0_gamma, pv, ell)
                 for pv in p_range_gamma
             ])
-            label = 'No QEM' if ell == 0 else rf'$\ell={ell}$'
+            label = 'No QES' if ell == 0 else rf'$\ell={ell}$'
             style = ':' if ell == 0 else '-'
             ax.plot(p_range_gamma, gamma_vals,
                     color=colors[i], linewidth=3,
@@ -759,14 +759,14 @@ class AnalyticTheoryPlotter:
             traj_r = self.iterate_r(r0=r0, p=p_fixed, ell=ell, n_iter=n_iter)
             traj_F = (1 + traj_r) / 2
             it     = np.arange(len(traj_F))
-            label  = 'No QEM' if ell == 0 else rf'$\ell={ell}$'
+            label  = 'No QES' if ell == 0 else rf'$\ell={ell}$'
             style  = ':' if ell == 0 else '-'
             ax.plot(it, traj_F,
                     marker=_mk(i), color=colors[i], linestyle=style,
                     label=label, markevery=max(1, len(it)//8),
                     markersize=12, linewidth=2)
 
-        ax.set_xlabel(r'PQEM Cycles, $t$', fontsize=FS_LABEL)
+        ax.set_xlabel(r'PQES Cycles, $t$', fontsize=FS_LABEL)
         ax.set_ylabel('Fidelity, F', fontsize=FS_LABEL)
         ax.set_xlim(0, n_iter)
         ax.set_xticks([0, 5, 10, 15, 20])
@@ -789,7 +789,7 @@ class AnalyticTheoryPlotter:
                     markevery=max(1, len(it)//8),
                     markersize=12, linewidth=2)
 
-        ax.set_xlabel(r'PQEM Cycles, $t$', fontsize=FS_LABEL)
+        ax.set_xlabel(r'PQES Cycles, $t$', fontsize=FS_LABEL)
         ax.set_ylabel(r'Fidelity, $F$', fontsize=FS_LABEL)
         ax.set_xlim(0, n_iter)
         ax.set_xticks([0, 5, 10, 15, 20])
@@ -811,7 +811,7 @@ class AnalyticTheoryPlotter:
                 ax.plot(p_range, F0_vals,
                         color=colors[i], linewidth=3,
                         marker=_mk(i), markevery=50, markersize=10,
-                        label='No QEM', linestyle='dotted')
+                        label='No QES', linestyle='dotted')
             else:
                 r_fix = self.rfix_general(p_range, ell)
                 F_fix = (1 + r_fix) / 2
@@ -841,7 +841,7 @@ class AnalyticTheoryPlotter:
                 self.calculate_gamma_first_drop(r0_gamma, pv, ell)
                 for pv in p_range_gamma
             ])
-            label = 'No QEM' if ell == 0 else rf'$\ell={ell}$'
+            label = 'No QES' if ell == 0 else rf'$\ell={ell}$'
             style = ':' if ell == 0 else '-'
             ax.plot(p_range_gamma, gamma_vals,
                     color=colors[i], linewidth=3,
