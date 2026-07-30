@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en" data-theme="silk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PQES interleaving experiment review</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/daisyui.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/themes.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.4/dist/index.global.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :where(.grid, .flex, .layout-grid, .layout-flex) > *,
+    :where([style*="display: grid"], [style*="display:grid"], [style*="display: flex"], [style*="display:flex"]) > * {
+      min-width: 0;
+    }
+    :where(p, h1, h2, h3, h4, h5, h6, li, dd, blockquote, figcaption, td, th, .badge, .label) {
+      overflow-wrap: anywhere;
+    }
+    :where(img, svg, video, canvas, iframe) {
+      max-width: 100%;
+      height: auto;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-variant-numeric: tabular-nums; }
+    code, .font-mono { word-break: break-word; }
+    .mermaid { min-width: 0; overflow: auto; }
+    .section-anchor { scroll-margin-top: 5rem; }
+  </style>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      securityLevel: "strict",
+      themeVariables: {
+        primaryColor: "#e8eef8",
+        primaryTextColor: "#192234",
+        primaryBorderColor: "#5c6f91",
+        lineColor: "#5c6f91",
+        secondaryColor: "#f3eadb",
+        tertiaryColor: "#eef4ec",
+        fontFamily: "ui-sans-serif, system-ui, sans-serif"
+      }
+    });
+  </script>
+</head>
+<body class="bg-base-200 text-base-content">
+  <header class="sticky top-0 z-30 border-b border-base-300 bg-base-100/95 backdrop-blur">
+    <div class="navbar mx-auto max-w-7xl px-4">
+      <div class="navbar-start min-w-0">
+        <a href="#top" class="btn btn-ghost min-w-0 text-left text-base sm:text-lg">
+          <span class="truncate">PQES · interleaving study</span>
+        </a>
+      </div>
+      <nav class="navbar-end hidden gap-1 lg:flex" aria-label="Page sections">
+        <a class="btn btn-ghost btn-sm" href="#verdict">Verdict</a>
+        <a class="btn btn-ghost btn-sm" href="#comparison">Comparison</a>
+        <a class="btn btn-ghost btn-sm" href="#repository">Repository</a>
+        <a class="btn btn-ghost btn-sm" href="#implementation">Implementation</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top" class="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-10">
+    <section class="hero overflow-hidden rounded-box border border-base-300 bg-base-100 shadow-sm">
+      <div class="hero-content w-full items-start py-10 text-left lg:py-14">
+        <div class="w-full max-w-none">
+          <div class="mb-4 flex flex-wrap gap-2">
+            <span class="badge badge-primary badge-soft">Design review</span>
+            <span class="badge badge-success badge-soft">Good experiment</span>
+            <span class="badge badge-warning badge-soft">One essential control</span>
+          </div>
+          <h1 class="max-w-5xl text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+            Interleaving is worth testing — but placement and purification power must be separated.
+          </h1>
+          <p class="mt-5 max-w-4xl text-lg leading-relaxed opacity-80 sm:text-xl">
+            The proposed noise-then-purify versus noise/purify/noise/purify comparison is the right
+            baseline for the open question in the manuscript. A second, resource-matched comparison
+            is required to tell whether any gain comes from <em>where</em> purification is placed,
+            rather than simply from applying it more often.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="verdict" class="section-anchor grid gap-4 md:grid-cols-3">
+      <div class="card card-border bg-base-100">
+        <div class="card-body">
+          <div class="stat p-0">
+            <div class="stat-title">Manuscript result</div>
+            <div class="stat-value text-primary">Ideal equivalence</div>
+            <div class="stat-desc mt-2 whitespace-normal">
+              Common ideal unitaries commute with the power map; noise placement is where schedules can diverge.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-border bg-base-100">
+        <div class="card-body">
+          <div class="stat p-0">
+            <div class="stat-title">Current implementation</div>
+            <div class="stat-value text-secondary">1 of 2 arms</div>
+            <div class="stat-desc mt-2 whitespace-normal">
+              <span class="font-mono">rho2_sims</span> already implements repeated noise → purification cycles.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-border bg-base-100">
+        <div class="card-body">
+          <div class="stat p-0">
+            <div class="stat-title">Missing control</div>
+            <div class="stat-value text-warning">Matched budget</div>
+            <div class="stat-desc mt-2 whitespace-normal">
+              Give both schedules the same total number of ρ → ρ²/Tr(ρ²) rounds.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alert alert-info alert-soft items-start" role="alert">
+      <div>
+        <h2 class="font-semibold">What the manuscript says</h2>
+        <p class="mt-1 leading-relaxed">
+          Sections III.D and IV.B show that ideal common unitary blocks can be pushed through the
+          SWAP tree. The manuscript then explicitly leaves genuine circuit-level schedule advantage
+          as an open problem because preparation, memory, SWAP-test, and reset noise can make placement matter.
+          The proposed study is therefore a useful <strong>ideal-channel baseline</strong>, not yet a full
+          circuit-level answer.
+        </p>
+      </div>
+    </section>
+
+    <section id="comparison" class="section-anchor space-y-5">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-widest text-primary">The experimental fork</p>
+        <h2 class="mt-2 text-3xl font-semibold sm:text-4xl">Run both questions, not just one</h2>
+      </div>
+
+      <div class="card card-border bg-base-100">
+        <div class="card-body">
+          <h3 class="card-title">Schedule topology</h3>
+          <p class="opacity-75">Here E is one dephasing application and P is one normalized rho² round.</p>
+          <div class="mermaid mt-3">
+flowchart TB
+  S["Pure target ρ₀"]
+  subgraph L["Literal policy comparison"]
+    direction LR
+    L1["End-only<br/>E → E → E → P"]
+    L2["Interleaved<br/>E → P → E → P → E → P"]
+  end
+  subgraph F["Placement-only comparison · matched budget"]
+    direction LR
+    F1["End-only<br/>E → E → E → P → P → P"]
+    F2["Interleaved<br/>E → P → E → P → E → P"]
+  end
+  S --> L1
+  S --> L2
+  S --> F1
+  S --> F2
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-5 lg:grid-cols-2">
+        <article class="card card-border bg-base-100">
+          <div class="card-body">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="card-title">A · Literal policies</h3>
+              <span class="badge badge-warning badge-soft">Different power</span>
+            </div>
+            <div class="mt-2 rounded-box bg-base-200 p-4 font-mono text-sm">
+              end = P ∘ E<sup>T</sup><br>
+              interleaved = (P ∘ E)<sup>T</sup>
+            </div>
+            <p class="mt-2 leading-relaxed">
+              This answers the operational question “should I purify once or after every noise block?”
+              It is useful, but the interleaved arm has T purification rounds while the end arm has one.
+            </p>
+            <div class="card-actions mt-2">
+              <span class="badge badge-outline">Keep as panel A</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="card card-border border-primary bg-base-100">
+          <div class="card-body">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="card-title">B · Matched placement</h3>
+              <span class="badge badge-primary badge-soft">Primary result</span>
+            </div>
+            <div class="mt-2 rounded-box bg-base-200 p-4 font-mono text-sm">
+              end = P<sup>T</sup> ∘ E<sup>T</sup><br>
+              interleaved = (P ∘ E)<sup>T</sup>
+            </div>
+            <p class="mt-2 leading-relaxed">
+              This holds the number of purification layers fixed and isolates schedule placement.
+              Report ΔF = F<sub>interleaved</sub> − F<sub>end</sub>; positive values are genuine interleaving gains.
+            </p>
+            <div class="card-actions mt-2">
+              <span class="badge badge-primary">Use as headline comparison</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="alert alert-warning alert-soft items-start" role="alert">
+        <div>
+          <h3 class="font-semibold">A quick sanity check changes the expected story</h3>
+          <p class="mt-1 leading-relaxed">
+            Using the repository’s untwirled one-qubit Z-dephasing map with |+⟩, p = 0.1, and T = 5:
+            raw F = 0.66384; one purification at the end gives 0.79591; purifying after every step gives
+            0.98414. But with five purification rounds at the end, the matched-budget end schedule gives
+            0.9999999997 — higher than the interleaved result. This is only a smoke calculation, but it
+            demonstrates why the matched control is decisive.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="repository" class="section-anchor space-y-5">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-widest text-primary">Repository audit</p>
+        <h2 class="mt-2 text-3xl font-semibold sm:text-4xl">What already exists and what is missing</h2>
+      </div>
+
+      <div class="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+        <table class="table table-zebra">
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>What is there</th>
+              <th>Use in this study</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="font-mono text-sm">src/simulation/rho2_sims</td>
+              <td>Exact density-matrix noise, full twirl, target factory, rho² map, iterative runner</td>
+              <td>Reuse noise, target, and purification helpers</td>
+              <td><span class="badge badge-success badge-soft">Primary</span></td>
+            </tr>
+            <tr>
+              <td class="font-mono text-sm">src/simulation/rho2_approx_twirl_sim</td>
+              <td>Same protocol with a fixed Clifford subset</td>
+              <td>Defer until the untwirled baseline is understood</td>
+              <td><span class="badge badge-info badge-soft">Phase 2</span></td>
+            </tr>
+            <tr>
+              <td class="font-mono text-sm">data/rho2_sim</td>
+              <td>10 active CSVs; roughly 47.8k step/final rows across five noise variants</td>
+              <td>Schema reference only; do not append schedule data here</td>
+              <td><span class="badge badge-warning badge-soft">Mixed legacy</span></td>
+            </tr>
+            <tr>
+              <td class="font-mono text-sm">figures/rho2_plots.py</td>
+              <td>Purification-depth, repeated-cycle, threshold, and twirling figures</td>
+              <td>Reuse visual conventions, not its dataset assumptions</td>
+              <td><span class="badge badge-success badge-soft">Relevant</span></td>
+            </tr>
+            <tr>
+              <td class="font-mono text-sm">globalTwirl / moreNoise / subsetTwirling</td>
+              <td>Older SWAP/postselection-era variants and broader circuit studies</td>
+              <td>Useful later for realistic SWAP/reset/memory noise</td>
+              <td><span class="badge badge-ghost">Older branch</span></td>
+            </tr>
+            <tr>
+              <td class="font-mono text-sm">BACKUP / OLD / original_attempt</td>
+              <td>Duplicated or superseded code paths</td>
+              <td>Do not build the new experiment here</td>
+              <td><span class="badge badge-ghost">Ignore</span></td>
+            </tr>
+            <tr>
+              <td class="font-mono text-sm">src/theory</td>
+              <td>Analytic state/noise/purification models and older streaming comparisons</td>
+              <td>Potential analytic cross-check, not the execution path</td>
+              <td><span class="badge badge-info badge-soft">Cross-check</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="card card-border bg-base-100">
+          <div class="card-body">
+            <h3 class="card-title">Already implemented</h3>
+            <ul class="list-disc space-y-2 pl-5">
+              <li>Untwirled local Z-dephasing on a density matrix.</li>
+              <li>One or more normalized rho² purification rounds.</li>
+              <li>Pure-state fidelity, trace distance, and purity.</li>
+              <li>Repeated noise → purification trajectories.</li>
+              <li>Hadamard, GHZ, Haar, random-circuit, and off-axis product targets.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card card-border bg-base-100">
+          <div class="card-body">
+            <h3 class="card-title">Not implemented</h3>
+            <ul class="list-disc space-y-2 pl-5">
+              <li>An end-only schedule driven by the same step count.</li>
+              <li>A shared event-level dataset containing both schedules.</li>
+              <li>A matched-budget final-fidelity comparison.</li>
+              <li>A plot of ΔF versus p or circuit/noise depth.</li>
+              <li>A circuit-level schedule model with SWAP, reset, preparation, and memory noise.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="implementation" class="section-anchor space-y-5">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-widest text-primary">Concrete proposal</p>
+        <h2 class="mt-2 text-3xl font-semibold sm:text-4xl">One standalone study file, isolated outputs</h2>
+      </div>
+
+      <div class="card card-border bg-base-100">
+        <div class="card-body">
+          <ul class="steps steps-vertical w-full lg:steps-horizontal">
+            <li class="step step-primary">Build target</li>
+            <li class="step step-primary">Run both schedules</li>
+            <li class="step step-primary">Save long-form CSV</li>
+            <li class="step step-primary">Plot trajectory + ΔF</li>
+            <li class="step">Add circuit noise later</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
+        <div class="card card-border bg-base-100">
+          <div class="card-body">
+            <h3 class="card-title">Recommended file shape</h3>
+            <div class="mockup-code mt-2 text-sm">
+              <pre data-prefix="1"><code>src/simulation/rho2_sims/interleaving_study.py</code></pre>
+              <pre data-prefix="2"><code>data/rho2_interleaving/interleaving_trajectories.csv</code></pre>
+              <pre data-prefix="3"><code>figures/rho2_interleaving/fidelity_schedule_comparison.pdf</code></pre>
+            </div>
+            <p class="mt-4 leading-relaxed">
+              Keep this separate from <span class="font-mono">streaming_runner.py</span>. The existing runner
+              encodes N as the number of repeated cycles and appends into large, mixed-history CSVs. A focused
+              file makes the two arms explicit and the result reproducible.
+            </p>
+          </div>
+        </div>
+
+        <div class="card card-border bg-base-100">
+          <div class="card-body">
+            <h3 class="card-title">First sweep</h3>
+            <dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
+              <dt class="font-semibold">M</dt><dd>1, then 5</dd>
+              <dt class="font-semibold">Targets</dt><dd>|+⟩<sup>⊗M</sup>; then θ = π/3, φ = π/4</dd>
+              <dt class="font-semibold">p</dt><dd>0.05, 0.10, 0.20, 0.30, 0.49, 0.50, 0.60</dd>
+              <dt class="font-semibold">Steps T</dt><dd>1–10</dd>
+              <dt class="font-semibold">Twirl</dt><dd>Off</dd>
+              <dt class="font-semibold">Seeds</dt><dd>None needed for deterministic channels</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+        <table class="table table-sm table-zebra">
+          <thead>
+            <tr>
+              <th>CSV field</th>
+              <th>Purpose</th>
+              <th>Why it matters</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="font-mono">schedule</td><td>end_once, end_matched, interleaved, no_purification</td><td>Never infer the arm from a filename</td></tr>
+            <tr><td class="font-mono">noise_step</td><td>Comparable time/depth coordinate</td><td>Aligns checkpoints across schedules</td></tr>
+            <tr><td class="font-mono">checkpoint</td><td>before_noise, after_noise, after_purification</td><td>Prevents mixed-time fidelity comparisons</td></tr>
+            <tr><td class="font-mono">rounds_this_step</td><td>Purification applied at this event</td><td>Makes the budget auditable</td></tr>
+            <tr><td class="font-mono">rounds_total</td><td>Cumulative purification layers</td><td>Supports matched-budget filtering</td></tr>
+            <tr><td class="font-mono">fidelity</td><td>Target overlap</td><td>Main outcome</td></tr>
+            <tr><td class="font-mono">purity</td><td>Tr(ρ²)</td><td>Separates spectral sharpening from target recovery</td></tr>
+            <tr><td class="font-mono">trace_distance</td><td>Distance to target projector</td><td>Matches existing repository diagnostics</td></tr>
+            <tr><td class="font-mono">p, M, target, T</td><td>Explicit run parameters</td><td>Avoids the current run-id ambiguity</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="card card-border bg-base-100">
+          <div class="card-body">
+            <h3 class="card-title">Figure A · trajectory</h3>
+            <p>
+              Fidelity versus dephasing step for the no-purification baseline, literal end-only,
+              interleaved, and matched end-only schedules. Use distinct markers for after-noise and
+              after-purification checkpoints.
+            </p>
+          </div>
+        </div>
+        <div class="card card-border bg-base-100">
+          <div class="card-body">
+            <h3 class="card-title">Figure B · advantage map</h3>
+            <p>
+              Plot matched-budget ΔF versus p for several T values. A horizontal zero line makes the
+              sign of the interleaving advantage immediately visible.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-3xl font-semibold">Physics and implementation guardrails</h2>
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <article class="card card-border bg-base-100">
+          <div class="card-body">
+            <span class="badge badge-warning badge-soft">Confound</span>
+            <h3 class="card-title mt-2">Purification power</h3>
+            <p>One round after every noise step is not comparable to one round at the end.</p>
+          </div>
+        </article>
+        <article class="card card-border bg-base-100">
+          <div class="card-body">
+            <span class="badge badge-warning badge-soft">Interpretation</span>
+            <h3 class="card-title mt-2">Ideal map only</h3>
+            <p>This tests nonlinear map placement, not noisy SWAP hardware or signed-estimator variance.</p>
+          </div>
+        </article>
+        <article class="card card-border bg-base-100">
+          <div class="card-body">
+            <span class="badge badge-info badge-soft">Physics</span>
+            <h3 class="card-title mt-2">Target choice</h3>
+            <p>|+⟩ isolates spectral recovery; an off-axis product state reveals the dephasing eigenvector tilt.</p>
+          </div>
+        </article>
+        <article class="card card-border bg-base-100">
+          <div class="card-body">
+            <span class="badge badge-info badge-soft">Schema</span>
+            <h3 class="card-title mt-2">P_success mismatch</h3>
+            <p>The two active rho² packages use different P_success semantics. Store purity explicitly instead.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="alert alert-success alert-soft items-start" role="alert">
+      <div>
+        <h2 class="text-xl font-semibold">Recommendation</h2>
+        <p class="mt-1 leading-relaxed">
+          Proceed with the study as a small standalone module. Treat the literal two-arm trajectory
+          as an operational comparison, and make the matched-budget end-versus-interleaved result the
+          scientific claim. Begin with untwirled dephasing; add twirling and realistic SWAP/reset/memory
+          errors only after this baseline is stable.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-base-300 bg-base-100">
+    <div class="mx-auto max-w-7xl p-6 text-sm opacity-70">
+      Based on the 25-page manuscript, the active rho² code paths, stored CSV schemas, existing rho² figures,
+      and a small direct-map sanity check. No simulation source files were changed.
+    </div>
+  </footer>
+</body>
+</html>
